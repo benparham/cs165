@@ -8,38 +8,37 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 #include <string.h>
 
 #define BACKLOG 10
 #define BUFSIZE 1024
 
-#define LCL_LSTN_CMD "./listen.sh 1"
-#define EXECUTE_CMD "./execute.sh "
-#define SETUP_CMD "osascript setup.scpt"
 #define HOST_LOOKUP_CMD "ifconfig | grep -P 'inet (?!127.0.0.1)'"
 
-void setup(int socketFD);
-void listen_to_client();
-void listen_local(int socketFD);
-void terminate_connection(int socketFD, int childPid);
-int execute_command(char *command, int socketFD);
+void *listen_to_client();
+void terminate_connection(int socketFD);
+
+typedef struct threadArgs {
+	int socketFD;
+} threadArgs;
 
 int main(int argc, char *argv[]) {
-	printf("Initiating iTunes Remote Server2...\n\n");
+	printf("Initiating Server...\n\n");
 	
-	struct servent *serv;
+	// struct servent *serv;
 	struct sockaddr_in addr;
-	
-	// Obtain http service
-	serv  = getservbyname("http", "tcp");
 	
 	// Optional specification of port number
 	int port_number;
 	if (argc == 2) {
-		port_number = 8888;
+		port_number = atoi(argv[1]);
 	}
 	else {
+		// Obtain http service
+		struct servent *serv  = getservbyname("http", "tcp");
 		port_number = htons(serv->s_port);
+		endservent();
 	}
 	
 	// Create socket
@@ -55,7 +54,7 @@ int main(int argc, char *argv[]) {
 	// Setup the address (port number) to bind to
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = port_number;//htons(serv->s_port);
+	addr.sin_port = port_number;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	
 	// Bind the socket to the address
@@ -106,13 +105,13 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			printf("Accepted new connection. Created socket with file descriptor: %d\n", sock_accept);
-			setup(sock_accept);
-			int pid = fork();
-			if (pid == 0) {
-				listen_local(sock_accept);
-			}
-			else {
-				listen_to_client(sock_accept, pid);
+
+			pthread_t newThread;
+			threadArgs *args = malloc(sizeof(threadArgs));
+			args->socketFD = sock_accept;
+
+			if (pthread_create(&newThread, NULL, listen_to_client, (void *) args)) {
+				printf("Failed to create thread for connection with file descriptor: %d\n", sock_accept);
 			}
 		}
 	}
@@ -121,132 +120,32 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-void setup(int socketFD) {
-	FILE *ptr = popen(SETUP_CMD, "r");
-	if (ptr != NULL) {
-		char buf[BUFSIZE];
-		memset(buf, 0, BUFSIZE);
-		fgets(buf, BUFSIZE, ptr);
-		if (buf != NULL) {
-			strcat(buf, "\n");
-				
-			printf("Sending setup message: %s", buf);
-			send(socketFD, buf, strlen(buf), 0);
-		}
-		else {
-			printf("Return value from %s was null\n", SETUP_CMD);
-		}
-	}
-	else {
-		printf("Failed to run command %s\n", SETUP_CMD);
-	}
-	pclose(ptr);
-}
-
-void listen_to_client(int socketFD, int childPid) {
+void *listen_to_client(void *tempArgs) {
 	char command_buffer[BUFSIZE];
 	int bytes_recieved;
-	
-	while (1) {
-		printf("Waiting to recieve data from client...\n");
+
+	threadArgs *args = (threadArgs *) tempArgs;
+
+	while(1) {
+		printf("Waiting to receive data from client...\n");
 		memset(command_buffer, 0, BUFSIZE);
-		bytes_recieved = recv(socketFD, command_buffer, BUFSIZE, 0);
+		bytes_recieved = recv(args->socketFD, command_buffer, BUFSIZE, 0);
 		if (bytes_recieved < 1) {
 			printf("Client has closed connection\n");
 			break;
 		}
 		else {
-			printf("Data recieved: %s\n", command_buffer);
-			execute_command(command_buffer, socketFD);
+			printf("Data received: %s\n", command_buffer);
 		}
 	}
-	
-	terminate_connection(socketFD, childPid);
+
+	terminate_connection(args->socketFD);
+	free(args);
+	pthread_exit(NULL);
 }
 
-void listen_local(int socketFD) {
-	char buf[BUFSIZE];
-	FILE *ptr;
-	
-	while(1) {
-		memset(buf, 0, BUFSIZE);
-		ptr = popen(LCL_LSTN_CMD, "r");
-		if (ptr != NULL) {
-			fgets(buf, BUFSIZE, ptr);
-			if (buf != NULL) {
-				strcat(buf, "\n");
-				
-				printf("Sending message: %s", buf);
-				send(socketFD, buf, strlen(buf), 0);
-			}
-			else {
-				printf("Return value from %s was null\n", LCL_LSTN_CMD);
-				break;
-			}
-		}
-		else {
-			printf("Failed to run command %s\n", LCL_LSTN_CMD);
-			break;
-		}
-		pclose(ptr);
-	}
-}
-
-void terminate_connection(int socketFD, int childPid) {
+void terminate_connection(int socketFD) {
 	printf("Terminating connection from server end...\n");
 	printf("Closing socket %d\n", socketFD);
 	close(socketFD);
-	printf("Killing child process with pid: %d\n", childPid);
-	kill(childPid, SIGTERM);
-}
-
-int execute_command(char *command, int socketFD) {
-	char buf[BUFSIZE];
-	memset(buf, 0, BUFSIZE);
-	
-	char final_cmd[BUFSIZE];
-	memset(final_cmd, 0, BUFSIZE);
-	strcpy(final_cmd, EXECUTE_CMD);
-	strcat(final_cmd, command);
-	
-	FILE *ptr = popen(final_cmd, "r");
-	if (ptr != NULL) {
-		fgets(buf, BUFSIZE, ptr);
-		if (buf != NULL) {
-			if (strlen(buf) > 0) {
-				strcat(buf, "\n");
-				
-				printf("Sending message: %s", buf);
-				send(socketFD, buf, strlen(buf), 0);
-			}
-		}
-		else {
-			printf("Return value from %s was null\n", final_cmd);
-		}
-	}
-	else {
-		printf("Failed to run command %s\n", final_cmd);
-	}
-	pclose(ptr);
-}
-
-int execute_command_old(char *command, int socketFD) {
-	char *strend = strchr(command, '\n');
-	if (strend != NULL) {
-		*strend = '\0';
-	}
-	
-	char *filename = strtok(command, " ");
-	char *remaining_args = strtok(NULL, "\0");
-	
-	int pid = fork();
-	if (pid == 0) {
-		execlp("osascript", "osascript", filename, remaining_args, NULL);
-		exit(0);
-	}
-	else {
-		waitpid(pid, NULL, 0);
-	}
-	
-	return 0;
 }

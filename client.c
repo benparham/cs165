@@ -13,7 +13,7 @@
 #define MAX_INPUT 1024
 
 int main(int argc, char *argv[]) {
-	printf("Initiating Client2...\n");
+	printf("Initiating Client...\n");
 	
 	struct servent *serv;
 	struct sockaddr_in addr;
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	// Obtain http service
-	serv  = getservbyname("http", "tcp");
+	serv = getservbyname("http", "tcp");
 	
 	// Create socket
 	int socketFD = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
 	// Setup address to connect to
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(serv->s_port);
+	endservent();	// closes etc/services
 	if (inet_pton(AF_INET, target_address, &addr.sin_addr) != 1) {
 		printf("Failed to convert string %s to a network address\n", target_address);
 		close(socketFD);
@@ -85,6 +86,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	cleanup_socket:
 	close(socketFD);
 	printf("Closed socket %d\n", socketFD);
 	
