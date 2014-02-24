@@ -24,7 +24,7 @@ int parseCommand(char *buf, command *cmd, error *err) {
 		cmd->args = "";
 	} else {
 		err->err = ERR_INVALID_CMD;
-		err->message = "Invalid command";
+		err->message = "Unknown command";
 		return 1;
 	}
 
@@ -46,9 +46,23 @@ int receiveCommand(int socketFD, command *cmd, error *err) {
 	}
 
 	return parseCommand(buf, cmd, err);
-	// if (parseCommand(buf, cmd, err)) {
-	// 	return 1;
-	// }
+}
 
-	// return 0;
+/*
+ * If receives the required command OR graceful exit, returns success.
+ * Any error returns failure.
+ * Else continues to ask for required command.
+ */
+int requireCommand(CMD req_cmd, int socketFD, command *cmd, error *err) {
+	while (1) {
+		if (receiveCommand(socketFD, cmd, err)) {
+			return 1;
+		} else {
+			if (cmd->cmd == req_cmd || cmd->cmd == CMD_EXIT) {
+				return 0;
+			} else {
+				printf("Invalid command\n");
+			}
+		}
+	}
 }

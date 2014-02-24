@@ -5,9 +5,6 @@
 
 #define BUFSIZE				1024
 
-#define E_MSG_SIZE			256
-#define CMD_ARG_SIZE		256
-
 /*
  * Errors
  */
@@ -22,7 +19,7 @@ typedef enum {
 
 typedef struct error {
 	ERR err;
-	char *message;//[E_MSG_SIZE];
+	char *message;
 } error;
 
 
@@ -44,7 +41,7 @@ typedef enum {
 // Create new type called 'command'
 typedef struct command {
 	CMD cmd;
-	char *args;//[CMD_ARG_SIZE];
+	char *args;
 } command;
 
 // Command functions
@@ -52,5 +49,7 @@ typedef struct command {
 int parseCommand(char *buf, command *cmd, error *err);
 
 int receiveCommand(int socketFD, command *cmd, error *err);
+
+int requireCommand(CMD req_cmd, int socketFD, command *cmd, error *err);
 
 #endif

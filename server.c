@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <string.h>
+#include <assert.h>
 
 #include "database.h"
 
@@ -136,7 +137,7 @@ void *listenToClient(void *tempArgs) {
 
 	int done = 0;
 	while (!done) {
-		if (receiveCommand(args->socketFD, cmd, err)) {
+		if (requireCommand(CMD_USE, args->socketFD, cmd, err)) {
 			switch (err->err) {
 				case ERR_GENERAL:
 				case ERR_INVALID_CMD:
@@ -151,17 +152,12 @@ void *listenToClient(void *tempArgs) {
 					break;
 			}
 		} else {
-			switch (cmd->cmd) {
-				case CMD_USE:
-					printf("Received command 'use' with args: %s\n", cmd->args);
-					break;
-				case CMD_EXIT:
-					printf("Exiting...\n");
-					done = 1;
-					break;
-				default:
-					printf("Unknown command\n");
-					break;
+			if (cmd->cmd == CMD_EXIT) {
+				printf("Exiting...\n");
+				done = 1;
+			} else {
+				assert(cmd->cmd == CMD_USE);
+				printf("Received command 'use' with args: %s\n", cmd->args);
 			}
 		}
 	}
