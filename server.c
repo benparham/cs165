@@ -91,8 +91,9 @@ int main(int argc, char *argv[]) {
 	socklen_t addressLen;
 	
 	// Loop for accepting connections
+	printf("Ready for client connections...\n");
 	while (1) {
-		printf("\nWaiting for connection from client...\n");
+		// printf("\nWaiting for connection from client...\n");
 		int sockAccept = accept(sockListen, &clientAddress, &addressLen);
 		if (sockAccept == -1) {
 			printf("Failed to accept connection on listening socket %d\n", sockListen);
@@ -213,9 +214,9 @@ int executeCommand(dbTable *tbl, command *cmd, error *err) {
 
 	switch (cmd->cmd) {
 		case CMD_USE:
-			printf("Using table '%s'...\n", cmd->args);
-			tbl->name = cmd->args;
-			// result = loadTable(cmd->args);
+			// printf("Using table '%s'...\n", cmd->args);
+			// tbl->name = cmd->args;
+			result = useTable(tbl, cmd->args, err);
 			break;
 		default:
 			err->err = ERR_INVALID_CMD;
@@ -225,49 +226,4 @@ int executeCommand(dbTable *tbl, command *cmd, error *err) {
 	}
 
 	return result;
-}
-
-int cmdUse(int socketFD, FILE *fp) {
-	char buf[BUFSIZE];
-	int bytesReceived;
-
-	while (1) {
-		printf("Waiting to receive table from client...\n");
-		memset(buf, 0, BUFSIZE);
-
-		bytesReceived = recv(socketFD, buf, BUFSIZE, 0);
-		if (bytesReceived < 1) {
-			printf("Client has closed connection\n");
-			terminateConnection(socketFD);
-			return 1;
-		}
-
-		if (strncmp(buf, "use ", 4) == 0) {
-			printf("Request to use table: %s\n", &buf[4]);
-			if (openTable(strtok(&buf[4], "\n"), fp)) {
-				continue;
-			} else {
-				break;
-			}
-		} else {
-			printf("Invalid command. Require 'use <table name>'\n");
-		}
-	}
-
-	return 0;
-}
-
-int openTable(char *tableName, FILE *fp) {
-	char fileName[BUFSIZE];
-	sprintf(fileName, "db/%s.txt", tableName);
-	
-	fp = fopen(fileName, "r");
-
-	if (fp == NULL) {
-		printf("Unknown table: %s\n", tableName);
-		return 1;
-	}
-
-	printf("Opened table %s\n", fileName);
-	return 0;
 }

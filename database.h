@@ -6,7 +6,8 @@
 #include "dberror.h"
 
 #define BUFSIZE				1024
-
+#define MAX_COLS			64
+#define MSTR_TBLS_PATH		"./db/tables.csv"
 
 /*
  * Tables
@@ -14,16 +15,22 @@
 
 typedef struct table {
 	char *name;
+	char *columns[MAX_COLS];
 	int numRows;
-	char **columns;
+	int numColumns;
+	FILE *fp;
 } dbTable;
+
+// Table functions
+void printDbTable(dbTable *tbl);
+int useTable(dbTable *tbl, char *tableName, error *err);
 
 /*
  * Commands
  */
 
 // Declaration of global array of command strings matched to enum CMD
-extern const char *CMD_NAMES[]; 
+extern const char *CMD_NAMES[];
 
 // Enumerate possible commands
 typedef enum {

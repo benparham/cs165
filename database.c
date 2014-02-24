@@ -12,6 +12,92 @@
 #include "database.h"
 #include "dberror.h"
 
+// Table functions
+void printDbTable(dbTable *tbl) {
+	printf("\nTable:\n");
+
+	printf("Name: %s\n", tbl->name);
+	printf("Number of rows: %d\n", tbl->numRows);
+
+	for (int i; i < tbl->numColumns; i++) {
+		printf("Column %d: %s\n", i, tbl->columns[i]);
+	}
+
+	printf("\n");
+}
+
+int useTable(dbTable *tbl, char *tableName, error *err) {
+	int foundTable = 0;
+
+
+	FILE *mstr_fp;
+	mstr_fp = fopen("./db/tables.csv", "r");
+	if (mstr_fp == NULL) {
+		err->err = ERR_INTERNAL;
+		err->message = "Master tables file missing";
+		return 1;
+	}
+
+	size_t len = 0;
+	char *line = NULL;
+	while (getline(&line, &len, mstr_fp) != -1) {
+		if (strncmp(line, tableName, strlen(tableName)) == 0) {
+			
+			// Read in table name
+			char *tok = strtok(line, ",");
+			if (tok == NULL) {
+				err->err = ERR_MLFM_DATA;
+				err->message = "Table name missing";
+				return 1;
+			}
+			tbl->name = tok;
+
+			// Read in table size
+			tok = strtok(NULL, ",");
+			if (tok == NULL) {
+				err->err = ERR_MLFM_DATA;
+				err->message = "Table's number of rows missing";
+				return 1;
+			}
+			tbl->numRows = atoi(tok);
+
+			// Read in table columns
+			tok = strtok(NULL, ",\n");
+			if (tok == NULL) {
+				err->err = ERR_MLFM_DATA;
+				err->message = "Table has no columns";
+				return 1;
+			}
+			tbl->numColumns = 0;
+			while (tok != NULL) {
+				tbl->columns[tbl->numColumns] = tok;
+				tbl->numColumns++;
+				tok = strtok(NULL, ",\n");
+			}
+
+			// Open table's file with read/write access
+			char filePath[BUFSIZE];
+			sprintf(filePath, "%s/%s", MSTR_TBLS_PATH, tableName);
+			printf("Table file to open: %s\n", filePath);
+			// tbl->fp = fopen(, "r+");
+
+			foundTable = 1;
+			break;
+		}
+	}
+
+	fclose(mstr_fp);
+	
+	if (!foundTable) {
+		err->err = ERR_SRCH;
+		err->message = "Could not find table";
+		return 1;
+	}
+
+	printf("Using table: '%s'\n", tbl->name);
+	return 0;
+}
+
 // Command functions
 
 // Definition of global array of command strings matched to enum CMD

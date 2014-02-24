@@ -70,10 +70,10 @@ int main(int argc, char *argv[]) {
 	
 		printf("Input string to send to server: ");
 		fgets(input, MAX_INPUT, stdin);
-		if (strcmp(input, "exit\n") == 0) {
-			break;	
-		}
-		else {
+		// if (strcmp(input, "exit\n") == 0) {
+		// 	break;	
+		// }
+		// else {
 			send(socketFD, input, MAX_INPUT, 0);
 			/*
 			int bytes_recieved = recv(socketFD, response, MAX_INPUT, 0);
@@ -83,7 +83,11 @@ int main(int argc, char *argv[]) {
 			else {
 				printf("Error recieving response from server\n");
 			}*/
-		}
+
+			if (strcmp(input, "exit\n") == 0) {
+				break;	
+			}
+		// }
 	}
 	
 	cleanup_socket:

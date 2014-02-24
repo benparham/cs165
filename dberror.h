@@ -10,7 +10,11 @@
 typedef enum {
 	ERR_GENERAL,
 	ERR_CLIENT_EXIT,
-	ERR_INVALID_CMD
+	ERR_INVALID_CMD,
+
+	ERR_MLFM_DATA,
+	ERR_SRCH,
+	ERR_INTERNAL
 } ERR;
 
 // Create new type called 'error'

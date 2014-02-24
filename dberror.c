@@ -28,7 +28,8 @@ int handleExecuteErrors(error *err) {
 
 	switch (err->err) {
 		default:
-			err->message = "Unknown error";
+			// if (err->message == NULL || err->message == " ");
+			// err->message = "Unknown error";
 			break;
 	}
 
