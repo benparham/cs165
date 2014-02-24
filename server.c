@@ -11,11 +11,10 @@
 #include <pthread.h>
 #include <string.h>
 
+#include "database.h"
+
 #define BACKLOG 				10
 #define BUFSIZE 				1024
-
-#define E_GENERIC				1
-#define E_CLIENT_TERMINATED		2
 
 #define HOST_LOOKUP_CMD "ifconfig | grep -P 'inet (?!127.0.0.1)'"
 
@@ -160,13 +159,13 @@ void terminateConnection(int socketFD) {
 	close(socketFD);
 }
 
-char *getCmd(char *cmd, int socketFD) {
-	char buf[BUFSIZE];
-	int bytesRecieved;
+// char *getCmd(char *cmd, int socketFD) {
+// 	char buf[BUFSIZE];
+// 	int bytesRecieved;
 
-	memset(buf, 0, BUFSIZE);
+// 	memset(buf, 0, BUFSIZE);
 
-}
+// }
 
 int cmdUse(int socketFD, FILE *fp) {
 	char buf[BUFSIZE];
