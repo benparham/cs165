@@ -11,13 +11,18 @@
 #include <pthread.h>
 #include <string.h>
 
-#define BACKLOG 10
-#define BUFSIZE 1024
+#define BACKLOG 				10
+#define BUFSIZE 				1024
+
+#define E_GENERIC				1
+#define E_CLIENT_TERMINATED		2
 
 #define HOST_LOOKUP_CMD "ifconfig | grep -P 'inet (?!127.0.0.1)'"
 
-void *listen_to_client();
-void terminate_connection(int socketFD);
+void *listenToClient();
+void terminateConnection(int socketFD);
+int cmdUse(int socketFD, FILE *fp);
+int openTable(char *tableName, FILE *fp);
 
 typedef struct threadArgs {
 	int socketFD;
@@ -30,46 +35,46 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in addr;
 	
 	// Optional specification of port number
-	int port_number;
+	int portNumber;
 	if (argc == 2) {
-		port_number = atoi(argv[1]);
+		portNumber = atoi(argv[1]);
 	}
 	else {
 		// Obtain http service
 		struct servent *serv  = getservbyname("http", "tcp");
-		port_number = htons(serv->s_port);
+		portNumber = htons(serv->s_port);
 		endservent();
 	}
 	
 	// Create socket
-	int sock_listen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (sock_listen < 0) {
+	int sockListen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sockListen < 0) {
 		printf("Failed to create listening socket\n");
 		return 0;
 	}
 	else {
-		printf("Created socket with file descriptor: %d\n", sock_listen);
+		printf("Created socket with file descriptor: %d\n", sockListen);
 	}
 	
 	// Setup the address (port number) to bind to
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = port_number;
+	addr.sin_port = portNumber;
 	addr.sin_addr.s_addr = INADDR_ANY;
 	
 	// Bind the socket to the address
-	if (bind(sock_listen, (struct sockaddr *) &addr, sizeof(addr)) == 0) {
+	if (bind(sockListen, (struct sockaddr *) &addr, sizeof(addr)) == 0) {
 		printf("Successfully bound socket to port %d (%d)\n", ntohs(addr.sin_port), addr.sin_port);
 	}
 	else {
 		printf("Failed to bind socket to port %d\n", ntohs(addr.sin_port));
-		close(sock_listen);
+		close(sockListen);
 		return 0;
 	}
 	
 	// Listen on socket
-	if (listen(sock_listen, BACKLOG) == 0) {
-		printf("Listening on socket %d\n", sock_listen);
+	if (listen(sockListen, BACKLOG) == 0) {
+		printf("Listening on socket %d\n", sockListen);
 
 		// Get current hosting ip address
 		FILE *ptr = popen(HOST_LOOKUP_CMD, "r");
@@ -88,64 +93,122 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	else {
-		printf("Failed listen on socket %d\n", sock_listen);
-		close(sock_listen);
+		printf("Failed listen on socket %d\n", sockListen);
+		close(sockListen);
 		return 0;
 	}
 	
-	struct sockaddr client_address;
-	socklen_t address_len;
+	struct sockaddr clientAddress;
+	socklen_t addressLen;
 	
 	// Loop for accepting connections
 	while (1) {
 		printf("\nWaiting for connection from client...\n");
-		int sock_accept = accept(sock_listen, &client_address, &address_len);
-		if (sock_accept == -1) {
-			printf("Failed to accept connection on listening socket %d\n", sock_listen);
+		int sockAccept = accept(sockListen, &clientAddress, &addressLen);
+		if (sockAccept == -1) {
+			printf("Failed to accept connection on listening socket %d\n", sockListen);
 		}
 		else {
-			printf("Accepted new connection. Created socket with file descriptor: %d\n", sock_accept);
+			printf("Accepted new connection. Created socket with file descriptor: %d\n", sockAccept);
 
 			pthread_t newThread;
 			threadArgs *args = malloc(sizeof(threadArgs));
-			args->socketFD = sock_accept;
+			args->socketFD = sockAccept;
 
-			if (pthread_create(&newThread, NULL, listen_to_client, (void *) args)) {
-				printf("Failed to create thread for connection with file descriptor: %d\n", sock_accept);
+			if (pthread_create(&newThread, NULL, listenToClient, (void *) args)) {
+				printf("Failed to create thread for connection with file descriptor: %d\n", sockAccept);
 			}
 		}
 	}
 	
-	close(sock_listen);
+	close(sockListen);
 	return 0;
 }
 
-void *listen_to_client(void *tempArgs) {
-	char command_buffer[BUFSIZE];
-	int bytes_recieved;
+void *listenToClient(void *tempArgs) {
+	char commandBuffer[BUFSIZE];
+	int bytesRecieved;
 
 	threadArgs *args = (threadArgs *) tempArgs;
 
-	while(1) {
-		printf("Waiting to receive data from client...\n");
-		memset(command_buffer, 0, BUFSIZE);
-		bytes_recieved = recv(args->socketFD, command_buffer, BUFSIZE, 0);
-		if (bytes_recieved < 1) {
-			printf("Client has closed connection\n");
-			break;
+	FILE *fp;
+	if (!cmdUse(args->socketFD, fp)) {
+		while(1) {
+			printf("Waiting to receive data from client...\n");
+			memset(commandBuffer, 0, BUFSIZE);
+			bytesRecieved = recv(args->socketFD, commandBuffer, BUFSIZE, 0);
+			if (bytesRecieved < 1) {
+				printf("Client has closed connection\n");
+				terminateConnection(args->socketFD);
+				break;
+			}
+			else {
+				printf("Data received: %s\n", commandBuffer);
+			}
 		}
-		else {
-			printf("Data received: %s\n", command_buffer);
-		}
+
+		fclose(fp);
 	}
 
-	terminate_connection(args->socketFD);
 	free(args);
 	pthread_exit(NULL);
 }
 
-void terminate_connection(int socketFD) {
+void terminateConnection(int socketFD) {
 	printf("Terminating connection from server end...\n");
 	printf("Closing socket %d\n", socketFD);
 	close(socketFD);
+}
+
+char *getCmd(char *cmd, int socketFD) {
+	char buf[BUFSIZE];
+	int bytesRecieved;
+
+	memset(buf, 0, BUFSIZE);
+
+}
+
+int cmdUse(int socketFD, FILE *fp) {
+	char buf[BUFSIZE];
+	int bytesRecieved;
+
+	while (1) {
+		printf("Waiting to receive table from client...\n");
+		memset(buf, 0, BUFSIZE);
+
+		bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
+		if (bytesRecieved < 1) {
+			printf("Client has closed connection\n");
+			terminateConnection(socketFD);
+			return 1;
+		}
+
+		if (strncmp(buf, "use ", 4) == 0) {
+			printf("Request to use table: %s\n", &buf[4]);
+			if (openTable(strtok(&buf[4], "\n"), fp)) {
+				continue;
+			} else {
+				break;
+			}
+		} else {
+			printf("Invalid command. Require 'use <table name>'\n");
+		}
+	}
+
+	return 0;
+}
+
+int openTable(char *tableName, FILE *fp) {
+	char fileName[BUFSIZE];
+	sprintf(fileName, "db/%s.txt", tableName);
+	
+	fp = fopen(fileName, "r");
+
+	if (fp == NULL) {
+		printf("Unknown table: %s\n", tableName);
+		return 1;
+	}
+
+	printf("Opened table %s\n", fileName);
+	return 0;
 }
