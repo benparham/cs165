@@ -22,6 +22,15 @@ typedef struct error {
 	char *message;
 } error;
 
+/*
+ * Tables
+ */
+
+typedef struct table {
+	char *name;
+	int numRows;
+	char **columns;
+} dbTable;
 
 /*
  * Commands

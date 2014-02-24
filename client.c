@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 	
 		printf("Input string to send to server: ");
 		fgets(input, MAX_INPUT, stdin);
-		if (strcmp(input, "done\n") == 0) {
+		if (strcmp(input, "exit\n") == 0) {
 			break;	
 		}
 		else {

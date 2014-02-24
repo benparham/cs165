@@ -12,20 +12,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include "server.h"
 #include "database.h"
 
-#define BACKLOG 				10
-
-#define HOST_LOOKUP_CMD "ifconfig | grep -P 'inet (?!127.0.0.1)'"
-
-void *listenToClient();
-void terminateConnection(int socketFD);
-int cmdUse(int socketFD, FILE *fp);
-int openTable(char *tableName, FILE *fp);
-
-typedef struct threadArgs {
-	int socketFD;
-} threadArgs;
 
 int main(int argc, char *argv[]) {
 	printf("Initiating Server...\n\n");
@@ -125,8 +114,6 @@ int main(int argc, char *argv[]) {
 }
 
 void *listenToClient(void *tempArgs) {
-	// char commandBuffer[BUFSIZE];
-	// int bytesRecieved;
 
 	// Cast args to proper struct
 	threadArgs *args = (threadArgs *) tempArgs;
@@ -135,29 +122,20 @@ void *listenToClient(void *tempArgs) {
 	error *err = (error *) malloc(sizeof(error));
 	command *cmd = (command *) malloc(sizeof(command));
 
+	dbTable *currentTable = malloc(sizeof(dbTable));
+	currentTable->name = NULL;
+
 	int done = 0;
 	while (!done) {
-		if (requireCommand(CMD_USE, args->socketFD, cmd, err)) {
-			switch (err->err) {
-				case ERR_GENERAL:
-				case ERR_INVALID_CMD:
-					printf("%s\n", err->message);
-					break;
-				case ERR_CLIENT_EXIT:
-					printf("%s\n", err->message);
-					done = 1;
-					break;
-				default:
-					printf("Unknown error\n");
-					break;
-			}
+		if (currentTable->name == NULL) {
+			done = requireTable(currentTable, args->socketFD, cmd, err);
 		} else {
-			if (cmd->cmd == CMD_EXIT) {
-				printf("Exiting...\n");
-				done = 1;
+			if (receiveCommand(args->socketFD, cmd, err)) {
+				done = handleReceiveErrors(err);
 			} else {
-				assert(cmd->cmd == CMD_USE);
-				printf("Received command 'use' with args: %s\n", cmd->args);
+				if (executeCommand(currentTable, cmd, err)) {
+					done = handleExecuteErrors(err);
+				}
 			}
 		}
 	}
@@ -167,8 +145,8 @@ void *listenToClient(void *tempArgs) {
 	// 	while(1) {
 	// 		printf("Waiting to receive data from client...\n");
 	// 		memset(commandBuffer, 0, BUFSIZE);
-	// 		bytesRecieved = recv(args->socketFD, commandBuffer, BUFSIZE, 0);
-	// 		if (bytesRecieved < 1) {
+	// 		bytesReceived = recv(args->socketFD, commandBuffer, BUFSIZE, 0);
+	// 		if (bytesReceived < 1) {
 	// 			printf("Client has closed connection\n");
 	// 			terminateConnection(args->socketFD);
 	// 			break;
@@ -188,6 +166,7 @@ void *listenToClient(void *tempArgs) {
 	free(args);
 	free(err);
 	free(cmd);
+	free(currentTable);
 
 	pthread_exit(NULL);
 }
@@ -198,16 +177,99 @@ void terminateConnection(int socketFD) {
 	close(socketFD);
 }
 
+// Returns 1 if error requires termination of client's thread, 0 if succeeded in setting table
+int requireTable(dbTable *tbl, int socketFD, command *cmd, error *err) {
+	int result = 0;
+
+	int done = 0;
+	while (!done) {
+		if (requireCommand(CMD_USE, socketFD, cmd, err)) {
+			done = handleReceiveErrors(err);
+			result = done;
+		} else {
+			if (cmd->cmd == CMD_EXIT) {
+				printf("Exiting...\n");
+				done = 1;
+				result = 1;
+			} else {
+				if (executeCommand(tbl, cmd, err)) {
+					done = handleExecuteErrors(err);
+					result = done;
+				} else {
+					done = (tbl->name != NULL);
+				}
+
+			}
+		}
+	}
+
+	return result;
+}
+
+// Returns 1 if server needs to shut down client's thread, 0 otherwise
+int handleReceiveErrors(error *err) {
+	int result = 0;
+
+	switch (err->err) {
+		case ERR_CLIENT_EXIT:
+			result = 1;
+			break;
+		case ERR_GENERAL:
+		case ERR_INVALID_CMD:
+			break;
+		default:
+			err->message = "Unknown error";
+			break;
+	}
+
+	printf("%s\n", err->message);
+	return result;
+}
+
+// Returns 1 if server needs to shut down client's thread, 0 otherwise
+int handleExecuteErrors(error *err) {
+	int result = 0;
+
+	switch (err->err) {
+		default:
+			err->message = "Unknown error";
+			break;
+	}
+
+	printf("%s\n", err->message);
+	return result;
+}
+
+int executeCommand(dbTable *tbl, command *cmd, error *err) {
+	printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
+	int result = 0;
+
+	switch (cmd->cmd) {
+		case CMD_USE:
+			printf("Loading table '%s'...\n", cmd->args);
+			tbl->name = cmd->args;
+			// result = loadTable(cmd->args);
+			break;
+		default:
+			err->err = ERR_INVALID_CMD;
+			err->message = "Invalid Command";
+			result = 1;
+			break;
+	}
+
+	return result;
+}
+
 int cmdUse(int socketFD, FILE *fp) {
 	char buf[BUFSIZE];
-	int bytesRecieved;
+	int bytesReceived;
 
 	while (1) {
 		printf("Waiting to receive table from client...\n");
 		memset(buf, 0, BUFSIZE);
 
-		bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
-		if (bytesRecieved < 1) {
+		bytesReceived = recv(socketFD, buf, BUFSIZE, 0);
+		if (bytesReceived < 1) {
 			printf("Client has closed connection\n");
 			terminateConnection(socketFD);
 			return 1;
