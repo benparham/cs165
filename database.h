@@ -3,24 +3,10 @@
 
 #include <stdlib.h>
 
+#include "dberror.h"
+
 #define BUFSIZE				1024
 
-/*
- * Errors
- */
-
-typedef enum {
-	ERR_GENERAL,
-	ERR_CLIENT_EXIT,
-	ERR_INVALID_CMD
-} ERR;
-
-// Create new type called 'error'
-
-typedef struct error {
-	ERR err;
-	char *message;
-} error;
 
 /*
  * Tables

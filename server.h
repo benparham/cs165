@@ -17,8 +17,6 @@ void terminateConnection(int socketFD);
 int cmdUse(int socketFD, FILE *fp);
 int openTable(char *tableName, FILE *fp);
 int requireTable(dbTable *tbl, int socketFD, command *cmd, error *err);
-int handleReceiveErrors(error *err);
-int handleExecuteErrors(error *err);
 int executeCommand(dbTable *tbl, command *cmd, error *err);
 
 #endif
