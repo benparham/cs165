@@ -14,7 +14,6 @@
 #include "database.h"
 
 #define BACKLOG 				10
-#define BUFSIZE 				1024
 
 #define HOST_LOOKUP_CMD "ifconfig | grep -P 'inet (?!127.0.0.1)'"
 
@@ -125,31 +124,75 @@ int main(int argc, char *argv[]) {
 }
 
 void *listenToClient(void *tempArgs) {
-	char commandBuffer[BUFSIZE];
-	int bytesRecieved;
+	// char commandBuffer[BUFSIZE];
+	// int bytesRecieved;
 
+	// Cast args to proper struct
 	threadArgs *args = (threadArgs *) tempArgs;
 
-	FILE *fp;
-	if (!cmdUse(args->socketFD, fp)) {
-		while(1) {
-			printf("Waiting to receive data from client...\n");
-			memset(commandBuffer, 0, BUFSIZE);
-			bytesRecieved = recv(args->socketFD, commandBuffer, BUFSIZE, 0);
-			if (bytesRecieved < 1) {
-				printf("Client has closed connection\n");
-				terminateConnection(args->socketFD);
-				break;
+	// Allocate command and error structs
+	error *err = (error *) malloc(sizeof(error));
+	command *cmd = (command *) malloc(sizeof(command));
+
+	int done = 0;
+	while (!done) {
+		if (receiveCommand(args->socketFD, cmd, err)) {
+			switch (err->err) {
+				case ERR_GENERAL:
+				case ERR_INVALID_CMD:
+					printf("%s\n", err->message);
+					break;
+				case ERR_CLIENT_EXIT:
+					printf("%s\n", err->message);
+					done = 1;
+					break;
+				default:
+					printf("Unknown error\n");
+					break;
 			}
-			else {
-				printf("Data received: %s\n", commandBuffer);
+		} else {
+			switch (cmd->cmd) {
+				case CMD_USE:
+					printf("Received command 'use' with args: %s\n", cmd->args);
+					break;
+				case CMD_EXIT:
+					printf("Exiting...\n");
+					done = 1;
+					break;
+				default:
+					printf("Unknown command\n");
+					break;
 			}
 		}
-
-		fclose(fp);
 	}
 
+	// FILE *fp;
+	// if (!cmdUse(args->socketFD, fp)) {
+	// 	while(1) {
+	// 		printf("Waiting to receive data from client...\n");
+	// 		memset(commandBuffer, 0, BUFSIZE);
+	// 		bytesRecieved = recv(args->socketFD, commandBuffer, BUFSIZE, 0);
+	// 		if (bytesRecieved < 1) {
+	// 			printf("Client has closed connection\n");
+	// 			terminateConnection(args->socketFD);
+	// 			break;
+	// 		}
+	// 		else {
+	// 			printf("Data received: %s\n", commandBuffer);
+	// 		}
+	// 	}
+
+	// 	fclose(fp);
+	// }
+
+	// Terminate connection from server end
+	terminateConnection(args->socketFD);
+
+	// Cleanup
 	free(args);
+	free(err);
+	free(cmd);
+
 	pthread_exit(NULL);
 }
 
@@ -158,14 +201,6 @@ void terminateConnection(int socketFD) {
 	printf("Closing socket %d\n", socketFD);
 	close(socketFD);
 }
-
-// char *getCmd(char *cmd, int socketFD) {
-// 	char buf[BUFSIZE];
-// 	int bytesRecieved;
-
-// 	memset(buf, 0, BUFSIZE);
-
-// }
 
 int cmdUse(int socketFD, FILE *fp) {
 	char buf[BUFSIZE];

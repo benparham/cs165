@@ -3,33 +3,54 @@
 
 #include <stdlib.h>
 
+#define BUFSIZE				1024
+
 #define E_MSG_SIZE			256
+#define CMD_ARG_SIZE		256
 
-// Commands
-#define CMD_USE				'use'
+/*
+ * Errors
+ */
 
-// Error Codes
-#define ECODE_GENERAL		0
+typedef enum {
+	ERR_GENERAL,
+	ERR_CLIENT_EXIT,
+	ERR_INVALID_CMD
+} ERR;
+
+// Create new type called 'error'
 
 typedef struct error {
-	int code;
-	char message[E_MSG_SIZE];
-} ERROR;
+	ERR err;
+	char *message;//[E_MSG_SIZE];
+} error;
 
 
 /*
- * Error functions
+ * Commands
  */
-ERROR* createError();
 
-void setError(ERROR *err, int code, char *msg);
-
-void destroyError(ERROR *err);
-
-
+// Enumerate possible commands
 typedef enum {
-
+	CMD_USE,
+	CMD_SELECT,
+	CMD_FETCH,
+	CMD_CREATE,
+	CMD_LOAD,
+	CMD_INSERT,
+	CMD_EXIT
 } CMD;
 
+// Create new type called 'command'
+typedef struct command {
+	CMD cmd;
+	char *args;//[CMD_ARG_SIZE];
+} command;
+
+// Command functions
+
+int parseCommand(char *buf, command *cmd, error *err);
+
+int receiveCommand(int socketFD, command *cmd, error *err);
 
 #endif
