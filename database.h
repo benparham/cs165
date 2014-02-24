@@ -27,6 +27,9 @@ typedef struct error {
  * Commands
  */
 
+// Declaration of global array of command strings matched to enum CMD
+extern const char *CMD_NAMES[]; 
+
 // Enumerate possible commands
 typedef enum {
 	CMD_USE,
