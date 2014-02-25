@@ -11,6 +11,7 @@
 
 #include "database.h"
 #include "dberror.h"
+#include "command.h"
 
 // Table functions
 void printDbTable(dbTable *tbl) {
@@ -24,6 +25,52 @@ void printDbTable(dbTable *tbl) {
 	}
 
 	printf("\n");
+}
+
+int executeCommand(dbTable *tbl, command *cmd, error *err) {
+	printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
+	int result = 0;
+
+	switch (cmd->cmd) {
+		case CMD_USE:
+			result = useTable(tbl, cmd->args, err);
+			break;
+		case CMD_CREATE_TABLE:
+			result = createTable(cmd->args, err);
+			break;
+		case CMD_SELECT:
+			err->err = ERR_INTERNAL;
+			err->message = "Select not yet implemented";
+			result = 1;
+			break;
+		case CMD_FETCH:
+			err->err = ERR_INTERNAL;
+			err->message = "Fetch not yet implemented";
+			result = 1;
+			break;
+		default:
+			err->err = ERR_INVALID_CMD;
+			err->message = "Invalid Command";
+			result = 1;
+			break;
+	}
+
+	return result;
+}
+
+// TODO: efficiently check that table doesn't already exist
+int createTable(char *tableName, error *err) {
+	printf("Will create table with name '%s' here...\n", tableName);
+
+	char mstrTablePath[BUFSIZE];
+	sprintf(mstrTablePath, "%s/%s", DATA_PATH, MSTR_TBL_NAME);
+
+	// printf("Master table path: %s\n", mstrTablePath);
+
+	FILE *fp = fopen(mstrTablePath, 'ab');
+
+
+	return 0;
 }
 
 int useTable(dbTable *tbl, char *tableName, error *err) {
@@ -76,9 +123,9 @@ int useTable(dbTable *tbl, char *tableName, error *err) {
 			}
 
 			// Open table's file with read/write access
-			char filePath[BUFSIZE];
-			sprintf(filePath, "%s/%s", MSTR_TBLS_PATH, tableName);
-			printf("Table file to open: %s\n", filePath);
+			// char filePath[BUFSIZE];
+			// sprintf(filePath, "%s/%s", MSTR_TBLS_PATH, tableName);
+			// printf("Table file to open: %s\n", filePath);
 			// tbl->fp = fopen(, "r+");
 
 			foundTable = 1;
@@ -96,84 +143,4 @@ int useTable(dbTable *tbl, char *tableName, error *err) {
 
 	printf("Using table: '%s'\n", tbl->name);
 	return 0;
-}
-
-// Command functions
-
-// Definition of global array of command strings matched to enum CMD
-const char *CMD_NAMES[] = {
-	"use",
-	"select",
-	"fetch",
-	"create",
-	"load",
-	"insert",
-	"exit"
-};
-
-int parseCommand(char *buf, command *cmd, error *err) {
-	if (strncmp(buf, "use ", 4) == 0) {
-		cmd->cmd = CMD_USE;
-		cmd->args = strtok(&buf[4], "\n");
-	} else if (strncmp(buf, "select(", 7) == 0) {
-		cmd->cmd = CMD_SELECT;
-		cmd->args = strtok(&buf[7], ")");
-	} else if (strncmp(buf, "fetch(", 6) == 0) {
-		cmd->cmd = CMD_FETCH;
-		cmd->args = strtok(&buf[6], ")");
-	} else if (strncmp(buf, "create(", 7) == 0) {
-		cmd->cmd = CMD_CREATE;
-		cmd->args = strtok(&buf[7], ")");
-	} else if (strncmp(buf, "load(", 5) == 0) {
-		cmd->cmd = CMD_LOAD;
-		cmd->args = strtok(&buf[5], ")");
-	} else if (strncmp(buf, "insert(", 7) == 0) {
-		cmd->cmd = CMD_INSERT;
-		cmd->args = strtok(&buf[7], ")");
-	} else if (strcmp(buf, "exit\n") == 0) {
-		cmd->cmd = CMD_EXIT;
-		cmd->args = "";
-	} else {
-		err->err = ERR_INVALID_CMD;
-		err->message = "Unknown command";
-		return 1;
-	}
-
-	return 0;
-}
-
-int receiveCommand(int socketFD, command *cmd, error *err) {
-	char buf[BUFSIZE];
-	int bytesRecieved;
-
-	printf("Waiting to receive command from client...\n");
-	memset(buf, 0, BUFSIZE);
-
-	bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
-	if (bytesRecieved < 1) {
-		err->err = ERR_CLIENT_EXIT;
-		err->message = "Client has closed connection";
-		return 1;
-	}
-
-	return parseCommand(buf, cmd, err);
-}
-
-/*
- * If receives the required command OR graceful exit, returns success.
- * Any error returns failure.
- * Else continues to ask for required command.
- */
-int requireCommand(CMD req_cmd, int socketFD, command *cmd, error *err) {
-	while (1) {
-		if (receiveCommand(socketFD, cmd, err)) {
-			return 1;
-		} else {
-			if (cmd->cmd == req_cmd || cmd->cmd == CMD_EXIT) {
-				return 0;
-			} else {
-				printf("Invalid command: '%s'. Require command: '%s'\n", CMD_NAMES[cmd->cmd], CMD_NAMES[req_cmd]);
-			}
-		}
-	}
 }

@@ -15,6 +15,7 @@
 #include "server.h"
 #include "dberror.h"
 #include "database.h"
+#include "command.h"
 
 
 int main(int argc, char *argv[]) {
@@ -183,9 +184,12 @@ void terminateConnection(int socketFD) {
 int requireTable(dbTable *tbl, int socketFD, command *cmd, error *err) {
 	int result = 0;
 
+	CMD cmds[2] = {CMD_USE, CMD_CREATE_TABLE};
+	CMD_LIST req_cmds = {cmds, 2};
+
 	int done = 0;
 	while (!done) {
-		if (requireCommand(CMD_USE, socketFD, cmd, err)) {
+		if (requireCommand(&req_cmds, socketFD, cmd, err)) {
 			done = handleReceiveErrors(err);
 			result = done;
 		} else {
@@ -203,26 +207,6 @@ int requireTable(dbTable *tbl, int socketFD, command *cmd, error *err) {
 
 			}
 		}
-	}
-
-	return result;
-}
-
-int executeCommand(dbTable *tbl, command *cmd, error *err) {
-	printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
-	int result = 0;
-
-	switch (cmd->cmd) {
-		case CMD_USE:
-			// printf("Using table '%s'...\n", cmd->args);
-			// tbl->name = cmd->args;
-			result = useTable(tbl, cmd->args, err);
-			break;
-		default:
-			err->err = ERR_INVALID_CMD;
-			err->message = "Invalid Command";
-			result = 1;
-			break;
 	}
 
 	return result;
