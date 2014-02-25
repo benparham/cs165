@@ -12,9 +12,10 @@
 #include "database.h"
 #include "dberror.h"
 #include "command.h"
+#include "output.h"
 
 // Table functions
-void printDbTable(dbTable *tbl) {
+void printdbTableInfo(dbTableInfo *tbl) {
 	printf("\nTable:\n");
 
 	printf("Name: %s\n", tbl->name);
@@ -27,7 +28,7 @@ void printDbTable(dbTable *tbl) {
 	printf("\n");
 }
 
-int executeCommand(dbTable *tbl, command *cmd, error *err) {
+int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
 	printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
 	int result = 0;
 
@@ -58,89 +59,91 @@ int executeCommand(dbTable *tbl, command *cmd, error *err) {
 	return result;
 }
 
+void copyTable(dbTableInfo *dest, dbTableInfo *src) {
+	dest->isValid = src->isValid;
+	dest->numRows = src->numRows;
+	dest->numColumns = src->numColumns;
+
+	strcpy(dest->name, src->name);
+
+	int length = sizeof(src->columns);
+	for (int i = 0; i < length; i++) {
+		strcpy(dest->columns[i], src->columns[i]);
+	}
+}
+
 // TODO: efficiently check that table doesn't already exist
 int createTable(char *tableName, error *err) {
-	printf("Will create table with name '%s' here...\n", tableName);
 
 	char mstrTablePath[BUFSIZE];
 	sprintf(mstrTablePath, "%s/%s", DATA_PATH, MSTR_TBL_NAME);
 
-	// printf("Master table path: %s\n", mstrTablePath);
-
-	FILE *fp = fopen(mstrTablePath, 'ab');
-
-
-	return 0;
-}
-
-int useTable(dbTable *tbl, char *tableName, error *err) {
-	int foundTable = 0;
-
-
-	FILE *mstr_fp;
-	mstr_fp = fopen("./db/tables.csv", "r");
-	if (mstr_fp == NULL) {
+	// Open master table file
+	FILE *fp = fopen(mstrTablePath, "ab");
+	if (fp == NULL) {
 		err->err = ERR_INTERNAL;
-		err->message = "Master tables file missing";
+		err->message = "Unable to open master table";
 		return 1;
 	}
 
-	size_t len = 0;
-	char *line = NULL;
-	while (getline(&line, &len, mstr_fp) != -1) {
-		if (strncmp(line, tableName, strlen(tableName)) == 0) {
-			
-			// Read in table name
-			char *tok = strtok(line, ",");
-			if (tok == NULL) {
-				err->err = ERR_MLFM_DATA;
-				err->message = "Table name missing";
-				return 1;
-			}
-			tbl->name = tok;
+	// Initialize a new table with proper name
+	dbTableInfo tempTbl;
+	// tempTbl.name = tableName;
+	strcpy(tempTbl.name, "testTable");
+	tempTbl.numRows = 0;
+	tempTbl.numColumns = 0;
+	tempTbl.isValid = 1;
 
-			// Read in table size
-			tok = strtok(NULL, ",");
-			if (tok == NULL) {
-				err->err = ERR_MLFM_DATA;
-				err->message = "Table's number of rows missing";
-				return 1;
-			}
-			tbl->numRows = atoi(tok);
+	// Write out table
+	fwrite(&tempTbl, sizeof(dbTableInfo), 1, fp);
 
-			// Read in table columns
-			tok = strtok(NULL, ",\n");
-			if (tok == NULL) {
-				err->err = ERR_MLFM_DATA;
-				err->message = "Table has no columns";
-				return 1;
-			}
-			tbl->numColumns = 0;
-			while (tok != NULL) {
-				tbl->columns[tbl->numColumns] = tok;
-				tbl->numColumns++;
-				tok = strtok(NULL, ",\n");
-			}
+	// Close master table file
+	fclose(fp);
 
-			// Open table's file with read/write access
-			// char filePath[BUFSIZE];
-			// sprintf(filePath, "%s/%s", MSTR_TBLS_PATH, tableName);
-			// printf("Table file to open: %s\n", filePath);
-			// tbl->fp = fopen(, "r+");
+	printf("Created new table '%s'\n", tempTbl.name);
+	return 0;
+}
 
+int useTable(dbTableInfo *tbl, char *tableName, error *err) {
+	printf("Sanity check: %s\n", tableName);
+
+	char mstrTablePath[BUFSIZE];
+	sprintf(mstrTablePath, "%s/%s", DATA_PATH, MSTR_TBL_NAME);
+
+	FILE *fp = fopen(mstrTablePath, "rb");
+	if (fp == NULL) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to open master table";
+		return 1;
+	}
+
+	int foundTable = 0;
+
+	dbTableInfo *tempTbl = (dbTableInfo *) malloc(sizeof(dbTableInfo));
+
+	while (fread(tempTbl, sizeof(dbTableInfo), 1, fp) > 0) {
+		printf("Read in table: %s\n", tempTbl->name);
+		printf("Searching for table: %s\n", tableName);
+
+		if (strcmp(tempTbl->name, tableName) == 0) {
+			copyTable(tbl, tempTbl);
 			foundTable = 1;
 			break;
 		}
 	}
 
-	fclose(mstr_fp);
-	
+	// Cleanup
+	free(tempTbl);
+	fclose(fp);
+
+	// Table not found
 	if (!foundTable) {
 		err->err = ERR_SRCH;
 		err->message = "Could not find table";
 		return 1;
 	}
 
-	printf("Using table: '%s'\n", tbl->name);
+	// Table found
+	printf("Using table: %s\n", tbl->name);
 	return 0;
 }

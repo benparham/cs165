@@ -21,31 +21,50 @@ const char *CMD_NAMES[] = {
 	"exit"
 };
 
+command* createCommand() {
+	command* cmd = (command *) malloc(sizeof(command));
+	cmd->args = NULL;
+	return cmd;
+}
+
+void commandAllocCopyArgs(command *cmd, char *args) {
+	cmd->args = (char *) malloc(sizeof(args));
+	strcpy(cmd->args, args);
+}
+
+void destroyCommand(command *cmd) {
+	if (cmd->args != NULL) {
+		free(cmd->args);
+	}
+
+	free(cmd);
+}
+
 int parseCommand(char *buf, command *cmd, error *err) {
 	if (strncmp(buf, "use ", 4) == 0) {
 		cmd->cmd = CMD_USE;
-		cmd->args = strtok(&buf[4], "\n");
+		commandAllocCopyArgs(cmd, strtok(&buf[4], "\n"));
 	} else if (strncmp(buf, "create table ", 13) == 0) {
 		cmd->cmd = CMD_CREATE_TABLE;
-		cmd->args = strtok(&buf[13], "\n");
+		commandAllocCopyArgs(cmd, strtok(&buf[13], "\n"));
 	} else if (strncmp(buf, "select(", 7) == 0) {
 		cmd->cmd = CMD_SELECT;
-		cmd->args = strtok(&buf[7], ")");
+		commandAllocCopyArgs(cmd, strtok(&buf[7], ")"));
 	} else if (strncmp(buf, "fetch(", 6) == 0) {
 		cmd->cmd = CMD_FETCH;
-		cmd->args = strtok(&buf[6], ")");
+		commandAllocCopyArgs(cmd, strtok(&buf[6], ")"));
 	} else if (strncmp(buf, "create(", 7) == 0) {
 		cmd->cmd = CMD_CREATE;
-		cmd->args = strtok(&buf[7], ")");
+		commandAllocCopyArgs(cmd, strtok(&buf[7], ")"));
 	} else if (strncmp(buf, "load(", 5) == 0) {
 		cmd->cmd = CMD_LOAD;
-		cmd->args = strtok(&buf[5], ")");
+		commandAllocCopyArgs(cmd, strtok(&buf[5], ")"));
 	} else if (strncmp(buf, "insert(", 7) == 0) {
 		cmd->cmd = CMD_INSERT;
-		cmd->args = strtok(&buf[7], ")");
+		commandAllocCopyArgs(cmd, strtok(&buf[7], ")"));
 	} else if (strcmp(buf, "exit\n") == 0) {
 		cmd->cmd = CMD_EXIT;
-		cmd->args = "";
+		commandAllocCopyArgs(cmd, "");
 	} else {
 		err->err = ERR_INVALID_CMD;
 		err->message = "Unknown command";

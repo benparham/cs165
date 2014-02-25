@@ -123,14 +123,16 @@ void *listenToClient(void *tempArgs) {
 
 	// Allocate command and error structs
 	error *err = (error *) malloc(sizeof(error));
-	command *cmd = (command *) malloc(sizeof(command));
+	command *cmd = createCommand();
 
-	dbTable *currentTable = malloc(sizeof(dbTable));
-	currentTable->name = NULL;
+	// The thread holds one valid table struct at a time with all table information
+	dbTableInfo *currentTable = malloc(sizeof(dbTableInfo));
+	currentTable->isValid = 0;
 
+	// Begin command loop
 	int done = 0;
 	while (!done) {
-		if (currentTable->name == NULL) {
+		if (!currentTable->isValid) {
 			done = requireTable(currentTable, args->socketFD, cmd, err);
 		} else {
 			if (receiveCommand(args->socketFD, cmd, err)) {
@@ -143,32 +145,13 @@ void *listenToClient(void *tempArgs) {
 		}
 	}
 
-	// FILE *fp;
-	// if (!cmdUse(args->socketFD, fp)) {
-	// 	while(1) {
-	// 		printf("Waiting to receive data from client...\n");
-	// 		memset(commandBuffer, 0, BUFSIZE);
-	// 		bytesReceived = recv(args->socketFD, commandBuffer, BUFSIZE, 0);
-	// 		if (bytesReceived < 1) {
-	// 			printf("Client has closed connection\n");
-	// 			terminateConnection(args->socketFD);
-	// 			break;
-	// 		}
-	// 		else {
-	// 			printf("Data received: %s\n", commandBuffer);
-	// 		}
-	// 	}
-
-	// 	fclose(fp);
-	// }
-
 	// Terminate connection from server end
 	terminateConnection(args->socketFD);
 
 	// Cleanup
 	free(args);
 	free(err);
-	free(cmd);
+	destroyCommand(cmd);//free(cmd);
 	free(currentTable);
 
 	pthread_exit(NULL);
@@ -181,7 +164,7 @@ void terminateConnection(int socketFD) {
 }
 
 // Returns 1 if error requires termination of client's thread, 0 if succeeded in setting table
-int requireTable(dbTable *tbl, int socketFD, command *cmd, error *err) {
+int requireTable(dbTableInfo *tbl, int socketFD, command *cmd, error *err) {
 	int result = 0;
 
 	CMD cmds[2] = {CMD_USE, CMD_CREATE_TABLE};

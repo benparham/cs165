@@ -42,6 +42,9 @@ typedef struct command {
 
 // Command functions
 
+command* createCommand();
+void destroyCommand(command *cmd);
+
 int parseCommand(char *buf, command *cmd, error *err);
 
 int receiveCommand(int socketFD, command *cmd, error *err);
