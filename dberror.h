@@ -8,13 +8,15 @@
  */
 
 typedef enum {
-	ERR_GENERAL,
-	ERR_CLIENT_EXIT,
-	ERR_INVALID_CMD,
+	ERR_GENERAL,			// General error
+	ERR_CLIENT_EXIT,		// Client has exited
+	ERR_INVALID_CMD,		// Invalid command
 
-	ERR_MLFM_DATA,
-	ERR_SRCH,
-	ERR_INTERNAL
+	ERR_MLFM_DATA,			// Malformed data, corrupted or incorrect data found
+	ERR_SRCH,				// Search failed, something not found
+	ERR_INTERNAL,			// Internal error, not users='s fault
+
+	ERR_DUP					// Duplicate, already exiists
 } ERR;
 
 // Create new type called 'error'

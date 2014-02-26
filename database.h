@@ -11,6 +11,7 @@
 #define MAX_COLS			64
 
 #define DATA_PATH			"./db"
+#define TABLE_PATH			"tables"
 #define MSTR_TBL_NAME		"tables.csv"
 
 /*
@@ -31,7 +32,8 @@ typedef struct table {
 // Table functions
 void printdbTableInfo(dbTableInfo *tbl);
 int executeCommand(dbTableInfo *tbl, command *cmd, error *err);
-int createTable(char * tableName, error *err);
+int createTable(char *tableName, error *err);
+int removeTable(char *tableName, error *err);
 int useTable(dbTableInfo *tbl, char *tableName, error *err);
 
 

@@ -13,6 +13,7 @@
 const char *CMD_NAMES[] = {
 	"use",
 	"create table",
+	"remove table",
 	"select",
 	"fetch",
 	"create",
@@ -46,6 +47,9 @@ int parseCommand(char *buf, command *cmd, error *err) {
 		commandAllocCopyArgs(cmd, strtok(&buf[4], "\n"));
 	} else if (strncmp(buf, "create table ", 13) == 0) {
 		cmd->cmd = CMD_CREATE_TABLE;
+		commandAllocCopyArgs(cmd, strtok(&buf[13], "\n"));
+	} else if (strncmp(buf, "remove table ", 13) == 0) {
+		cmd->cmd = CMD_REMOVE_TABLE;
 		commandAllocCopyArgs(cmd, strtok(&buf[13], "\n"));
 	} else if (strncmp(buf, "select(", 7) == 0) {
 		cmd->cmd = CMD_SELECT;

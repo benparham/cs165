@@ -39,6 +39,9 @@ int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
 		case CMD_CREATE_TABLE:
 			result = createTable(cmd->args, err);
 			break;
+		case CMD_REMOVE_TABLE:
+			result = removeTable(cmd->args, err);
+			break;
 		case CMD_SELECT:
 			err->err = ERR_INTERNAL;
 			err->message = "Select not yet implemented";
@@ -72,35 +75,67 @@ void copyTable(dbTableInfo *dest, dbTableInfo *src) {
 	}
 }
 
-// TODO: efficiently check that table doesn't already exist
 int createTable(char *tableName, error *err) {
 
-	char mstrTablePath[BUFSIZE];
-	sprintf(mstrTablePath, "%s/%s", DATA_PATH, MSTR_TBL_NAME);
+	// Get path for the file
+	char pathToTable[BUFSIZE];
+	sprintf(pathToTable, "%s/%s/%s.bin", DATA_PATH, TABLE_PATH, tableName);
 
-	// Open master table file
-	FILE *fp = fopen(mstrTablePath, "ab");
-	if (fp == NULL) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to open master table";
+	// Check that the file doesn't already exist
+	struct stat st;
+	if (stat(pathToTable, &st) == 0) {
+		err->err = ERR_DUP;
+		err->message = "Cannot create file. Already exists";
 		return 1;
 	}
 
-	// Initialize a new table with proper name
+	// Open the new file for writing
+	FILE *fp = fopen(pathToTable, "wb");
+	if (fp == NULL) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to create file for table";
+		return 1;
+	}
+
+	// Initialize new table info with proper values
 	dbTableInfo tempTbl;
-	// tempTbl.name = tableName;
-	strcpy(tempTbl.name, "testTable");
+	strcpy(tempTbl.name, tableName);
 	tempTbl.numRows = 0;
 	tempTbl.numColumns = 0;
 	tempTbl.isValid = 1;
 
-	// Write out table
+	// Write table info to beginning of file
 	fwrite(&tempTbl, sizeof(dbTableInfo), 1, fp);
 
-	// Close master table file
-	fclose(fp);
+	printf("Created new table '%s'\n", tableName);
 
-	printf("Created new table '%s'\n", tempTbl.name);
+	// Close file
+	fclose(fp);
+	return 0;
+}
+
+int removeTable(char *tableName, error *err) {
+
+	// Get path for the file
+	char pathToTable[BUFSIZE];
+	sprintf(pathToTable, "%s/%s/%s.bin", DATA_PATH, TABLE_PATH, tableName);
+
+	// Check that the file doesn't already exist
+	struct stat st;
+	if (stat(pathToTable, &st) != 0) {
+		err->err = ERR_SRCH;
+		err->message = "Cannot delete file. Does not exist";
+		return 1;
+	}
+
+	if (remove(pathToTable) != 0) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to remove file for table";
+		return 1;
+	}
+
+	printf("Removed table %s\n", tableName);
+
 	return 0;
 }
 

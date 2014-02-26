@@ -167,8 +167,8 @@ void terminateConnection(int socketFD) {
 int requireTable(dbTableInfo *tbl, int socketFD, command *cmd, error *err) {
 	int result = 0;
 
-	CMD cmds[2] = {CMD_USE, CMD_CREATE_TABLE};
-	CMD_LIST req_cmds = {cmds, 2};
+	CMD cmds[3] = {CMD_USE, CMD_CREATE_TABLE, CMD_REMOVE_TABLE};
+	CMD_LIST req_cmds = {cmds, 3};
 
 	int done = 0;
 	while (!done) {

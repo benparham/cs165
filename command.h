@@ -18,6 +18,7 @@ extern const char *CMD_NAMES[];
 typedef enum {
 	CMD_USE,
 	CMD_CREATE_TABLE,
+	CMD_REMOVE_TABLE,
 
 	CMD_SELECT,
 	CMD_FETCH,
