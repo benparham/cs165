@@ -29,6 +29,8 @@
 // 	// FILE *fp;
 // } dbTableInfo;
 
+typedef unsigned char *dbData;
+
 typedef struct dbColumnInfo {
 	char name[MAX_NAME_SIZE];
 	int size_bytes;
@@ -47,10 +49,12 @@ typedef struct dbTableInfo {
 
 // Table functions
 void printdbTableInfo(dbTableInfo *tbl);
-int executeCommand(dbTableInfo *tbl, command *cmd, error *err);
+void getPathToTable(char *tableName, char *dest);
+int tableExists(char *pathToTable);
+int executeCommand(dbTableInfo *tbl, dbData *tableData, command *cmd, error *err);
 int createTable(char *tableName, error *err);
 int removeTable(char *tableName, error *err);
-int useTable(dbTableInfo *tbl, char *tableName, error *err);
+int useTable(dbTableInfo *tbl, dbData *tableData, char *tableName, error *err);
 
 
 #endif

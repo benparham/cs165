@@ -8,11 +8,14 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include "database.h"
 #include "dberror.h"
 #include "command.h"
 #include "output.h"
+
+#define READ_BLOCK_SIZE			256
 
 // Table functions
 void printdbTableInfo(dbTableInfo *tbl) {
@@ -31,13 +34,27 @@ void printdbTableInfo(dbTableInfo *tbl) {
 	printf("\n");
 }
 
-int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
+int executeCommand(dbTableInfo *tbl, dbData *tableData, command *cmd, error *err) {
 	printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
 	int result = 0;
 
+	// Check that table is in use if needed
+	if (*tableData == NULL &&
+		
+		(cmd->cmd != CMD_USE &&
+		 cmd->cmd != CMD_CREATE_TABLE &&
+		 cmd->cmd != CMD_REMOVE_TABLE)
+
+		) {
+
+		err->err = ERR_INVALID_CMD;
+		err->message = "No table in use. Cannot execute command";
+		return 1;
+	}
+
 	switch (cmd->cmd) {
 		case CMD_USE:
-			result = useTable(tbl, cmd->args, err);
+			result = useTable(tbl, tableData, cmd->args, err);
 			break;
 		case CMD_CREATE_TABLE:
 			result = createTable(cmd->args, err);
@@ -135,12 +152,16 @@ int removeTable(char *tableName, error *err) {
 	return 0;
 }
 
-int useTable(dbTableInfo *tbl, char *tableName, error *err) {
+int useTable(dbTableInfo *tbl, dbData *tableData, char *tableName, error *err) {
+
+	printf("Size of table info: %d\n", (int) sizeof(dbTableInfo));
 
 	char pathToTable[BUFSIZE];
 	getPathToTable(tableName, pathToTable);
 
-	if (!tableExists(pathToTable)) {
+	struct stat st;
+
+	if (stat(pathToTable, &st) != 0) {
 		err->err = ERR_SRCH;
 		err->message = "Cannot use table. Does not exist";
 		return 1;
@@ -156,14 +177,26 @@ int useTable(dbTableInfo *tbl, char *tableName, error *err) {
 
 	// Read the table info from the beginning
 	if (fread(tbl, sizeof(dbTableInfo), 1, fp) < 1) {
+		fclose(fp);
+
 		err->err = ERR_MLFM_DATA;
 		err->message = "Unable to read table info from table";
 		return 1;
 	}
 
-	printf("Read in table:\n");
-	printdbTableInfo(tbl);	
+	int bytesToRead = st.st_size - sizeof(dbTableInfo);
+	printf("About to read %d bytes into memory from file %s\n", bytesToRead, tableName);
 
-	printf("Using table: %s\n", tbl->name);
+	// Read file into memory
+	*tableData = (dbData) malloc(st.st_size - sizeof(dbTableInfo));
+	if (fread(*tableData, st.st_size - sizeof(dbTableInfo), 1, fp) < 1) {
+		err->err = ERR_MLFM_DATA;
+		err->message = "Unable to read data from table";
+		free(tableData);
+		*tableData = NULL;
+		return 1;
+	}
+
+	fclose(fp);
 	return 0;
 }

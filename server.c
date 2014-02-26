@@ -125,22 +125,18 @@ void *listenToClient(void *tempArgs) {
 	error *err = (error *) malloc(sizeof(error));
 	command *cmd = createCommand();
 
-	// The thread holds one valid table struct at a time with all table information
-	dbTableInfo *currentTable = malloc(sizeof(dbTableInfo));
-	currentTable->isValid = 0;
+	dbTableInfo *currentTable = malloc(sizeof(dbTableInfo));	// Info for current table in use
+	dbData tableData = NULL;										// Pointer to table data
+	// FILE *fp = NULL;											// File for current table in use
 
 	// Begin command loop
 	int done = 0;
 	while (!done) {
-		if (!currentTable->isValid) {
-			done = requireTable(currentTable, args->socketFD, cmd, err);
+		if (receiveCommand(args->socketFD, cmd, err)) {
+			done = handleReceiveErrors(err);
 		} else {
-			if (receiveCommand(args->socketFD, cmd, err)) {
-				done = handleReceiveErrors(err);
-			} else {
-				if (executeCommand(currentTable, cmd, err)) {
-					done = handleExecuteErrors(err);
-				}
+			if (executeCommand(currentTable, &tableData, cmd, err)) {
+				done = handleExecuteErrors(err);
 			}
 		}
 	}
@@ -149,6 +145,9 @@ void *listenToClient(void *tempArgs) {
 	terminateConnection(args->socketFD);
 
 	// Cleanup
+	if (tableData != NULL) {
+		free(tableData);
+	}
 	free(args);
 	free(err);
 	destroyCommand(cmd);//free(cmd);
@@ -161,36 +160,4 @@ void terminateConnection(int socketFD) {
 	printf("Terminating connection from server end...\n");
 	printf("Closing socket %d\n", socketFD);
 	close(socketFD);
-}
-
-// Returns 1 if error requires termination of client's thread, 0 if succeeded in setting table
-int requireTable(dbTableInfo *tbl, int socketFD, command *cmd, error *err) {
-	int result = 0;
-
-	CMD cmds[3] = {CMD_USE, CMD_CREATE_TABLE, CMD_REMOVE_TABLE};
-	CMD_LIST req_cmds = {cmds, 3};
-
-	int done = 0;
-	while (!done) {
-		if (requireCommand(&req_cmds, socketFD, cmd, err)) {
-			done = handleReceiveErrors(err);
-			result = done;
-		} else {
-			if (cmd->cmd == CMD_EXIT) {
-				printf("Exiting...\n");
-				done = 1;
-				result = 1;
-			} else {
-				if (executeCommand(tbl, cmd, err)) {
-					done = handleExecuteErrors(err);
-					result = done;
-				} else {
-					done = (tbl->name != NULL);
-				}
-
-			}
-		}
-	}
-
-	return result;
 }

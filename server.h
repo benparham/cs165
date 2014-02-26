@@ -14,7 +14,6 @@ typedef struct threadArgs {
 
 void *listenToClient();
 void terminateConnection(int socketFD);
-// int cmdUse(int socketFD, FILE *fp);
-int requireTable(dbTableInfo *tbl, int socketFD, command *cmd, error *err);
+int requireTable(dbTableInfo *tbl, FILE *fp, int socketFD, command *cmd, error *err);
 
 #endif
