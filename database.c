@@ -19,10 +19,13 @@ void printdbTableInfo(dbTableInfo *tbl) {
 	printf("\nTable:\n");
 
 	printf("Name: %s\n", tbl->name);
-	printf("Number of rows: %d\n", tbl->numRows);
+	printf("Validity: %d\n", tbl->isValid);
+	printf("Number of columns: %d\n", tbl->numColumns);
 
 	for (int i; i < tbl->numColumns; i++) {
-		printf("Column %d: %s\n", i, tbl->columns[i]);
+		printf("Column %d: %s\n", i, tbl->columns[i].name);
+		printf("\tbytes: %d\n", tbl->columns[i].size_bytes);
+		printf("\toffset: %d\n", tbl->columns[i].start_offset);
 	}
 
 	printf("\n");
@@ -62,33 +65,30 @@ int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
 	return result;
 }
 
-void copyTable(dbTableInfo *dest, dbTableInfo *src) {
-	dest->isValid = src->isValid;
-	dest->numRows = src->numRows;
-	dest->numColumns = src->numColumns;
-
-	strcpy(dest->name, src->name);
-
-	int length = sizeof(src->columns);
-	for (int i = 0; i < length; i++) {
-		strcpy(dest->columns[i], src->columns[i]);
-	}
-}
-
-int createTable(char *tableName, error *err) {
-
+void getPathToTable(char *tableName, char *dest) {
 	// Get path for the file
 	char pathToTable[BUFSIZE];
 	sprintf(pathToTable, "%s/%s/%s.bin", DATA_PATH, TABLE_PATH, tableName);
 
-	// Check that the file doesn't already exist
+	strcpy(dest, pathToTable);
+}
+
+int tableExists(char *pathToTable) {
 	struct stat st;
-	if (stat(pathToTable, &st) == 0) {
+	return stat(pathToTable, &st) == 0;
+}
+
+int createTable(char *tableName, error *err) {
+
+	char pathToTable[BUFSIZE];
+	getPathToTable(tableName, pathToTable);
+
+	if (tableExists(pathToTable)) {
 		err->err = ERR_DUP;
-		err->message = "Cannot create file. Already exists";
+		err->message = "Cannot create table. Already exists";
 		return 1;
 	}
-
+	
 	// Open the new file for writing
 	FILE *fp = fopen(pathToTable, "wb");
 	if (fp == NULL) {
@@ -99,10 +99,9 @@ int createTable(char *tableName, error *err) {
 
 	// Initialize new table info with proper values
 	dbTableInfo tempTbl;
-	strcpy(tempTbl.name, tableName);
-	tempTbl.numRows = 0;
-	tempTbl.numColumns = 0;
 	tempTbl.isValid = 1;
+	strcpy(tempTbl.name, tableName);
+	tempTbl.numColumns = 0;
 
 	// Write table info to beginning of file
 	fwrite(&tempTbl, sizeof(dbTableInfo), 1, fp);
@@ -116,15 +115,12 @@ int createTable(char *tableName, error *err) {
 
 int removeTable(char *tableName, error *err) {
 
-	// Get path for the file
 	char pathToTable[BUFSIZE];
-	sprintf(pathToTable, "%s/%s/%s.bin", DATA_PATH, TABLE_PATH, tableName);
+	getPathToTable(tableName, pathToTable);
 
-	// Check that the file doesn't already exist
-	struct stat st;
-	if (stat(pathToTable, &st) != 0) {
+	if (!tableExists(pathToTable)) {
 		err->err = ERR_SRCH;
-		err->message = "Cannot delete file. Does not exist";
+		err->message = "Cannot delete table. Does not exist";
 		return 1;
 	}
 
@@ -140,45 +136,34 @@ int removeTable(char *tableName, error *err) {
 }
 
 int useTable(dbTableInfo *tbl, char *tableName, error *err) {
-	printf("Sanity check: %s\n", tableName);
 
-	char mstrTablePath[BUFSIZE];
-	sprintf(mstrTablePath, "%s/%s", DATA_PATH, MSTR_TBL_NAME);
+	char pathToTable[BUFSIZE];
+	getPathToTable(tableName, pathToTable);
 
-	FILE *fp = fopen(mstrTablePath, "rb");
+	if (!tableExists(pathToTable)) {
+		err->err = ERR_SRCH;
+		err->message = "Cannot use table. Does not exist";
+		return 1;
+	}
+
+	// Open the table file
+	FILE *fp = fopen(pathToTable, "rb+");
 	if (fp == NULL) {
 		err->err = ERR_INTERNAL;
-		err->message = "Unable to open master table";
+		err->message = "Unable to open file";
 		return 1;
 	}
 
-	int foundTable = 0;
-
-	dbTableInfo *tempTbl = (dbTableInfo *) malloc(sizeof(dbTableInfo));
-
-	while (fread(tempTbl, sizeof(dbTableInfo), 1, fp) > 0) {
-		printf("Read in table: %s\n", tempTbl->name);
-		printf("Searching for table: %s\n", tableName);
-
-		if (strcmp(tempTbl->name, tableName) == 0) {
-			copyTable(tbl, tempTbl);
-			foundTable = 1;
-			break;
-		}
-	}
-
-	// Cleanup
-	free(tempTbl);
-	fclose(fp);
-
-	// Table not found
-	if (!foundTable) {
-		err->err = ERR_SRCH;
-		err->message = "Could not find table";
+	// Read the table info from the beginning
+	if (fread(tbl, sizeof(dbTableInfo), 1, fp) < 1) {
+		err->err = ERR_MLFM_DATA;
+		err->message = "Unable to read table info from table";
 		return 1;
 	}
 
-	// Table found
+	printf("Read in table:\n");
+	printdbTableInfo(tbl);	
+
 	printf("Using table: %s\n", tbl->name);
 	return 0;
 }
