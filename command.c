@@ -100,20 +100,20 @@ int receiveCommand(int socketFD, command *cmd, error *err) {
  * Any error returns failure.
  * Else continues to ask for required command.
  */
-int requireCommand(CMD_LIST *req_cmds, int socketFD, command *cmd, error *err) {
-	while (1) {
-		if (receiveCommand(socketFD, cmd, err)) {
-			return 1;
-		} else {
-			if (cmd->cmd == CMD_EXIT) {
-				return 0;
-			}
-			for (int i = 0; i < req_cmds->length; i++) {
-				if (cmd->cmd == req_cmds->cmds[i]) {
-					return 0;
-				}
-			}
-			printf("Invalid command: '%s'. Does not meet requirement\n", CMD_NAMES[cmd->cmd]);
-		}
-	}
-}
+// int requireCommand(CMD_LIST *req_cmds, int socketFD, command *cmd, error *err) {
+// 	while (1) {
+// 		if (receiveCommand(socketFD, cmd, err)) {
+// 			return 1;
+// 		} else {
+// 			if (cmd->cmd == CMD_EXIT) {
+// 				return 0;
+// 			}
+// 			for (int i = 0; i < req_cmds->length; i++) {
+// 				if (cmd->cmd == req_cmds->cmds[i]) {
+// 					return 0;
+// 				}
+// 			}
+// 			printf("Invalid command: '%s'. Does not meet requirement\n", CMD_NAMES[cmd->cmd]);
+// 		}
+// 	}
+// }

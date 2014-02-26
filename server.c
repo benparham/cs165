@@ -126,8 +126,7 @@ void *listenToClient(void *tempArgs) {
 	command *cmd = createCommand();
 
 	dbTableInfo *currentTable = malloc(sizeof(dbTableInfo));	// Info for current table in use
-	dbData tableData = NULL;										// Pointer to table data
-	// FILE *fp = NULL;											// File for current table in use
+	// dbData tableData = NULL;										// Pointer to table data
 
 	// Begin command loop
 	int done = 0;
@@ -135,7 +134,7 @@ void *listenToClient(void *tempArgs) {
 		if (receiveCommand(args->socketFD, cmd, err)) {
 			done = handleReceiveErrors(err);
 		} else {
-			if (executeCommand(currentTable, &tableData, cmd, err)) {
+			if (executeCommand(currentTable, cmd, err)) {
 				done = handleExecuteErrors(err);
 			}
 		}
@@ -145,9 +144,6 @@ void *listenToClient(void *tempArgs) {
 	terminateConnection(args->socketFD);
 
 	// Cleanup
-	if (tableData != NULL) {
-		free(tableData);
-	}
 	free(args);
 	free(err);
 	destroyCommand(cmd);//free(cmd);

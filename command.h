@@ -16,24 +16,24 @@ extern const char *CMD_NAMES[];
 
 // Enumerate possible commands
 typedef enum {
-	CMD_USE,
-	CMD_CREATE_TABLE,
-	CMD_REMOVE_TABLE,
+	CMD_USE,					// Use a table
+	CMD_CREATE_TABLE,			// Create a table
+	CMD_REMOVE_TABLE,			// Remove a table
 
-	CMD_SELECT,
+	CMD_SELECT,					
 	CMD_FETCH,
 	
-	CMD_CREATE,
+	CMD_CREATE,					// Create a column
 	CMD_LOAD,
 	CMD_INSERT,
 	
-	CMD_EXIT
+	CMD_EXIT					// End session
 } CMD;
 
-typedef struct CMD_LIST {
-	CMD *cmds;
-	int length;
-} CMD_LIST;
+// typedef struct CMD_LIST {
+// 	CMD *cmds;
+// 	int length;
+// } CMD_LIST;
 
 // Create new type called 'command'
 typedef struct command {
@@ -50,6 +50,6 @@ int parseCommand(char *buf, command *cmd, error *err);
 
 int receiveCommand(int socketFD, command *cmd, error *err);
 
-int requireCommand(CMD_LIST *req_cmds, int socketFD, command *cmd, error *err);
+// int requireCommand(CMD_LIST *req_cmds, int socketFD, command *cmd, error *err);
 
 #endif
