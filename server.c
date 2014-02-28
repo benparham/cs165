@@ -16,6 +16,7 @@
 #include "error.h"
 #include "command.h"
 #include "database.h"
+#include "data.h"
 
 
 int main(int argc, char *argv[]) {
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
 	int sockListen = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (sockListen < 0) {
 		printf("Failed to create listening socket\n");
-		return 0;
+		return 1;
 	}
 	else {
 		printf("Created socket with file descriptor: %d\n", sockListen);
@@ -59,7 +60,7 @@ int main(int argc, char *argv[]) {
 	else {
 		printf("Failed to bind socket to port %d\n", ntohs(addr.sin_port));
 		close(sockListen);
-		return 0;
+		return 1;
 	}
 	
 	// Listen on socket
@@ -85,7 +86,13 @@ int main(int argc, char *argv[]) {
 	else {
 		printf("Failed listen on socket %d\n", sockListen);
 		close(sockListen);
-		return 0;
+		return 1;
+	}
+
+	if (bootstrap()) {
+		printf("Failed to initialize overhead in bootstrap\n");
+		close(sockListen);
+		return 1;
 	}
 	
 	struct sockaddr clientAddress;
@@ -113,6 +120,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	close(sockListen);
+	cleanup();
 	return 0;
 }
 
@@ -146,10 +154,25 @@ void *listenToClient(void *tempArgs) {
 	// Cleanup
 	free(args);
 	free(err);
-	destroyCommand(cmd);//free(cmd);
+	destroyCommand(cmd);
 	free(currentTable);
 
 	pthread_exit(NULL);
+}
+
+// Initialize all overhead
+int bootstrap() {
+
+	// Add other bootstraps to this with ||
+	if (dataBootstrap()) {
+		return 1;
+	}
+
+	return 0;
+}
+
+void cleanup() {
+	dataCleanup();
 }
 
 void terminateConnection(int socketFD) {

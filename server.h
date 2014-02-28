@@ -16,5 +16,7 @@ typedef struct threadArgs {
 void *listenToClient();
 void terminateConnection(int socketFD);
 int receiveCommand(int socketFD, command *cmd, error *err);
+int bootstrap();
+void cleanup();
 
 #endif
