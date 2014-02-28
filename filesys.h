@@ -1,7 +1,11 @@
 #ifndef _FILESYS_H_
 #define _FILESYS_H_
 
-#include "dberror.h"
+#include "error.h"
+
+#define DATA_PATH			"./db"
+#define TABLE_DIR			"tables"
+#define COLUMN_DIR			"columns"
 
 int fileExists(char *pathToFile);
 int dirExists(char *pathToDir);

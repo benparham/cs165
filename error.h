@@ -1,5 +1,5 @@
-#ifndef _DBERROR_H_
-#define _DBERROR_H_
+#ifndef _ERROR_H_
+#define _ERROR_H_
 
 #include <stdlib.h>
 
@@ -18,8 +18,6 @@ typedef enum {
 
 	ERR_DUP					// Duplicate, already exiists
 } ERR;
-
-// Create new type called 'error'
 
 typedef struct error {
 	ERR err;

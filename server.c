@@ -13,9 +13,9 @@
 #include <assert.h>
 
 #include "server.h"
-#include "dberror.h"
-#include "database.h"
+#include "error.h"
 #include "command.h"
+#include "database.h"
 
 
 int main(int argc, char *argv[]) {
@@ -125,7 +125,7 @@ void *listenToClient(void *tempArgs) {
 	error *err = (error *) malloc(sizeof(error));
 	command *cmd = createCommand();
 
-	dbTableInfo *currentTable = malloc(sizeof(dbTableInfo));	// Info for current table in use
+	tableInfo *currentTable = malloc(sizeof(tableInfo));	// Info for current table in use
 	// dbData tableData = NULL;										// Pointer to table data
 
 	// Begin command loop
@@ -156,4 +156,21 @@ void terminateConnection(int socketFD) {
 	printf("Terminating connection from server end...\n");
 	printf("Closing socket %d\n", socketFD);
 	close(socketFD);
+}
+
+int receiveCommand(int socketFD, command *cmd, error *err) {
+	char buf[BUFSIZE];
+	int bytesRecieved;
+
+	printf("Waiting to receive command from client...\n");
+	memset(buf, 0, BUFSIZE);
+
+	bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
+	if (bytesRecieved < 1) {
+		err->err = ERR_CLIENT_EXIT;
+		err->message = "Client has closed connection";
+		return 1;
+	}
+
+	return parseCommand(buf, cmd, err);
 }

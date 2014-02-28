@@ -2,11 +2,12 @@
 #define _SERVER_H_
 
 #include <stdlib.h>
-#include "database.h"
+
+#include "error.h"
+#include "command.h"
 
 #define BACKLOG 				10
 #define HOST_LOOKUP_CMD 		"ifconfig | grep -P 'inet (?!127.0.0.1)'"
-#define MAX_ARG_LEN				256
 
 typedef struct threadArgs {
 	int socketFD;
@@ -14,6 +15,6 @@ typedef struct threadArgs {
 
 void *listenToClient();
 void terminateConnection(int socketFD);
-int requireTable(dbTableInfo *tbl, FILE *fp, int socketFD, command *cmd, error *err);
+int receiveCommand(int socketFD, command *cmd, error *err);
 
 #endif

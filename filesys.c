@@ -6,8 +6,8 @@
 #include <unistd.h>
 
 #include "filesys.h"
-#include "dberror.h"
-#include "command.h"
+#include "error.h"
+#include "global.h"
 
 
 int fileExists(char *pathToFile) {

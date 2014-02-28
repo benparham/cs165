@@ -3,9 +3,9 @@
 
 #include <stdlib.h>
 
-#include "dberror.h"
-
-#define BUFSIZE				1024
+#include "error.h"
+#include "global.h"
+#include "column.h"
 
 /*
  * Commands
@@ -30,26 +30,24 @@ typedef enum {
 	CMD_EXIT					// End session
 } CMD;
 
-// typedef struct CMD_LIST {
-// 	CMD *cmds;
-// 	int length;
-// } CMD_LIST;
-
 // Create new type called 'command'
 typedef struct command {
 	CMD cmd;
-	char *args;
+	void *args;
 } command;
 
-// Command functions
+typedef struct createColArgs {
+	char *columnName;
+	COL_DATA_TYPE dataType;
+	COL_STORAGE_TYPE storageType;
+} createColArgs;
 
 command* createCommand();
 void destroyCommand(command *cmd);
 
+createColArgs* createCCA();
+void destroyCCA(createColArgs *args);
+
 int parseCommand(char *buf, command *cmd, error *err);
-
-int receiveCommand(int socketFD, command *cmd, error *err);
-
-// int requireCommand(CMD_LIST *req_cmds, int socketFD, command *cmd, error *err);
 
 #endif

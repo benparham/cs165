@@ -11,25 +11,24 @@
 #include <fcntl.h>
 
 #include "database.h"
-#include "dberror.h"
+#include "error.h"
 #include "command.h"
-#include "output.h"
 #include "filesys.h"
-#include "debug.h"
+#include "table.h"
+#include "column.h"
 
-#define READ_BLOCK_SIZE			256
-
-
-int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
-	printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
+int executeCommand(tableInfo *tbl, command *cmd, error *err) {
+	// printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
+	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
 	int result = 0;
 
 	// Check that table is in use if needed
-	if (!tbl->isValid &&//*tableData == NULL &&
+	if (!tbl->isValid &&
 		
 		(cmd->cmd != CMD_USE &&
 		 cmd->cmd != CMD_CREATE_TABLE &&
-		 cmd->cmd != CMD_REMOVE_TABLE)
+		 cmd->cmd != CMD_REMOVE_TABLE &&
+		 cmd->cmd != CMD_EXIT)
 
 		) {
 
@@ -40,16 +39,20 @@ int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
 
 	switch (cmd->cmd) {
 		case CMD_USE:
-			result = useTable(tbl, cmd->args, err);
+			result = useTable(tbl, (char *) cmd->args, err);
 			break;
 		case CMD_CREATE_TABLE:
-			result = createTable(cmd->args, err);
+			result = createTable((char *) cmd->args, err);
 			break;
 		case CMD_REMOVE_TABLE:
-			result = removeTable(cmd->args, err);
+			// char *columnName = cmd->args;
+			result = removeTable((char *) cmd->args, err);
 			break;
 		case CMD_CREATE:
-			result = createColumn(tbl, cmd->args, err);
+			result = createColumn(tbl, (createColArgs *) cmd->args, err);
+			break;
+		case CMD_INSERT:
+			// result = insertColumn();
 			break;
 		case CMD_SELECT:
 			err->err = ERR_INTERNAL;
@@ -59,6 +62,11 @@ int executeCommand(dbTableInfo *tbl, command *cmd, error *err) {
 		case CMD_FETCH:
 			err->err = ERR_INTERNAL;
 			err->message = "Fetch not yet implemented";
+			result = 1;
+			break;
+		case CMD_EXIT:
+			err->err = ERR_CLIENT_EXIT;
+			err->message = "Client has exited";
 			result = 1;
 			break;
 		default:
@@ -111,13 +119,13 @@ int createTable(char *tableName, error *err) {
 	}
 
 	// Initialize new table info with proper values
-	dbTableInfo tempTbl;
+	tableInfo tempTbl;
 	tempTbl.isValid = 1;
 	strcpy(tempTbl.name, tableName);
 	tempTbl.numColumns = 0;
 
 	// Write table info to beginning of file
-	if (fwrite(&tempTbl, sizeof(dbTableInfo), 1, fp) <= 0) {
+	if (fwrite(&tempTbl, sizeof(tableInfo), 1, fp) <= 0) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to write to table info file";
 
@@ -133,6 +141,7 @@ int createTable(char *tableName, error *err) {
 }
 
 int removeTable(char *tableName, error *err) {
+	printf("Attempting to remove table '%s'\n", tableName);
 
 	char pathToTableDir[BUFSIZE];
 	sprintf(pathToTableDir, "%s/%s/%s", DATA_PATH, TABLE_DIR, tableName);
@@ -151,7 +160,7 @@ int removeTable(char *tableName, error *err) {
 	return 0;
 }
 
-int useTable(dbTableInfo *tbl, char *tableName, error *err) {
+int useTable(tableInfo *tbl, char *tableName, error *err) {
 	char pathToTableFile[BUFSIZE];
 	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tableName, tableName);
 
@@ -170,7 +179,7 @@ int useTable(dbTableInfo *tbl, char *tableName, error *err) {
 	}
 
 	// Read the table info from the beginning
-	if (fread(tbl, sizeof(dbTableInfo), 1, fp) < 1) {
+	if (fread(tbl, sizeof(tableInfo), 1, fp) < 1) {
 		fclose(fp);
 
 		err->err = ERR_MLFM_DATA;
@@ -182,11 +191,15 @@ int useTable(dbTableInfo *tbl, char *tableName, error *err) {
 	fclose(fp);
 
 	printf("Using table '%s'\n", tbl->name);
-	printdbTableInfo(tbl);
+	printtableInfo(tbl);
 	return 0;
 }
 
-int createColumn(dbTableInfo *tbl, char *columnName, error * err) {
+int createColumn(tableInfo *tbl, /*char *columnName*/ createColArgs *args, error * err) {
+	char *columnName = args->columnName;
+	COL_DATA_TYPE dataType = args->dataType;
+	COL_STORAGE_TYPE storageType = args->storageType;
+
 	char pathToColumn[BUFSIZE];
 	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
@@ -207,13 +220,14 @@ int createColumn(dbTableInfo *tbl, char *columnName, error * err) {
 	}
 
 	// Initialize new table info with proper values
-	dbColumnInfo tempCol;
-	tempCol.size_bytes = 0;
-	tempCol.storage_type = ST_INT;
+	columnInfo tempCol;
+	tempCol.sizeBytes = 0;
+	tempCol.storageType = storageType;
+	tempCol.dataType = dataType;
 	strcpy(tempCol.name, columnName);
 
 	// Write table info to beginning of file
-	if (fwrite(&tempCol, sizeof(dbColumnInfo), 1, fp) <= 0) {
+	if (fwrite(&tempCol, sizeof(columnInfo), 1, fp) <= 0) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to write to column file";
 		fclose(fp);
@@ -224,13 +238,13 @@ int createColumn(dbTableInfo *tbl, char *columnName, error * err) {
 	fclose(fp);
 
 	printf("Created new column '%s'\n", columnName);
-	printdbColumnInfo(&tempCol);
+	printcolumnInfo(&tempCol);
 	return 0;	
 }
 
-// int old_useTable(dbTableInfo *tbl, dbData *tableData, char *tableName, error *err) {
+// int old_useTable(tableInfo *tbl, dbData *tableData, char *tableName, error *err) {
 
-// 	printf("Size of table info: %d\n", (int) sizeof(dbTableInfo));
+// 	printf("Size of table info: %d\n", (int) sizeof(tableInfo));
 
 // 	char pathToTable[BUFSIZE];
 // 	getPathToTable(tableName, pathToTable);
@@ -252,7 +266,7 @@ int createColumn(dbTableInfo *tbl, char *columnName, error * err) {
 // 	}
 
 // 	// Read the table info from the beginning
-// 	if (fread(tbl, sizeof(dbTableInfo), 1, fp) < 1) {
+// 	if (fread(tbl, sizeof(tableInfo), 1, fp) < 1) {
 // 		fclose(fp);
 
 // 		err->err = ERR_MLFM_DATA;
@@ -260,12 +274,12 @@ int createColumn(dbTableInfo *tbl, char *columnName, error * err) {
 // 		return 1;
 // 	}
 
-// 	int bytesToRead = st.st_size - sizeof(dbTableInfo);
+// 	int bytesToRead = st.st_size - sizeof(tableInfo);
 // 	printf("About to read %d bytes into memory from file %s\n", bytesToRead, tableName);
 
 // 	// Read file into memory
-// 	*tableData = (dbData) malloc(st.st_size - sizeof(dbTableInfo));
-// 	if (fread(*tableData, st.st_size - sizeof(dbTableInfo), 1, fp) < 1) {
+// 	*tableData = (dbData) malloc(st.st_size - sizeof(tableInfo));
+// 	if (fread(*tableData, st.st_size - sizeof(tableInfo), 1, fp) < 1) {
 // 		err->err = ERR_MLFM_DATA;
 // 		err->message = "Unable to read data from table";
 // 		free(tableData);
