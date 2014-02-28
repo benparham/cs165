@@ -4,24 +4,66 @@
 
 #include "data.h"
 
-colCache *columnCache;
+columnCache *colCache;
 
-void colCacheInit(colCache *cache) {
-	cache = (colCache *) malloc(sizeof(colCache));
-	pthread_mutex_init(&(cache->cacheLock), NULL);
+columnBuf* colBufCreate() {
+	columnBuf *colBuf = (columnBuf *) malloc(sizeof(columnBuf));
+	pthread_mutex_init(&(colBuf->colLock), NULL);
+
+	return colBuf;
 }
 
-void colCacheDestroy(colCache *cache) {
-	pthread_mutex_destroy(&(cache->cacheLock));
-	free(cache);
+void colBufSet(columnBuf *colBuf, columnInfo colInfo, unsigned char *data) {
+	colBuf->colInfo = colInfo;
+	colBuf->data = data;
+}
+
+void colBufDestroy(columnBuf *colBuf) {
+	if (colBuf == NULL) {
+		return;
+	}
+
+	// Free data if not null
+	if (colBuf->data != NULL) {
+		free(colBuf->data);
+	}
+
+	// Destroy the column buffer lock
+	pthread_mutex_destroy(&(colBuf->colLock));
+
+	// Free the whole column buffer
+	free(colBuf);
 }
 
 int dataBootstrap() {
-	colCacheInit(columnCache);
+	// Allocate the whole column cache
+	colCache = (columnCache *) malloc(sizeof(columnCache));
+
+	// Ensure that all column buffer pointers point to null
+	int i;
+	for (i = 0; i < COL_CACHE_SIZE; i++) {
+		colCache->bufCache[i] = NULL;
+	}
+
+	// Create the name cache lock
+	pthread_mutex_init(&(colCache->nameCache.nameLock), NULL);
+
 	return 0;
 }
 
 void dataCleanup() {
-	colCacheDestroy(columnCache);
+	// Iterate over bufCache and ensure all colBufs are destroyed
+	int i;
+	for (i = 0; i < COL_CACHE_SIZE; i++) {
+		if (colCache->bufCache[i] != NULL) {
+			colBufDestroy(colCache->bufCache[i]);
+		}
+	}
+
+	// Destroy the name cache lock
+	pthread_mutex_destroy(&(colCache->nameCache.nameLock));
+
+	// Free the whole column cache
+	free(colCache);
 }
 

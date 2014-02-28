@@ -9,31 +9,24 @@
 // rather than have a fixed number of unknown sized columns
 #define COL_CACHE_SIZE		4
 
-typedef struct rawData {
-	unsigned char *data;
-	pthread_mutex_t dataLock;
-} rawData;
-
-typedef struct colBuf {
+typedef struct columnBuf {
 	columnInfo colInfo;
-	rawData colData;
-} colBuf;
+	unsigned char *data;
+	pthread_mutex_t colLock;
+} columnBuf;
 
-typedef struct colCache {
-	colBuf *colCache[COL_CACHE_SIZE];
-	pthread_mutex_t cacheLock;
-} colCache;
+typedef struct columnCache {
+	columnBuf *bufCache[COL_CACHE_SIZE];
+	struct nameCache {
+		char *names[COL_CACHE_SIZE];
+		pthread_mutex_t nameLock;
+	} nameCache;
+} columnCache;
 
-extern colCache *columnCache;
-
-void colCacheInit(colCache *cache);
-void colCacheDestroy(colCache *cache);
+extern columnCache *colCache;
 
 int dataBootstrap();
 void dataCleanup();
-
-// colBuf *getColBuf();
-// void releaseColBuf(colBuf *colBuf);
 
 
 #endif
