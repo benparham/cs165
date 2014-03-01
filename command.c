@@ -83,16 +83,22 @@ int setArgsColArgs(command *cmd, char *args) {
 	return 0;
 }
 
-// int setArgsInsertArgs(command *cmd, char *args) {
-// 	char *columnName = strtok(args, ",");
-// 	char *value = strtok(NULL, "\n");
+int setArgsInsertArgs(command *cmd, char *args) {
+	char *columnName = strtok(args, ",");
+	char *value = strtok(NULL, "\n");
 
-// 	if (columnName == NULL || value == NULL) {
-// 		return 1;
-// 	}
+	if (columnName == NULL || value == NULL) {
+		return 1;
+	}
 
+	insertArgs *insArgs = (insertArgs *) malloc(sizeof(insertArgs));
+	strcpy(insArgs->columnName, columnName);
+	strcpy(insArgs->value, value);
 
-// }
+	cmd->args = insArgs;
+
+	return 0;	
+}
 
 struct cmdParseItem {
 	char *cmdString;
@@ -107,7 +113,7 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"remove table ", "\n", CMD_REMOVE_TABLE, &setArgsString},
 	{"create(", ")", CMD_CREATE, &setArgsColArgs},
 	{"select(", ")", CMD_SELECT, &setArgsString},
-	// {"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
+	{"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
 	{"fetch(", ")", CMD_FETCH, &setArgsString},
 	{"load(", ")", CMD_LOAD, &setArgsString},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
@@ -115,8 +121,8 @@ const struct cmdParseItem cmdParseMap[] = {
 };
 
 int parseCommand(char *buf, command *cmd, error *err) {
-	
-	
+
+
 	int i;
 	char *cmdString;
 	for (i = 0; (cmdString = cmdParseMap[i].cmdString) != NULL; i++) {

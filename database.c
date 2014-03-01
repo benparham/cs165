@@ -60,7 +60,7 @@ int executeCommand(tableInfo *tbl, command *cmd, error *err) {
 			result = createColumn(tbl, (createColArgs *) cmd->args, err);
 			break;
 		case CMD_INSERT:
-			// result = insertColumn(tbl, );
+			result = insert(tbl, (insertArgs *) cmd->args, err);
 			break;
 		case CMD_SELECT:
 			err->err = ERR_INTERNAL;
@@ -203,7 +203,7 @@ int useTable(tableInfo *tbl, char *tableName, error *err) {
 	return 0;
 }
 
-int createColumn(tableInfo *tbl, /*char *columnName*/ createColArgs *args, error * err) {
+int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	char *columnName = args->columnName;
 	COL_DATA_TYPE dataType = args->dataType;
 	COL_STORAGE_TYPE storageType = args->storageType;
@@ -248,6 +248,13 @@ int createColumn(tableInfo *tbl, /*char *columnName*/ createColArgs *args, error
 	printf("Created new column '%s'\n", columnName);
 	printcolumnInfo(&tempCol);
 	return 0;	
+}
+
+int insert(tableInfo *tbl, insertArgs *args, error *err) {
+	char *columnName = args->columnName;
+	printf("Inserting into column '%s'...\n", columnName);
+
+	return 0;
 }
 
 // int old_useTable(tableInfo *tbl, dbData *tableData, char *tableName, error *err) {
