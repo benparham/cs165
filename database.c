@@ -60,7 +60,7 @@ int executeCommand(tableInfo *tbl, command *cmd, error *err) {
 			result = createColumn(tbl, (createColArgs *) cmd->args, err);
 			break;
 		case CMD_INSERT:
-			// result = insertColumn();
+			// result = insertColumn(tbl, );
 			break;
 		case CMD_SELECT:
 			err->err = ERR_INTERNAL;

@@ -3,6 +3,7 @@
 
 #include "global.h"
 #include "column.h"
+#include "error.h"
 #include "pthread.h"
 
 // TODO: make it so we just constantly check the byte size of the cache,
@@ -34,6 +35,7 @@ extern columnCache *colCache;
 int dataBootstrap();
 void dataCleanup();
 
-// Cache Management
+
+columnBuf* fetchCol(char *columnName, error *err);
 
 #endif

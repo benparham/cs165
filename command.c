@@ -60,28 +60,6 @@ int setArgsNull(command *cmd, char *args) {
 	return 0;
 }
 
-createColArgs* createCCA(char *columnName, COL_STORAGE_TYPE storageType, COL_DATA_TYPE dataType) {
-	// Allocate struct createColArgs
-	createColArgs *args = (createColArgs *) malloc(sizeof(createColArgs));
-	
-	// Allocate string pointer in struct
-	args->columnName = (char *) malloc(sizeof(char) * strlen(columnName));
-
-	strcpy(args->columnName, columnName);
-
-	args->storageType = storageType;
-	args->dataType = dataType;
-
-	return args;
-}
-
-void destroyCCA(createColArgs *args) {
-	if (args != NULL) {
-		free(args->columnName);
-		free(args);
-	}
-}
-
 int setArgsColArgs(command *cmd, char *args) {
 	char *columnName = strtok(args, ",");
 	char *columnStorageType = strtok(NULL, "\n");
@@ -95,10 +73,28 @@ int setArgsColArgs(command *cmd, char *args) {
 		return 1;
 	}
 
-	cmd->args = createCCA(columnName, storageType, COL_INT);
+	createColArgs *ccArgs = (createColArgs *) malloc(sizeof(createColArgs));
+	strcpy(ccArgs->columnName, columnName);
+	ccArgs->storageType = storageType;
+	ccArgs->dataType = COL_INT;
+
+	cmd->args = ccArgs;
 
 	return 0;
 }
+
+// insertArgs* createInsertArgs(char *)
+
+// int setArgsInsertArgs(command *cmd, char *args) {
+// 	char *columnName = strtok(args, ",");
+// 	char *value = strtok(NULL, "\n");
+
+// 	if (columnName == NULL || value == NULL) {
+// 		return 1;
+// 	}
+
+
+// }
 
 struct cmdParseItem {
 	char *cmdString;
@@ -113,7 +109,7 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"remove table ", "\n", CMD_REMOVE_TABLE, &setArgsString},
 	{"create(", ")", CMD_CREATE, &setArgsColArgs},
 	{"select(", ")", CMD_SELECT, &setArgsString},
-	{"insert(", ")", CMD_INSERT, &setArgsString},
+	// {"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
 	{"fetch(", ")", CMD_FETCH, &setArgsString},
 	{"load(", ")", CMD_LOAD, &setArgsString},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},

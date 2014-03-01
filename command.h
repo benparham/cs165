@@ -37,10 +37,15 @@ typedef struct command {
 } command;
 
 typedef struct createColArgs {
-	char *columnName;
+	char columnName[BUFSIZE];
 	COL_DATA_TYPE dataType;
 	COL_STORAGE_TYPE storageType;
 } createColArgs;
+
+// typedef struct insertArgs {
+// 	char *columnName;
+// 	char *value;
+// } insertArgs;
 
 command* createCommand();
 void destroyCommand(command *cmd);
