@@ -83,8 +83,6 @@ int setArgsColArgs(command *cmd, char *args) {
 	return 0;
 }
 
-// insertArgs* createInsertArgs(char *)
-
 // int setArgsInsertArgs(command *cmd, char *args) {
 // 	char *columnName = strtok(args, ",");
 // 	char *value = strtok(NULL, "\n");
@@ -117,6 +115,8 @@ const struct cmdParseItem cmdParseMap[] = {
 };
 
 int parseCommand(char *buf, command *cmd, error *err) {
+	
+	
 	int i;
 	char *cmdString;
 	for (i = 0; (cmdString = cmdParseMap[i].cmdString) != NULL; i++) {

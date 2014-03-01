@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 
+#include "global.h"
+
 /*
  * Errors
  */

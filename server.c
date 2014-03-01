@@ -185,6 +185,10 @@ void terminateConnection(int socketFD) {
 }
 
 int receiveCommand(int socketFD, command *cmd, error *err) {
+	if (cmd->args != NULL) {
+		free(cmd->args);
+	}
+
 	char buf[BUFSIZE];
 	int bytesRecieved;
 

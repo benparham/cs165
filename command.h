@@ -42,10 +42,10 @@ typedef struct createColArgs {
 	COL_STORAGE_TYPE storageType;
 } createColArgs;
 
-// typedef struct insertArgs {
-// 	char *columnName;
-// 	char *value;
-// } insertArgs;
+typedef struct insertArgs {
+	char columnName[BUFSIZE];
+	char value[BUFSIZE];
+} insertArgs;
 
 command* createCommand();
 void destroyCommand(command *cmd);
