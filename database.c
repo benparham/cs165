@@ -17,20 +17,28 @@
 #include "table.h"
 #include "column.h"
 
+int cmdNeedsTable(command *cmd) {
+
+	return (cmd->cmd != CMD_USE &&
+			cmd->cmd != CMD_CREATE_TABLE &&
+			cmd->cmd != CMD_REMOVE_TABLE &&
+			cmd->cmd != CMD_EXIT);
+}
+
 int executeCommand(tableInfo *tbl, command *cmd, error *err) {
 	// printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
 	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
 	int result = 0;
 
 	// Check that table is in use if needed
-	if (!tbl->isValid &&
+	if (!tbl->isValid && cmdNeedsTable(cmd)) {
 		
-		(cmd->cmd != CMD_USE &&
-		 cmd->cmd != CMD_CREATE_TABLE &&
-		 cmd->cmd != CMD_REMOVE_TABLE &&
-		 cmd->cmd != CMD_EXIT)
+		// (cmd->cmd != CMD_USE &&
+		//  cmd->cmd != CMD_CREATE_TABLE &&
+		//  cmd->cmd != CMD_REMOVE_TABLE &&
+		//  cmd->cmd != CMD_EXIT)
 
-		) {
+		// ) {
 
 		err->err = ERR_INVALID_CMD;
 		err->message = "No table in use. Cannot execute command";

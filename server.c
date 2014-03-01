@@ -20,7 +20,7 @@
 
 
 int main(int argc, char *argv[]) {
-	printf("Initiating Server...\n\n");
+	printf("Initiating Database Server...\n\n");
 	
 	// struct servent *serv;
 	struct sockaddr_in addr;
@@ -89,6 +89,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+	// Run bootstrap for overhead initialization
 	if (bootstrap()) {
 		printf("Failed to initialize overhead in bootstrap\n");
 		close(sockListen);
@@ -119,8 +120,10 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	// Cleanup
 	close(sockListen);
 	cleanup();
+
 	return 0;
 }
 

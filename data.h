@@ -25,8 +25,15 @@ typedef struct columnCache {
 
 extern columnCache *colCache;
 
+// Column Buffer Manipulation
+// columnBuf* colBufCreate();
+// void colBufSet(columnBuf *colBuf, columnInfo colInfo, unsigned char *data);
+// void colBufDestroy(columnBuf *colBuf);
+
+// Data Overhead Setup/Cleanup
 int dataBootstrap();
 void dataCleanup();
 
+// Cache Management
 
 #endif

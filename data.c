@@ -1,10 +1,17 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 
 #include "data.h"
+#include "error.h"
 
 columnCache *colCache;
+
+// =================================================================
+// Column Buffer Manipulation
+// =================================================================
 
 columnBuf* colBufCreate() {
 	columnBuf *colBuf = (columnBuf *) malloc(sizeof(columnBuf));
@@ -34,6 +41,10 @@ void colBufDestroy(columnBuf *colBuf) {
 	// Free the whole column buffer
 	free(colBuf);
 }
+
+// =================================================================
+// Data Overhead Setup/Cleanup
+// =================================================================
 
 int dataBootstrap() {
 	// Allocate the whole column cache
@@ -66,4 +77,79 @@ void dataCleanup() {
 	// Free the whole column cache
 	free(colCache);
 }
+
+// =================================================================
+// Cache Management
+// =================================================================
+
+/* 
+ * Assumes that nameCache is locked.
+ * Checks nameCache for columnName.
+ * Returns index of hit on success, -1 on failure.
+ */
+
+int getColIdx(char *columnName) {
+	int i;
+	for (i = 0; i < COL_CACHE_SIZE; i++) {
+		if (strcmp(colCache->nameCache.names[i], columnName) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+/*
+ * Assumes that nameCache is locked.
+ */
+
+columnBuf* fetchColFromDisk(char *columnName, error *err) {
+
+	err->err = ERR_INTERNAL;
+	err->message = "fetch from disk not yet implemented";
+	return NULL;
+}
+
+/*
+ * Assumes dataBootstrap has been called
+ * Fetches the column buffer with name = columnName
+ * On success, locks the column buffer and returns pointer to it
+ * On failure returns NULL
+ */
+
+columnBuf* fetchCol(char *columnName, error *err) {
+	columnBuf *colBuf;
+
+	// Lock the name cache
+	pthread_mutex_lock(&(colCache->nameCache.nameLock));
+
+	// Check cache
+	int idx = getColIdx(columnName);
+	if (idx == -1) {
+		colBuf = fetchColFromDisk(columnName, err);		// Fetch from disk
+	} else {
+		colBuf = colCache->bufCache[idx];				// Fetch from cache
+		
+		if (colBuf == NULL) {
+			err->err = ERR_INTERNAL;
+			err->message = "Name cache and buffer cache out of synch";
+		}
+	}
+
+	// Lock the column Buffer
+	if (colBuf != NULL) {
+		pthread_mutex_lock(&(colBuf->colLock));
+	}
+
+	// Release the name cache lock
+	pthread_mutex_unlock(&(colCache->nameCache.nameLock));
+
+	return colBuf;
+}
+
+
+
+
+
+
+
 
