@@ -16,6 +16,7 @@
 #include "filesys.h"
 #include "table.h"
 #include "column.h"
+#include "data.h"
 
 int cmdNeedsTable(command *cmd) {
 
@@ -246,13 +247,25 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	fclose(fp);
 
 	printf("Created new column '%s'\n", columnName);
-	printcolumnInfo(&tempCol);
+	printColumnInfo(&tempCol);
 	return 0;	
 }
 
 int insert(tableInfo *tbl, insertArgs *args, error *err) {
 	char *columnName = args->columnName;
-	printf("Inserting into column '%s'...\n", columnName);
+	printf("Fetching column '%s'...\n", columnName);
+
+	columnBuf *colBuf = fetchCol(tbl, columnName, err);
+	if (colBuf == NULL) {
+		printf("Col Buf was null\n");
+		return 1;
+	}
+
+	printf("Column:\n");
+	printColumnInfo(&(colBuf->colInfo));
+
+
+	pthread_mutex_unlock(&(colBuf->colLock));
 
 	return 0;
 }

@@ -18,7 +18,9 @@ typedef enum {
 	ERR_SRCH,				// Search failed, something not found
 	ERR_INTERNAL,			// Internal error, not users='s fault
 
-	ERR_DUP					// Duplicate, already exiists
+	ERR_DUP,				// Duplicate, already exiists
+
+	ERR_MEM					// Memory err, usually indicates not enough memory free for operation
 } ERR;
 
 typedef struct error {

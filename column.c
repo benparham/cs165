@@ -29,7 +29,7 @@ int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	return result;
 }
 
-void printcolumnInfo(columnInfo *col) {
+void printColumnInfo(columnInfo *col) {
 	printf("\nColumn:\n");
 
 	printf("Name: %s\n", col->name);

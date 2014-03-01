@@ -24,6 +24,6 @@ typedef struct columnInfo {
 int strToColStorage(char *str, COL_STORAGE_TYPE *type);
 int getColDataSize(COL_DATA_TYPE);
 
-void printcolumnInfo(columnInfo *col);
+void printColumnInfo(columnInfo *col);
 
 #endif

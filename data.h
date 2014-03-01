@@ -1,10 +1,12 @@
 #ifndef _DATA_H_
 #define _DATA_H_
 
+#include <pthread.h>
+
 #include "global.h"
 #include "column.h"
 #include "error.h"
-#include "pthread.h"
+#include "table.h"
 
 // TODO: make it so we just constantly check the byte size of the cache,
 // rather than have a fixed number of unknown sized columns
@@ -36,6 +38,6 @@ int dataBootstrap();
 void dataCleanup();
 
 
-columnBuf* fetchCol(char *columnName, error *err);
+columnBuf* fetchCol(tableInfo *tbl, char *columnName, error *err);
 
 #endif
