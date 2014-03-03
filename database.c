@@ -27,20 +27,11 @@ int cmdNeedsTable(command *cmd) {
 }
 
 int executeCommand(tableInfo *tbl, command *cmd, error *err) {
-	// printf("Received command: '%s' with args: '%s'\n", CMD_NAMES[cmd->cmd], cmd->args);
 	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
 	int result = 0;
 
 	// Check that table is in use if needed
 	if (!tbl->isValid && cmdNeedsTable(cmd)) {
-		
-		// (cmd->cmd != CMD_USE &&
-		//  cmd->cmd != CMD_CREATE_TABLE &&
-		//  cmd->cmd != CMD_REMOVE_TABLE &&
-		//  cmd->cmd != CMD_EXIT)
-
-		// ) {
-
 		err->err = ERR_INVALID_CMD;
 		err->message = "No table in use. Cannot execute command";
 		return 1;
@@ -251,6 +242,12 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	return 0;	
 }
 
+int sorted_insert(columnBuf *colBuf, error *err) {
+
+
+	return 0;
+}
+
 int insert(tableInfo *tbl, insertArgs *args, error *err) {
 	char *columnName = args->columnName;
 	printf("Fetching column '%s'...\n", columnName);
@@ -261,13 +258,25 @@ int insert(tableInfo *tbl, insertArgs *args, error *err) {
 		return 1;
 	}
 
-	printf("Column:\n");
+	int result = 0;
+
 	printColumnInfo(&(colBuf->colInfo));
+
+	switch (colBuf->colInfo.storageType) {
+		case COL_UNSORTED:
+			result = sorted_insert(colBuf, err);
+			break;
+		default:
+			err->err = ERR_INTERNAL;
+			err->message = "Column sort type unsupported";
+			result = 1;
+			break;
+	}
 
 
 	pthread_mutex_unlock(&(colBuf->colLock));
 
-	return 0;
+	return result;
 }
 
 // int old_useTable(tableInfo *tbl, dbData *tableData, char *tableName, error *err) {
