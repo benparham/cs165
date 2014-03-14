@@ -4,14 +4,14 @@
 #include <column.h>
 #include <filesys.h>
 
-int getColDataSize(COL_DATA_TYPE type) {
-	switch (type) {
-		case COL_INT:
-			return 4;
-		default:
-			return -1;
-	}
-}
+// int getColDataSize(COL_DATA_TYPE type) {
+// 	switch (type) {
+// 		case COL_INT:
+// 			return 4;
+// 		default:
+// 			return -1;
+// 	}
+// }
 
 int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	int result = 1;
@@ -37,7 +37,7 @@ void printColumnInfo(columnInfo *col) {
 	printf("Size: %d\n", col->sizeBytes);
 
 	printf("Storage type: %d\n", col->storageType);
-	printf("Data type: %d\n", col->dataType);
+	// printf("Data type: %d\n", col->dataType);
 }
 
 int columnBufCreate(columnBuf **colBuf) {

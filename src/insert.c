@@ -7,39 +7,41 @@
 #include <error.h>
 #include <command.h>
 
-static int convertDataByType(COL_DATA_TYPE type, char *inData, void *outData, int *sizeBytes) {
-	switch (type) {
-		case COL_INT:
-			*((int *) outData) = atoi(inData);
-			*sizeBytes = sizeof(int);
+// static int convertDataByType(COL_DATA_TYPE type, char *inData, void *outData, int *sizeBytes) {
+// 	switch (type) {
+// 		case COL_INT:
+// 			*((int *) outData) = atoi(inData);
+// 			*sizeBytes = sizeof(int);
 
-			printf("In data: %s\n", inData);
-			printf("Out data: %d\n", *((int *) outData));
+// 			printf("In data: %s\n", inData);
+// 			printf("Out data: %d\n", *((int *) outData));
 
-			break;
-		default:
-			return 1;
-	}
+// 			break;
+// 		default:
+// 			return 1;
+// 	}
 
-	return 0;
-}
+// 	return 0;
+// }
 
 static int insertUnsorted(columnBuf *colBuf, char *data, error *err) {
 	
-	colDataType toWrite;
-	int sizeBytes;
+	// colDataType toWrite;
+	// int sizeBytes;
 
-	if (convertDataByType(colBuf->colInfo.dataType, data, (void *) &toWrite, &sizeBytes)) {
-		err->err = ERR_INTERNAL;
-		err->message = "Data type unsupported for insertion";
-		return 1;
-	}
+	// if (convertDataByType(colBuf->colInfo.dataType, data, (void *) &toWrite, &sizeBytes)) {
+	// 	err->err = ERR_INTERNAL;
+	// 	err->message = "Data type unsupported for insertion";
+	// 	return 1;
+	// }
+
+	int toWrite = atoi(data);
 
 	// Write data to end of file
 	if (fseek(colBuf->fp, 0, SEEK_END) == -1) {
 		return 1;
 	}
-	if (fwrite(&toWrite, sizeBytes, 1, colBuf->fp) <= 0) {
+	if (fwrite(&toWrite, sizeof(int), 1, colBuf->fp) <= 0) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to write data to column file";
 		return 1;

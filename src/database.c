@@ -197,7 +197,7 @@ int useTable(tableInfo *tbl, char *tableName, error *err) {
 
 int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	char *columnName = args->columnName;
-	COL_DATA_TYPE dataType = args->dataType;
+	// COL_DATA_TYPE dataType = args->dataType;
 	COL_STORAGE_TYPE storageType = args->storageType;
 
 	char pathToColumn[BUFSIZE];
@@ -223,7 +223,7 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	columnInfo tempCol;
 	tempCol.sizeBytes = 0;
 	tempCol.storageType = storageType;
-	tempCol.dataType = dataType;
+	// tempCol.dataType = dataType;
 	strcpy(tempCol.name, columnName);
 
 	// Write table info to beginning of file

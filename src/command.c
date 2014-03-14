@@ -76,7 +76,7 @@ int setArgsColArgs(command *cmd, char *args) {
 	createColArgs *ccArgs = (createColArgs *) malloc(sizeof(createColArgs));
 	strcpy(ccArgs->columnName, columnName);
 	ccArgs->storageType = storageType;
-	ccArgs->dataType = COL_INT;
+	// ccArgs->dataType = COL_INT;
 
 	cmd->args = ccArgs;
 

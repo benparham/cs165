@@ -38,7 +38,7 @@ typedef struct command {
 
 typedef struct createColArgs {
 	char columnName[BUFSIZE];
-	COL_DATA_TYPE dataType;
+	// COL_DATA_TYPE dataType;
 	COL_STORAGE_TYPE storageType;
 } createColArgs;
 
