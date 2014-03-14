@@ -18,6 +18,8 @@
 #include <column.h>
 #include <insert.h>
 
+// Random comment to force a commit
+
 int cmdNeedsTable(command *cmd) {
 
 	return (cmd->cmd != CMD_USE &&
