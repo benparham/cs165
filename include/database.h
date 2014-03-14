@@ -10,10 +10,11 @@
 #include "column.h"
 
 int executeCommand(tableInfo *tbl, command *cmd, error *err);
-int createTable(char *tableName, error *err);
-int removeTable(char *tableName, error *err);
-int useTable(tableInfo *tbl, char *tableName, error *err);
-int createColumn(tableInfo *tbl, createColArgs *args, error *err);
-int insert(tableInfo *tbl, insertArgs *args, error *err);
+
+int dbCreateTable(char *tableName, error *err);
+int dbRemoveTable(char *tableName, error *err);
+int dbUseTable(tableInfo *tbl, char *tableName, error *err);
+int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err);
+int dbInsert(tableInfo *tbl, insertArgs *args, error *err);
 
 #endif

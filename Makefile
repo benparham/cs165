@@ -15,7 +15,7 @@ CFLAGS = -g -Wall -std=c99 -I $(IDIR)
 INC = $(wildcard $(IDIR)/*.h)
 
 # Server dependencies
-_SERV_OBJ = server.o database.o command.o filesys.o error.o table.o column.o insert.o
+_SERV_OBJ = server.o database.o command.o filesys.o error.o table.o column.o
 SERV_OBJ = $(patsubst %, $(ODIR)/%, $(_SERV_OBJ))
 
 # Client dependencies

@@ -18,8 +18,6 @@
 #include <column.h>
 #include <insert.h>
 
-// Random comment to force a commit
-
 int cmdNeedsTable(command *cmd) {
 
 	return (cmd->cmd != CMD_USE &&
@@ -41,20 +39,19 @@ int executeCommand(tableInfo *tbl, command *cmd, error *err) {
 
 	switch (cmd->cmd) {
 		case CMD_USE:
-			result = useTable(tbl, (char *) cmd->args, err);
+			result = dbUseTable(tbl, (char *) cmd->args, err);
 			break;
 		case CMD_CREATE_TABLE:
-			result = createTable((char *) cmd->args, err);
+			result = dbCreateTable((char *) cmd->args, err);
 			break;
 		case CMD_REMOVE_TABLE:
-			// char *columnName = cmd->args;
-			result = removeTable((char *) cmd->args, err);
+			result = dbRemoveTable((char *) cmd->args, err);
 			break;
 		case CMD_CREATE:
-			result = createColumn(tbl, (createColArgs *) cmd->args, err);
+			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, err);
 			break;
 		case CMD_INSERT:
-			result = insert(tbl, (insertArgs *) cmd->args, err);
+			result = dbInsert(tbl, (insertArgs *) cmd->args, err);
 			break;
 		case CMD_SELECT:
 			err->err = ERR_INTERNAL;
@@ -81,7 +78,7 @@ int executeCommand(tableInfo *tbl, command *cmd, error *err) {
 	return result;
 }
 
-int createTable(char *tableName, error *err) {
+int dbCreateTable(char *tableName, error *err) {
 
 	char pathToTableDir[BUFSIZE];
 	sprintf(pathToTableDir, "%s/%s/%s", DATA_PATH, TABLE_DIR, tableName);
@@ -142,7 +139,7 @@ int createTable(char *tableName, error *err) {
 	return 0;
 }
 
-int removeTable(char *tableName, error *err) {
+int dbRemoveTable(char *tableName, error *err) {
 	printf("Attempting to remove table '%s'\n", tableName);
 
 	char pathToTableDir[BUFSIZE];
@@ -162,7 +159,7 @@ int removeTable(char *tableName, error *err) {
 	return 0;
 }
 
-int useTable(tableInfo *tbl, char *tableName, error *err) {
+int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
 	char pathToTableFile[BUFSIZE];
 	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tableName, tableName);
 
@@ -197,9 +194,8 @@ int useTable(tableInfo *tbl, char *tableName, error *err) {
 	return 0;
 }
 
-int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
+int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 	char *columnName = args->columnName;
-	// COL_DATA_TYPE dataType = args->dataType;
 	COL_STORAGE_TYPE storageType = args->storageType;
 
 	char pathToColumn[BUFSIZE];
@@ -221,17 +217,26 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 		return 1;
 	}
 
-	// Initialize new table info with proper values
-	columnInfo tempCol;
-	tempCol.sizeBytes = 0;
-	tempCol.storageType = storageType;
-	// tempCol.dataType = dataType;
-	strcpy(tempCol.name, columnName);
-
-	// Write table info to beginning of file
-	if (fwrite(&tempCol, sizeof(columnInfo), 1, fp) < 1) {
+	// Write the storage type to the beginning of the file
+	if (fwrite(&storageType, sizeof(COL_STORAGE_TYPE), 1, fp) < 1) {
 		err->err = ERR_INTERNAL;
-		err->message = "Unable to write to column file";
+		err->message = "Unable to write storage type to column file";
+		fclose(fp);
+		return 1;
+	}
+
+	// Initialize new column header for writing
+	void *columnHeader;
+	int columnHeaderSizeBytes;
+	if (columnCreateNewHeader(storageType, columnName, &columnHeader, &columnHeaderSizeBytes, err)) {
+		fclose(fp);
+		return 1;
+	}
+
+	// Write column header to file
+	if (fwrite(columnHeader, columnHeaderSizeBytes, 1, fp) < 1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to write column header to column file";
 		fclose(fp);
 		return 1;
 	}
@@ -240,44 +245,14 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	fclose(fp);
 
 	printf("Created new column '%s'\n", columnName);
-	printColumnInfo(&tempCol);
+	columnPrintHeader(storageType, columnHeader);
 	printf("\n");
 	return 0;	
 }
 
-// int sorted_insert(columnBuf *colBuf, error *err) {
+int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
 
+	printf("Will implement insert here\n");
 
-// 	return 0;
-// }
-
-// int insert(tableInfo *tbl, insertArgs *args, error *err) {
-// 	char *columnName = args->columnName;
-// 	printf("Fetching column '%s'...\n", columnName);
-
-// 	columnBuf *colBuf = fetchCol(tbl, columnName, err);
-// 	if (colBuf == NULL) {
-// 		printf("Col Buf was null\n");
-// 		return 1;
-// 	}
-
-// 	int result = 0;
-
-// 	printColumnInfo(&(colBuf->colInfo));
-
-// 	switch (colBuf->colInfo.storageType) {
-// 		case COL_UNSORTED:
-// 			result = sorted_insert(colBuf, err);
-// 			break;
-// 		default:
-// 			err->err = ERR_INTERNAL;
-// 			err->message = "Column sort type unsupported";
-// 			result = 1;
-// 			break;
-// 	}
-
-
-// 	pthread_mutex_unlock(&(colBuf->colLock));
-
-// 	return result;
-// }
+	return 0;
+}
