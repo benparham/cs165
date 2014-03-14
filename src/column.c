@@ -5,45 +5,9 @@
 #include <column.h>
 #include <global.h>
 #include <filesys.h>
-
-// ==================== Internal ======================
-
-
-// Unsorted
-typedef struct columnHeaderUnsorted {
-	char name[NAME_SIZE];
-	int sizeBytes;
-} columnHeaderUnsorted;
-
-void columnPrintHeaderUnsorted(columnHeaderUnsorted *header) {
-	printf("Name: %s\nSize Bytes: %d\n", header->name, header->sizeBytes);
-}
-
-int columnCreateHeaderUnsorted(columnHeaderUnsorted *header, char *columnName, error *err) {
-	// header->name = name;
-	strcpy(header->name, columnName);
-	header->sizeBytes = 0;
-	return 0;
-}
-
-void columnDestroyHeaderUnsorted(columnHeaderUnsorted *header) {
-	free(header);
-}
-
-int columnInsertUnsorted(void *columnHeader, FILE *fp, char *data, error *err) {
-
-	err->err = ERR_UNIMP;
-	err->message = "Insert unimplemented for sorted columns";
-	return 1;
-}
-
-// Sorted
-
-// Btree
-
-
-
-// ==================== External ======================
+#include <columnTypes/unsorted.h>
+#include <columnTypes/sorted.h>
+#include <columnTypes/btree.h>
 
 int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	int result = 1;
@@ -66,7 +30,13 @@ void columnPrintHeader(COL_STORAGE_TYPE storageType, void *header) {
 	printf("Header:\n");
 	switch (storageType) {
 		case COL_UNSORTED:
-			columnPrintHeaderUnsorted(header);
+			unsortedPrintHeader(header);
+			break;
+		case COL_SORTED:
+			sortedPrintHeader(header);
+			break;
+		case COL_BTREE:
+			btreePrintHeader(header);
 			break;
 		default:
 			printf("Unknown storage type for column\n");
@@ -88,11 +58,35 @@ int columnCreateNewHeader(COL_STORAGE_TYPE storageType, char *columnName, void *
 				err->message = "Unable to allocate new column header";
 				goto exit;
 			}
-			if (columnCreateHeaderUnsorted(*header, columnName, err)) {
+			if (unsortedCreateHeader(*header, columnName, err)) {
 				goto deallocateHeader;
 			}
 
 			*sizeBytes = sizeof(columnHeaderUnsorted);
+			break;
+		case COL_SORTED:
+			if ((*header = (columnHeaderSorted *) malloc(sizeof(columnHeaderSorted))) == NULL) {
+				err->err = ERR_MEM;
+				err->message = "Unable to allocate new column header";
+				goto exit;
+			}
+			if (sortedCreateHeader(*header, columnName, err)) {
+				goto deallocateHeader;
+			}
+
+			*sizeBytes = sizeof(columnHeaderSorted);
+			break;
+		case COL_BTREE:
+			if ((*header = (columnHeaderBtree *) malloc(sizeof(columnHeaderBtree))) == NULL) {
+				err->err = ERR_MEM;
+				err->message = "Unable to allocate new column header";
+				goto exit;
+			}
+			if (btreeCreateHeader(*header, columnName, err)) {
+				goto deallocateHeader;
+			}
+
+			*sizeBytes = sizeof(columnHeaderBtree);
 			break;
 		default:
 			err->err = ERR_INTERNAL;
@@ -103,7 +97,7 @@ int columnCreateNewHeader(COL_STORAGE_TYPE storageType, char *columnName, void *
 	return 0;
 
 deallocateHeader:
-	free(header);
+	free(*header);
 exit:
 	return 1;
 }
@@ -111,7 +105,13 @@ exit:
 void columnDestroyHeader(COL_STORAGE_TYPE storageType, void *header) {
 	switch (storageType) {
 		case COL_UNSORTED:
-			columnDestroyHeaderUnsorted(header);
+			unsortedDestroyHeader(header);
+			break;
+		case COL_SORTED:
+			sortedDestroyHeader(header);
+			break;
+		case COL_BTREE:
+			btreeDestroyHeader(header);
 			break;
 		default:
 			return;
@@ -158,7 +158,16 @@ int columnCreateFromDisk(tableInfo *tbl, char *columnName, column *col, error *e
 	switch (col->storageType) {
 		case COL_UNSORTED:
 			columnHeaderSizeBytes = sizeof(columnHeaderUnsorted);
-			col->insert = &columnInsertUnsorted;
+			col->insert = &unsortedInsert;
+			break;
+		case COL_SORTED:
+			columnHeaderSizeBytes = sizeof(columnHeaderSorted);
+			col->insert = &sortedInsert;
+			break;
+		case COL_BTREE:
+			columnHeaderSizeBytes = sizeof(columnHeaderBtree);
+			col->insert = &btreeInsert;
+			break;
 		default:
 			err->err = ERR_INTERNAL;
 			err->message = "Unsupported column storage type";
@@ -199,69 +208,3 @@ void columnDestroy(column *col) {
 int columnInsert(column *col, char *data, error *err) {
 	return col->insert(col->columnHeader, col->fp, data, err);
 }
-
-
-// void printColumnInfo(columnInfo *col) {
-// 	printf("\nColumn:\n");
-
-// 	printf("Name: %s\n", col->name);
-// 	printf("Size: %d\n", col->sizeBytes);
-
-// 	printf("Storage type: %d\n", col->storageType);
-// }
-
-// int columnBufCreate(columnBuf **colBuf) {
-// 	*colBuf = (columnBuf *) malloc(sizeof(columnBuf));
-// 	if (*colBuf == NULL) {
-// 		return 1;
-// 	}
-
-// 	return 0;
-// }
-
-// void columnBufDestroy(columnBuf *colBuf) {
-// 	if (colBuf != NULL) {
-// 		free(colBuf);
-// 	}
-// }
-
-// int getColumnFromDisk(tableInfo *tbl, char *columnName, char *mode, columnBuf *colBuf, error *err) {
-
-// 	if (colBuf == NULL) {
-// 		err->err = ERR_INTERNAL;
-// 		err->message = "Invalid column buffer";
-// 		goto exit;
-// 	}
-
-// 	// Check that file exists
-// 	char pathToColumn[BUFSIZE];
-// 	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
-
-// 	if (!fileExists(pathToColumn)) {
-// 		err->err = ERR_SRCH;
-// 		err->message = "Cannot fetch column. Does not exist";
-// 		goto exit;
-// 	}
-
-// 	// Open column file using 'mode'
-// 	colBuf->fp = fopen(pathToColumn, mode);
-// 	if (colBuf->fp == NULL) {
-// 		err->err = ERR_INTERNAL;
-// 		err->message = "Unable to open file for column";
-// 		goto exit;
-// 	}
-
-// 	// Read the column info from the beginning
-// 	if (fread(&(colBuf->colInfo), sizeof(columnInfo), 1, colBuf->fp) < 1) {
-// 		err->err = ERR_MLFM_DATA;
-// 		err->message = "Unable to read column info from file";
-// 		goto cleanupFile;
-// 	}
-
-// 	return 0;
-
-// cleanupFile:
-// 	fclose(colBuf->fp);
-// exit:
-// 	return 1;
-// }

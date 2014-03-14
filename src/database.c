@@ -206,7 +206,7 @@ int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 	if (fileExists(pathToColumn)) {
 		err->err = ERR_DUP;
 		err->message = "Cannot create column. Alread exists";
-		return 1;
+		goto exit;
 	}
 
 	// Open the new column info file for writing
@@ -214,31 +214,28 @@ int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 	if (fp == NULL) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to create file for column";
-		return 1;
+		goto exit;
 	}
 
 	// Write the storage type to the beginning of the file
 	if (fwrite(&storageType, sizeof(COL_STORAGE_TYPE), 1, fp) < 1) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to write storage type to column file";
-		fclose(fp);
-		return 1;
+		goto cleanupFile;
 	}
 
 	// Initialize new column header for writing
 	void *columnHeader;
 	int columnHeaderSizeBytes;
 	if (columnCreateNewHeader(storageType, columnName, &columnHeader, &columnHeaderSizeBytes, err)) {
-		fclose(fp);
-		return 1;
+		goto cleanupFile;
 	}
 
 	// Write column header to file
 	if (fwrite(columnHeader, columnHeaderSizeBytes, 1, fp) < 1) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to write column header to column file";
-		fclose(fp);
-		return 1;
+		goto cleanupFile;
 	}
 
 	// Cleanup
@@ -247,7 +244,13 @@ int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 	printf("Created new column '%s'\n", columnName);
 	columnPrintHeader(storageType, columnHeader);
 	printf("\n");
-	return 0;	
+	return 0;
+
+cleanupFile:
+	fclose(fp);
+	remove(pathToColumn);
+exit:
+	return 1;
 }
 
 int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
