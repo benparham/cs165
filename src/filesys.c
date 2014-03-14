@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "filesys.h"
-#include "error.h"
-#include "global.h"
+#include <filesys.h>
+#include <error.h>
+#include <global.h>
 
 
 int fileExists(char *pathToFile) {

@@ -4,10 +4,10 @@
 #include <string.h>
 
 
-#include "data.h"
-#include "error.h"
-#include "filesys.h"
-#include "table.h"
+#include <data.h>
+#include <error.h>
+#include <filesys.h>
+#include <table.h>
 
 columnCache *colCache;
 

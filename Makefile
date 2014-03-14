@@ -37,5 +37,7 @@ $(ODIR)/%.o: $(SDIR)/%.c $(INC)
 
 clean:
 	rm -f $(ODIR)/*.o
+	rm -f server
+	rm -f client
 
 ###############################

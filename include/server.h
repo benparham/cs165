@@ -3,8 +3,8 @@
 
 #include <stdlib.h>
 
-#include "error.h"
-#include "command.h"
+#include <error.h>
+#include <command.h>
 
 #define BACKLOG 				10
 #define HOST_LOOKUP_CMD 		"ifconfig | grep -P 'inet (?!127.0.0.1)'"
