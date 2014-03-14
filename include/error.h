@@ -20,7 +20,9 @@ typedef enum {
 
 	ERR_DUP,				// Duplicate, already exiists
 
-	ERR_MEM					// Memory err, usually indicates not enough memory free for operation
+	ERR_MEM,					// Memory err, usually indicates not enough memory free for operation
+
+	ERR_UNIMP				// Procedure is not yet implemented
 } ERR;
 
 typedef struct error {

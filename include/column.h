@@ -17,6 +17,11 @@ typedef enum {
 	COL_INT
 } COL_DATA_TYPE;
 
+// For use in determining the size to allocate for COL_DATA_TYPE data
+typedef union colDataType {
+	int int_type;
+} colDataType;
+
 typedef struct columnInfo {
 	char name[NAME_SIZE];
 	int sizeBytes;
