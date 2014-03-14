@@ -1,1 +1,6 @@
-.bin
+# Ignore all database's files
+db/*
+db
+
+.*
+*.bin
