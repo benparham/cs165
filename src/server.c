@@ -12,11 +12,11 @@
 #include <string.h>
 #include <assert.h>
 
-#include "server.h"
-#include "error.h"
-#include "command.h"
-#include "database.h"
-#include "data.h"
+#include <server.h>
+#include <error.h>
+#include <command.h>
+#include <database.h>
+#include <data.h>
 
 
 int main(int argc, char *argv[]) {

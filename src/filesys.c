@@ -59,4 +59,6 @@ int removeDir(char *pathToDir, error *err) {
 		err->message = "Unable to remove directory";
 		return 1;
 	}
+
+	return 0;
 }

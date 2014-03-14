@@ -224,7 +224,7 @@ cleanupFile:
 cleanupCache:
 	colCache->nameCache.names[idx] = NULL;
 	colBufDestroy(colCache->bufCache[idx]);
-exit:
+// exit:
 	return NULL;
 }
 

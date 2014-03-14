@@ -1,7 +1,41 @@
+# Compiler
+CC = gcc
+
+# Source
+SDIR = src
+# Include
+IDIR = include
+# Object
+ODIR = $(SDIR)/obj
+
+# Flags
+CFLAGS = -g -Wall -std=c99 -I $(IDIR)
+
+# Header files
+INC = $(wildcard $(IDIR)/*.h)
+
+# Server dependencies
+_SERV_OBJ = server.o database.o command.o filesys.o error.o table.o column.o data.o
+SERV_OBJ = $(patsubst %, $(ODIR)/%, $(_SERV_OBJ))
+
+# Client dependencies
+_CLIENT_OBJ = client.o
+CLIENT_OBJ = $(patsubst %, $(ODIR)/%, $(_CLIENT_OBJ))
+
+# Rules #######################
+
 all: server client
 
-client:client.c
-	gcc client.c -o client -std=c99
+server: $(SERV_OBJ)
+	$(CC) $(CFLAGS) -o $@ $^ 
 
-server:server.c database.c command.c filesys.c error.c table.c column.c data.c
-	gcc server.c database.c command.c filesys.c error.c table.c column.c data.c -o server -std=c99
+client: $(CLIENT_OBJ)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(ODIR)/%.o: $(SDIR)/%.c $(INC)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+clean:
+	rm -f $(ODIR)/*.o
+
+###############################

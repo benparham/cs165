@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
 		// }
 	}
 	
-	cleanup_socket:
+	// Cleanup socket
 	close(socketFD);
 	printf("Closed socket %d\n", socketFD);
 	
