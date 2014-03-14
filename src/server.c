@@ -16,8 +16,6 @@
 #include <error.h>
 #include <command.h>
 #include <database.h>
-#include <data.h>
-
 
 int main(int argc, char *argv[]) {
 	printf("Initiating Database Server...\n\n");
@@ -137,7 +135,6 @@ void *listenToClient(void *tempArgs) {
 	command *cmd = createCommand();
 
 	tableInfo *currentTable = malloc(sizeof(tableInfo));	// Info for current table in use
-	// dbData tableData = NULL;										// Pointer to table data
 
 	// Begin command loop
 	int done = 0;
@@ -167,15 +164,15 @@ void *listenToClient(void *tempArgs) {
 int bootstrap() {
 
 	// Add other bootstraps to this with ||
-	if (dataBootstrap()) {
-		return 1;
-	}
+	// if (dataBootstrap()) {
+	// 	return 1;
+	// }
 
 	return 0;
 }
 
 void cleanup() {
-	dataCleanup();
+	// dataCleanup();
 }
 
 void terminateConnection(int socketFD) {
@@ -187,6 +184,7 @@ void terminateConnection(int socketFD) {
 int receiveCommand(int socketFD, command *cmd, error *err) {
 	if (cmd->args != NULL) {
 		free(cmd->args);
+		cmd->args = NULL;
 	}
 
 	char buf[BUFSIZE];

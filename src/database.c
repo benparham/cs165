@@ -10,13 +10,13 @@
 #include <string.h>
 #include <fcntl.h>
 
-#include "database.h"
-#include "error.h"
-#include "command.h"
-#include "filesys.h"
-#include "table.h"
-#include "column.h"
-#include "data.h"
+#include <database.h>
+#include <error.h>
+#include <command.h>
+#include <filesys.h>
+#include <table.h>
+#include <column.h>
+#include <insert.h>
 
 int cmdNeedsTable(command *cmd) {
 
@@ -227,7 +227,7 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 	strcpy(tempCol.name, columnName);
 
 	// Write table info to beginning of file
-	if (fwrite(&tempCol, sizeof(columnInfo), 1, fp) <= 0) {
+	if (fwrite(&tempCol, sizeof(columnInfo), 1, fp) < 1) {
 		err->err = ERR_INTERNAL;
 		err->message = "Unable to write to column file";
 		fclose(fp);
@@ -239,91 +239,43 @@ int createColumn(tableInfo *tbl, createColArgs *args, error * err) {
 
 	printf("Created new column '%s'\n", columnName);
 	printColumnInfo(&tempCol);
+	printf("\n");
 	return 0;	
 }
 
-int sorted_insert(columnBuf *colBuf, error *err) {
+// int sorted_insert(columnBuf *colBuf, error *err) {
 
 
-	return 0;
-}
-
-int insert(tableInfo *tbl, insertArgs *args, error *err) {
-	char *columnName = args->columnName;
-	printf("Fetching column '%s'...\n", columnName);
-
-	columnBuf *colBuf = fetchCol(tbl, columnName, err);
-	if (colBuf == NULL) {
-		printf("Col Buf was null\n");
-		return 1;
-	}
-
-	int result = 0;
-
-	printColumnInfo(&(colBuf->colInfo));
-
-	switch (colBuf->colInfo.storageType) {
-		case COL_UNSORTED:
-			result = sorted_insert(colBuf, err);
-			break;
-		default:
-			err->err = ERR_INTERNAL;
-			err->message = "Column sort type unsupported";
-			result = 1;
-			break;
-	}
-
-
-	pthread_mutex_unlock(&(colBuf->colLock));
-
-	return result;
-}
-
-// int old_useTable(tableInfo *tbl, dbData *tableData, char *tableName, error *err) {
-
-// 	printf("Size of table info: %d\n", (int) sizeof(tableInfo));
-
-// 	char pathToTable[BUFSIZE];
-// 	getPathToTable(tableName, pathToTable);
-
-// 	struct stat st;
-
-// 	if (stat(pathToTable, &st) != 0) {
-// 		err->err = ERR_SRCH;
-// 		err->message = "Cannot use table. Does not exist";
-// 		return 1;
-// 	}
-
-// 	// Open the table file
-// 	FILE *fp = fopen(pathToTable, "rb+");
-// 	if (fp == NULL) {
-// 		err->err = ERR_INTERNAL;
-// 		err->message = "Unable to open file";
-// 		return 1;
-// 	}
-
-// 	// Read the table info from the beginning
-// 	if (fread(tbl, sizeof(tableInfo), 1, fp) < 1) {
-// 		fclose(fp);
-
-// 		err->err = ERR_MLFM_DATA;
-// 		err->message = "Unable to read table info from table";
-// 		return 1;
-// 	}
-
-// 	int bytesToRead = st.st_size - sizeof(tableInfo);
-// 	printf("About to read %d bytes into memory from file %s\n", bytesToRead, tableName);
-
-// 	// Read file into memory
-// 	*tableData = (dbData) malloc(st.st_size - sizeof(tableInfo));
-// 	if (fread(*tableData, st.st_size - sizeof(tableInfo), 1, fp) < 1) {
-// 		err->err = ERR_MLFM_DATA;
-// 		err->message = "Unable to read data from table";
-// 		free(tableData);
-// 		*tableData = NULL;
-// 		return 1;
-// 	}
-
-// 	fclose(fp);
 // 	return 0;
+// }
+
+// int insert(tableInfo *tbl, insertArgs *args, error *err) {
+// 	char *columnName = args->columnName;
+// 	printf("Fetching column '%s'...\n", columnName);
+
+// 	columnBuf *colBuf = fetchCol(tbl, columnName, err);
+// 	if (colBuf == NULL) {
+// 		printf("Col Buf was null\n");
+// 		return 1;
+// 	}
+
+// 	int result = 0;
+
+// 	printColumnInfo(&(colBuf->colInfo));
+
+// 	switch (colBuf->colInfo.storageType) {
+// 		case COL_UNSORTED:
+// 			result = sorted_insert(colBuf, err);
+// 			break;
+// 		default:
+// 			err->err = ERR_INTERNAL;
+// 			err->message = "Column sort type unsupported";
+// 			result = 1;
+// 			break;
+// 	}
+
+
+// 	pthread_mutex_unlock(&(colBuf->colLock));
+
+// 	return result;
 // }

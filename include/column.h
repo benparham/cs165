@@ -1,7 +1,11 @@
 #ifndef _COLUMN_H_
 #define _COLUMN_H_
 
-#include "global.h"
+#include <stdio.h>
+
+#include <global.h>
+#include <table.h>
+#include <error.h>
 
 typedef enum {
 	COL_UNSORTED,
@@ -21,9 +25,20 @@ typedef struct columnInfo {
 	COL_DATA_TYPE dataType;
 } columnInfo;
 
+typedef struct columnBuf {
+	columnInfo colInfo;
+	FILE *fp;
+	// unsigned char *data;
+	// pthread_mutex_t colLock;
+} columnBuf;
+
 int strToColStorage(char *str, COL_STORAGE_TYPE *type);
 int getColDataSize(COL_DATA_TYPE);
 
 void printColumnInfo(columnInfo *col);
+
+int columnBufCreate(columnBuf **colBuf);
+void columnBufDestroy(columnBuf *colBuf);
+int getColumnFromDisk(tableInfo *tbl, char *columnName, char *mode, columnBuf *colBuf, error *err);
 
 #endif

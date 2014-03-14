@@ -1,3 +1,7 @@
+/*
+ * For now all of this is DEPRECATED
+ */
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
