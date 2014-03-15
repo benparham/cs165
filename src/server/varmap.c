@@ -14,7 +14,7 @@
 #define VAR_MAP_SIZE	16
 
 varMapNode *gVarMapHead;
-varMapNode *gVarMapTail;
+// varMapNode *gVarMapTail;
 int nodeCount;
 
 static varMapNode* varMapNodeCreate(char *varName, struct bitmap *bmp) {
@@ -64,32 +64,61 @@ static void varMapPush(varMapNode *slot, varMapNode *newNode) {
 	varMapPush(slot->next, newNode);
 }
 
+static varMapNode *varMapFind(varMapNode *node, char *varName) {
+	if (node == NULL) {
+		return NULL;
+	}
+
+	if (strcmp(node->varName, varName) == 0) {
+		return node;
+	} else {
+		return varMapFind(node->next, varName);
+	}
+}
+
 int varMapBootstrap() {
 	gVarMapHead = NULL;
-	gVarMapTail = NULL;
+	// gVarMapTail = NULL;
 	nodeCount = 0;
 
-
-	int nbits = 8;
-	printf("Creating bitmap\n");
-	struct bitmap *bmp = bitmapCreate(nbits);
-	printf("Bitmap size: %d\n", bitmapSize(bmp));
-	printf("First bit marked: %s\n", bitmapIsSet(bmp, 0) ? "true" : "false");
-	printf("Marking first bit\n");
-	bitmapMark(bmp, 0);
-	printf("First bit marked: %s\n", bitmapIsSet(bmp, 0) ? "true" : "false");
-	printf("Unmarking first bit\n");
-	bitmapUnmark(bmp, 0);
-	printf("First bit marked: %s\n", bitmapIsSet(bmp, 0) ? "true" : "false");
+	// TODO: Delete this (old test code)
+	// int nbits = 8;
+	// printf("Creating bitmap\n");
+	// struct bitmap *bmp = bitmapCreate(nbits);
+	// printf("Bitmap size: %d\n", bitmapSize(bmp));
+	// printf("First bit marked: %s\n", bitmapIsSet(bmp, 0) ? "true" : "false");
+	// printf("Marking first bit\n");
+	// bitmapMark(bmp, 0);
+	// printf("First bit marked: %s\n", bitmapIsSet(bmp, 0) ? "true" : "false");
+	// printf("Unmarking first bit\n");
+	// bitmapUnmark(bmp, 0);
+	// printf("First bit marked: %s\n", bitmapIsSet(bmp, 0) ? "true" : "false");
 
 	return 0;
 }
 
 void varMapCleanup() {
-	// TODO: Maybe don't bother since it's only called on shutdown
+	while (nodeCount > 0) {
+		varMapPop();
+	}
 }
 
-int addVar(char *varName, struct bitmap *bmp, error *err) {
+void varMapNodePrint(varMapNode *node) {
+	printf("Variable: %s\n", node->varName);
+}
+
+static void _varMapPrint(varMapNode *node) {
+	if (node != NULL) {
+		varMapNodePrint(node);
+		_varMapPrint(node->next);
+	}
+}
+
+void varMapPrint() {
+	_varMapPrint(gVarMapHead);
+}
+
+int varMapAddVar(char *varName, struct bitmap *bmp, error *err) {
 
 	varMapNode *newNode = varMapNodeCreate(varName, bmp);
 	if (newNode == NULL) {
@@ -102,7 +131,14 @@ int addVar(char *varName, struct bitmap *bmp, error *err) {
 
 	return 0;
 }
-int getVar(char *varName, struct bitmap **bmp, error *err) {
+int varMapGetVar(char *varName, struct bitmap **bmp) {
+
+	varMapNode *node = varMapFind(gVarMapHead, varName);
+	if (node == NULL) {
+		return 1;
+	}
+
+	*bmp = node->bmp;
 
 	return 0;
 }

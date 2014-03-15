@@ -11,6 +11,7 @@ struct bitmap {
 	WORD_TYPE *map;
 } bitmap;
 
+// Allocates a bitmap based on nbits desired and returns it
 struct bitmap* bitmapCreate(unsigned int nbits) {
 	struct bitmap *bmp;
 	unsigned int words;

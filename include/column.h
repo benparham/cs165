@@ -6,14 +6,8 @@
 #include <table.h>
 #include <error.h>
 #include <columnTypes/common.h>
+#include <bitmap.h>
 
-// typedef enum {
-// 	COL_UNSORTED,
-// 	COL_SORTED,
-// 	COL_BTREE
-// } COL_STORAGE_TYPE;
-
-// int strToColStorage(char *str, COL_STORAGE_TYPE *type);
 
 // ================ Abstract Column Interface ==================
 typedef struct column {
@@ -28,6 +22,10 @@ typedef struct column {
 
 	// Functions
 	int (* insert) (void *columnHeader, FILE *fp, int data, error *err);
+	int (* selectAll) (void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
+	int (* selectValue) (void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
+	int (* selectRange) (void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
+	int (* fetch) (void *columnHeader, FILE *fp, struct bitmap *bmp, error *err);
 
 } column;
 
@@ -46,12 +44,9 @@ void columnDestroy(column *col);
 
 // Abstract column functions
 int columnInsert(column *col, int data, error *err);
-
-
-// void printColumnInfo(columnInfo *col);
-
-// int columnBufCreate(columnBuf **colBuf);
-// void columnBufDestroy(columnBuf *colBuf);
-// int getColumnFromDisk(tableInfo *tbl, char *columnName, char *mode, columnBuf *colBuf, error *err);
+int columnSelectAll(column *col, struct bitmap **bmp, error *err);
+int columnSelectValue(column *col, int value, struct bitmap **bmp, error *err);
+int columnSelectRange(column *col, int low, int high, struct bitmap **bmp, error *err);
+int columnFetch(column *col, struct bitmap *bmp, error *err);
 
 #endif

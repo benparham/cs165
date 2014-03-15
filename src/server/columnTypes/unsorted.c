@@ -3,6 +3,7 @@
 
 #include <columnTypes/unsorted.h>
 #include <error.h>
+#include <bitmap.h>
 
 void unsortedPrintHeader(columnHeaderUnsorted *header) {
 	printf("Name: %s\nSize Bytes: %d\n", header->name, header->sizeBytes);
@@ -40,4 +41,28 @@ int unsortedInsert(void *columnHeader, FILE *fp, int data, error *err) {
 	header->sizeBytes += sizeof(int);
 
 	return 0;
+}
+
+int unsortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err) {
+	err->err = ERR_UNIMP;
+	err->message = "Select all unimplemented for unsorted columns";
+	return 1;
+}
+
+int unsortedSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err) {
+	err->err = ERR_UNIMP;
+	err->message = "Select value unimplemented for unsorted columns";
+	return 1;
+}
+
+int unsortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err) {
+	err->err = ERR_UNIMP;
+	err->message = "Select range unimplemented for unsorted columns";
+	return 1;
+}
+
+int unsortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err) {
+	err->err = ERR_UNIMP;
+	err->message = "Fetch unimplemented for unsorted columns";
+	return 1;
 }

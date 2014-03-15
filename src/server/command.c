@@ -143,13 +143,14 @@ int setArgsSelectArgs(command *cmd, char *args, char *varName) {
 
 	cmd->args = selArgs;
 
-	printf("Select arguments:\n");
-	printf("Column name: %s\n", ((selectArgs *) cmd->args)->columnName);
-	printf("Variable name: %s\n", ((selectArgs *) cmd->args)->varName);
-	printf("Has condition: %s\n", ((selectArgs *) cmd->args)->hasCondition ? "true" : "false");
-	printf("Is range: %s\n", ((selectArgs *) cmd->args)->isRange ? "true" : "false");
-	printf("Low: %d\n", ((selectArgs *) cmd->args)->low);
-	printf("High: %d\n", ((selectArgs *) cmd->args)->high);
+	// TODO: Delete this (testing stuff)
+	// printf("Select arguments:\n");
+	// printf("Column name: %s\n", ((selectArgs *) cmd->args)->columnName);
+	// printf("Variable name: %s\n", ((selectArgs *) cmd->args)->varName);
+	// printf("Has condition: %s\n", ((selectArgs *) cmd->args)->hasCondition ? "true" : "false");
+	// printf("Is range: %s\n", ((selectArgs *) cmd->args)->isRange ? "true" : "false");
+	// printf("Low: %d\n", ((selectArgs *) cmd->args)->low);
+	// printf("High: %d\n", ((selectArgs *) cmd->args)->high);
 
 	return 0;
 }

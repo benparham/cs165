@@ -9,23 +9,8 @@
 #include <columnTypes/unsorted.h>
 #include <columnTypes/sorted.h>
 #include <columnTypes/btree.h>
+#include <bitmap.h>
 
-// int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
-// 	int result = 1;
-
-// 	if (strcmp(str, "unsorted") == 0) {
-// 		*type = COL_UNSORTED;
-// 		result = 0;
-// 	} else if (strcmp(str, "sorted") == 0) {
-// 		*type = COL_SORTED;
-// 		result = 0;
-// 	} else if (strcmp(str, "btree") == 0) {
-// 		*type = COL_BTREE;
-// 		result = 0;
-// 	}
-
-// 	return result;
-// }
 
 int columnHeaderByteSize(COL_STORAGE_TYPE storageType) {
 	switch (storageType) {
@@ -173,14 +158,26 @@ int columnCreateFromDisk(tableInfo *tbl, char *columnName, column *col, error *e
 		case COL_UNSORTED:
 			columnHeaderSizeBytes = sizeof(columnHeaderUnsorted);
 			col->insert = &unsortedInsert;
+			col->selectAll = &unsortedSelectAll;
+			col->selectValue = &unsortedSelectValue;
+			col->selectRange = &unsortedSelectRange;
+			col->fetch = &unsortedFetch;
 			break;
 		case COL_SORTED:
 			columnHeaderSizeBytes = sizeof(columnHeaderSorted);
 			col->insert = &sortedInsert;
+			col->selectAll = &sortedSelectAll;
+			col->selectValue = &sortedSelectValue;
+			col->selectRange = &sortedSelectRange;
+			col->fetch = &sortedFetch;
 			break;
 		case COL_BTREE:
 			columnHeaderSizeBytes = sizeof(columnHeaderBtree);
 			col->insert = &btreeInsert;
+			col->selectAll = &btreeSelectAll;
+			col->selectValue = &btreeSelectValue;
+			col->selectRange = &btreeSelectRange;
+			col->fetch = &btreeFetch;
 			break;
 		default:
 			err->err = ERR_INTERNAL;
@@ -246,4 +243,18 @@ int columnInsert(column *col, int data, error *err) {
 	}
 
 	return 0;
+}
+
+int columnSelectAll(column *col, struct bitmap **bmp, error *err) {
+	return col->selectAll(col->columnHeader, col->fp, bmp, err);
+}
+
+int columnSelectValue(column *col, int value, struct bitmap **bmp, error *err) {
+	return col->selectValue(col->columnHeader, col->fp, value, bmp, err);
+}
+int columnSelectRange(column *col, int low, int high, struct bitmap **bmp, error *err) {
+	return col->selectRange(col->columnHeader, col->fp, low, high, bmp, err);
+}
+int columnFetch(column *col, struct bitmap *bmp, error *err) {
+	return col->fetch(col->columnHeader, col->fp, bmp, err);
 }
