@@ -16,6 +16,7 @@
 #include <error.h>
 #include <command.h>
 #include <database.h>
+#include <varmap.h>
 
 int main(int argc, char *argv[]) {
 	printf("Initiating Database Server...\n\n");
@@ -164,15 +165,15 @@ void *listenToClient(void *tempArgs) {
 int bootstrap() {
 
 	// Add other bootstraps to this with ||
-	// if (dataBootstrap()) {
-	// 	return 1;
-	// }
+	if (varMapBootstrap()) {
+		return 1;
+	}
 
 	return 0;
 }
 
 void cleanup() {
-	// dataCleanup();
+	varMapCleanup();
 }
 
 void terminateConnection(int socketFD) {

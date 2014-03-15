@@ -4,7 +4,7 @@
 #include <bitmap.h>
 
 #define WORD_TYPE		unsigned char
-#define BITS_PER_WORD	4
+#define BITS_PER_WORD	8
 
 struct bitmap {
 	unsigned int nbits;
@@ -13,7 +13,7 @@ struct bitmap {
 
 struct bitmap* bitmapCreate(unsigned int nbits) {
 	struct bitmap *bmp;
-	WORD_TYPE words;
+	unsigned int words;
 
 	// Get number of words needed to store n bits
 	words = nbits / BITS_PER_WORD;
@@ -91,7 +91,7 @@ int bitmapUnmark(struct bitmap *bmp, int idx) {
 
 	bitmapTranslate(idx, &wordIdx, &mask);
 
-	bmp->map[wordIdx] &= -mask;
+	bmp->map[wordIdx] &= ~mask;
 
 	return 0;
 
