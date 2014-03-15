@@ -1,6 +1,8 @@
-# Ignore all database's files
 db/*
 db
+
+build/*
+build
 
 .*
 *.o
