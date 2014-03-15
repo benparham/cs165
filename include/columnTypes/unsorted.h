@@ -6,21 +6,26 @@
 #include <global.h>
 #include <error.h>
 #include <bitmap.h>
+#include <columnTypes/common.h>
+
+extern columnFunctions unsortedColumnFunctions;
 
 typedef struct columnHeaderUnsorted {
 	char name[NAME_SIZE];
 	int sizeBytes;
 } columnHeaderUnsorted;
 
-void unsortedPrintHeader(columnHeaderUnsorted *header);
+int unsortedCreateHeader(void *_header, char *columnName, error *err);
+void unsortedDestroyHeader(void *_header);
+int unsortedReadInHeader(void *_header, FILE *fp, error *err);
+int unsortedWriteOutHeader(void *_header, FILE *fp, error *err);
+void unsortedPrintHeader(void *_header);
+// void unsortedSerializeHeader(columnHeaderUnsorted *header, void **serial, int *serialBytes);
 
-int unsortedCreateHeader(columnHeaderUnsorted *header, char *columnName, error *err);
-void unsortedDestroyHeader(columnHeaderUnsorted *header);
-
-int unsortedInsert(void *columnHeader, FILE *fp, int data, error *err);
-int unsortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
-int unsortedSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
-int unsortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-int unsortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err);
+int unsortedInsert(void *_header, FILE *fp, int data, error *err);
+int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err);
+int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp, error *err);
+int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
+int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, error *err);
 
 #endif

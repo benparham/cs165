@@ -8,8 +8,8 @@
 #include <columnTypes/common.h>
 #include <bitmap.h>
 
-
 // ================ Abstract Column Interface ==================
+
 typedef struct column {
 	FILE *fp;							// Pointer to column's file
 	COL_STORAGE_TYPE storageType;		// Storage type of column
@@ -20,29 +20,22 @@ typedef struct column {
 	 */
 	void *columnHeader;
 
-	// Functions
-	int (* insert) (void *columnHeader, FILE *fp, int data, error *err);
-	int (* selectAll) (void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
-	int (* selectValue) (void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
-	int (* selectRange) (void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-	int (* fetch) (void *columnHeader, FILE *fp, struct bitmap *bmp, error *err);
+	/*
+	 * Various functions for interacting with a column. See columnTypes/common.h
+	 * for details.
+	 */
+	columnFunctions *funcs;
 
 } column;
 
-int columnHeaderByteSize(COL_STORAGE_TYPE storageType);
-
-void columnPrintHeader(COL_STORAGE_TYPE storageType, void *header);
-void columnPrint(column *col);
-
-// Header management
-int columnCreateNewHeader(COL_STORAGE_TYPE storageType, char *columnName, void **header, int *sizeBytes, error *err);
-void columnDestroyHeader(COL_STORAGE_TYPE storageType, void *header);
-
-// Column management
-int columnCreateFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);
+int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, column *col, error *err);
 void columnDestroy(column *col);
 
-// Abstract column functions
+int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);
+int columnWriteToDisk(tableInfo *tbl, column *col, error *err);
+
+void columnPrint(column *col);
+
 int columnInsert(column *col, int data, error *err);
 int columnSelectAll(column *col, struct bitmap **bmp, error *err);
 int columnSelectValue(column *col, int value, struct bitmap **bmp, error *err);

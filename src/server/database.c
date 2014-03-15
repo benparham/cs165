@@ -136,157 +136,194 @@ static int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
 }
 
 static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
+	
 	char *columnName = args->columnName;
 	COL_STORAGE_TYPE storageType = args->storageType;
 
-	char pathToColumn[BUFSIZE];
-	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
+	column *col;
+	//  = (column *) malloc(sizeof(column));
+	// if (col == NULL) {
+	// 	err->err = ERR_MEM;
+	// 	err->message = "Unable to allocate a new column buffer";
+	// 	goto exit;
+	// }
 
-	printf("Attempting to create column file %s\n", pathToColumn);
-
-	if (fileExists(pathToColumn)) {
-		err->err = ERR_DUP;
-		err->message = "Cannot create column. Alread exists";
+	if (columnCreate(columnName, storageType, col, err)) {
 		goto exit;
 	}
 
-	// Open the new column info file for writing
-	FILE *fp = fopen(pathToColumn, "wb");
-	if (fp == NULL) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to create file for column";
-		goto exit;
+	printf("Created new column:\n");
+	columnPrint(col);
+
+	if (columnWriteToDisk(tbl, col, err)) {
+		goto cleanupColumn;
 	}
 
-	// Write the storage type to the beginning of the file
-	if (fwrite(&storageType, sizeof(COL_STORAGE_TYPE), 1, fp) < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to write storage type to column file";
-		goto cleanupFile;
-	}
+	printf("Wrote new column to disk\n");
 
-	// Initialize new column header for writing
-	void *columnHeader;
-	int columnHeaderSizeBytes;
-	if (columnCreateNewHeader(storageType, columnName, &columnHeader, &columnHeaderSizeBytes, err)) {
-		goto cleanupFile;
-	}
+	columnDestroy(col);
 
-	// Write column header to file
-	if (fwrite(columnHeader, columnHeaderSizeBytes, 1, fp) < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to write column header to column file";
-		goto cleanupFile;
-	}
-
-	// Cleanup
-	fclose(fp);
-
-	printf("Created new column '%s'\n", columnName);
-	columnPrintHeader(storageType, columnHeader);
-	printf("\n");
 	return 0;
 
-cleanupFile:
-	fclose(fp);
-	remove(pathToColumn);
+cleanupColumn:
+	columnDestroy(col);
 exit:
 	return 1;
+// 	char *columnName = args->columnName;
+// 	COL_STORAGE_TYPE storageType = args->storageType;
+
+// 	char pathToColumn[BUFSIZE];
+// 	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
+
+// 	printf("Attempting to create column file %s\n", pathToColumn);
+
+// 	if (fileExists(pathToColumn)) {
+// 		err->err = ERR_DUP;
+// 		err->message = "Cannot create column. Alread exists";
+// 		goto exit;
+// 	}
+
+// 	// Open the new column info file for writing
+// 	FILE *fp = fopen(pathToColumn, "wb");
+// 	if (fp == NULL) {
+// 		err->err = ERR_INTERNAL;
+// 		err->message = "Unable to create file for column";
+// 		goto exit;
+// 	}
+
+// 	// Write the storage type to the beginning of the file
+// 	if (fwrite(&storageType, sizeof(COL_STORAGE_TYPE), 1, fp) < 1) {
+// 		err->err = ERR_INTERNAL;
+// 		err->message = "Unable to write storage type to column file";
+// 		goto cleanupFile;
+// 	}
+
+// 	// Initialize new column header for writing
+// 	void *columnHeader;
+// 	int columnHeaderSizeBytes;
+// 	if (columnCreateNewHeader(storageType, columnName, &columnHeader, &columnHeaderSizeBytes, err)) {
+// 		goto cleanupFile;
+// 	}
+
+// 	// Write column header to file
+// 	if (fwrite(columnHeader, columnHeaderSizeBytes, 1, fp) < 1) {
+// 		err->err = ERR_INTERNAL;
+// 		err->message = "Unable to write column header to column file";
+// 		goto cleanupFile;
+// 	}
+
+// 	// Cleanup
+// 	fclose(fp);
+
+// 	printf("Created new column '%s'\n", columnName);
+// 	columnPrintHeader(storageType, columnHeader);
+// 	printf("\n");
+// 	return 0;
+
+// cleanupFile:
+// 	fclose(fp);
+// 	remove(pathToColumn);
+// exit:
+// 	return 1;
 }
 
 static int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
-
-	char *columnName = args->columnName;
-	printf("Inserting into column '%s'...\n", columnName);
-
-	column *col = (column *) malloc(sizeof(column));
-	if (col == NULL) {
-		err->err = ERR_MEM;
-		err->message = "Could not allocate a column buffer";
-		goto exit;
-	}
-
-	if (columnCreateFromDisk(tbl, columnName, col, err)) {
-		goto cleanupColumn;
-	}
-
-	printf("Got column '%s' from disk:\n", columnName);
-	columnPrint(col);
-
-	if (columnInsert(col, args->value, err)) {
-		goto cleanupColumn;
-	}
-
-	printf("Inserted into column '%s'\n", columnName);
-	free(col);
-
-	return 0;
-
-cleanupColumn:
-	free(col);
-exit:
+	err->err = ERR_UNIMP;
+	err->message = "Not yet implemented";
 	return 1;
+// 	char *columnName = args->columnName;
+// 	printf("Inserting into column '%s'...\n", columnName);
+
+// 	column *col = (column *) malloc(sizeof(column));
+// 	if (col == NULL) {
+// 		err->err = ERR_MEM;
+// 		err->message = "Could not allocate a column buffer";
+// 		goto exit;
+// 	}
+
+// 	if (columnCreateFromDisk(tbl, columnName, col, err)) {
+// 		goto cleanupColumn;
+// 	}
+
+// 	printf("Got column '%s' from disk:\n", columnName);
+// 	columnPrint(col);
+
+// 	if (columnInsert(col, args->value, err)) {
+// 		goto cleanupColumn;
+// 	}
+
+// 	printf("Inserted into column '%s'\n", columnName);
+// 	free(col);
+
+// 	return 0;
+
+// cleanupColumn:
+// 	free(col);
+// exit:
+// 	return 1;
 }
 
 static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
-
-	char *columnName = args->columnName;
-	printf("Selecting from column '%s'...\n", columnName);
-
-	char *varName = args->varName;
-	if (varName == NULL || strcmp(varName, "") == 0) {
-		err->err = ERR_INTERNAL;
-		err->message = "Invalid variable name";
-		goto exit;
-	}
-
-	// Retrieve the column from disk
-	column *col = (column *) malloc(sizeof(column));
-	if (col == NULL) {
-		err->err = ERR_MEM;
-		err->message = "Could not allocate a column buffer";
-		goto exit;
-	}
-
-	if (columnCreateFromDisk(tbl, columnName, col, err)) {
-		goto cleanupColumn;
-	}
-
-	printf("Got column '%s' from disk:\n", columnName);
-	columnPrint(col);
-
-	// Get result bitmap
-	struct bitmap *resultBmp;
-	if (args->hasCondition) {
-		if (args->isRange) {
-			if (columnSelectRange(col, args->low, args->high, &resultBmp, err)) {
-				goto cleanupColumn;
-			}
-		} else {
-			if (columnSelectValue(col, args->low, &resultBmp, err)) {
-				goto cleanupColumn;
-			}
-		}
-	} else {
-		if (columnSelectAll(col, &resultBmp, err)) {
-			goto cleanupColumn;
-		}
-	}
-
-	// Add variable-bitmap pair to varmap
-	if (varMapAddVar(varName, resultBmp, err)) {
-		goto cleanupBitmap;
-	}
-
-	free(col);
-	return 0;
-
-cleanupBitmap:
-	bitmapDestroy(resultBmp);
-cleanupColumn:
-	free(col);
-exit:
+	err->err = ERR_UNIMP;
+	err->message = "Not yet implemented";
 	return 1;
+// 	char *columnName = args->columnName;
+// 	printf("Selecting from column '%s'...\n", columnName);
+
+// 	char *varName = args->varName;
+// 	if (varName == NULL || strcmp(varName, "") == 0) {
+// 		err->err = ERR_INTERNAL;
+// 		err->message = "Invalid variable name";
+// 		goto exit;
+// 	}
+
+// 	// Retrieve the column from disk
+// 	column *col = (column *) malloc(sizeof(column));
+// 	if (col == NULL) {
+// 		err->err = ERR_MEM;
+// 		err->message = "Could not allocate a column buffer";
+// 		goto exit;
+// 	}
+
+// 	if (columnCreateFromDisk(tbl, columnName, col, err)) {
+// 		goto cleanupColumn;
+// 	}
+
+// 	printf("Got column '%s' from disk:\n", columnName);
+// 	columnPrint(col);
+
+// 	// Get result bitmap
+// 	struct bitmap *resultBmp;
+// 	if (args->hasCondition) {
+// 		if (args->isRange) {
+// 			if (columnSelectRange(col, args->low, args->high, &resultBmp, err)) {
+// 				goto cleanupColumn;
+// 			}
+// 		} else {
+// 			if (columnSelectValue(col, args->low, &resultBmp, err)) {
+// 				goto cleanupColumn;
+// 			}
+// 		}
+// 	} else {
+// 		if (columnSelectAll(col, &resultBmp, err)) {
+// 			goto cleanupColumn;
+// 		}
+// 	}
+
+// 	// Add variable-bitmap pair to varmap
+// 	if (varMapAddVar(varName, resultBmp, err)) {
+// 		goto cleanupBitmap;
+// 	}
+
+// 	free(col);
+// 	return 0;
+
+// cleanupBitmap:
+// 	bitmapDestroy(resultBmp);
+// cleanupColumn:
+// 	free(col);
+// exit:
+// 	return 1;
 }
 
 static int cmdNeedsTable(command *cmd) {

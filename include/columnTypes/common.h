@@ -1,6 +1,11 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
+#include <stdio.h>
+
+#include <error.h>
+#include <bitmap.h>
+
 typedef enum {
 	COL_UNSORTED,
 	COL_SORTED,
@@ -8,5 +13,23 @@ typedef enum {
 } COL_STORAGE_TYPE;
 
 int strToColStorage(char *str, COL_STORAGE_TYPE *type);
+
+typedef struct columnFunctions {
+
+	// Header Functions
+	int (* createHeader) (void *columnHeader, char *columnName, error *err);
+	void (* destoryHeader) (void *columnHeader);
+	int (* readInHeader) (void *columnHeader, FILE *fp, error *err);
+	int (* writeOutHeader) (void *columnHeader, FILE *fp, error *err);
+	void (* printHeader) (void *columnHeader);
+
+	// Data functions
+	int (* insert) (void *columnHeader, FILE *fp, int data, error *err);
+	int (* selectAll) (void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
+	int (* selectValue) (void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
+	int (* selectRange) (void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
+	int (* fetch) (void *columnHeader, FILE *fp, struct bitmap *bmp, error *err);
+
+} columnFunctions;
 
 #endif

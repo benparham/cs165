@@ -5,23 +5,61 @@
 #include <error.h>
 #include <bitmap.h>
 
-void unsortedPrintHeader(columnHeaderUnsorted *header) {
-	printf("Name: %s\nSize Bytes: %d\n", header->name, header->sizeBytes);
-}
+columnFunctions unsortedColumnFunctions = {
+	// Header Functions
+	&unsortedCreateHeader,
+	&unsortedDestroyHeader,
+	&unsortedReadInHeader,
+	&unsortedWriteOutHeader,
+	&unsortedPrintHeader,
 
-int unsortedCreateHeader(columnHeaderUnsorted *header, char *columnName, error *err) {
+	// Data functions
+	&unsortedInsert,
+	&unsortedSelectAll,
+	&unsortedSelectValue,
+	&unsortedSelectRange,
+	&unsortedFetch
+};
+
+int unsortedCreateHeader(void *_header, char *columnName, error *err) {
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+
 	strcpy(header->name, columnName);
 	header->sizeBytes = 0;
 	return 0;
 }
 
-void unsortedDestroyHeader(columnHeaderUnsorted *header) {
+void unsortedDestroyHeader(void *header) {
 	free(header);
 }
 
-int unsortedInsert(void *columnHeader, FILE *fp, int data, error *err) {
+int unsortedReadInHeader(void *_header, FILE *fp, error *err) {
+	// columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+	err->err = ERR_UNIMP;
+	err->message = "Not yet implemented";
+	return 1;
+}
 
-	columnHeaderUnsorted *header = (columnHeaderUnsorted *) columnHeader;
+int unsortedWriteOutHeader(void *_header, FILE *fp, error *err) {
+	// columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+	err->err = ERR_UNIMP;
+	err->message = "Not yet implemented";
+	return 1;
+}
+
+void unsortedPrintHeader(void *_header) {
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+	printf("Name: %s\nSize Bytes: %d\n", header->name, header->sizeBytes);
+}
+
+// void unsortedSerializeHeader(columnHeaderUnsorted *header, void **serial, int *serialBytes) {
+// 	*serial = header;
+// 	*serialBytes = sizeof(columnHeaderUnsorted);
+// }
+
+int unsortedInsert(void *_header, FILE *fp, int data, error *err) {
+
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
 
 	// Seek to the end of the file
 	if (fseek(fp, 0, SEEK_END) == -1) {
@@ -43,25 +81,25 @@ int unsortedInsert(void *columnHeader, FILE *fp, int data, error *err) {
 	return 0;
 }
 
-int unsortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err) {
+int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err) {
 	err->err = ERR_UNIMP;
 	err->message = "Select all unimplemented for unsorted columns";
 	return 1;
 }
 
-int unsortedSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err) {
+int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp, error *err) {
 	err->err = ERR_UNIMP;
 	err->message = "Select value unimplemented for unsorted columns";
 	return 1;
 }
 
-int unsortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err) {
+int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitmap **bmp, error *err) {
 	err->err = ERR_UNIMP;
 	err->message = "Select range unimplemented for unsorted columns";
 	return 1;
 }
 
-int unsortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err) {
+int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, error *err) {
 	err->err = ERR_UNIMP;
 	err->message = "Fetch unimplemented for unsorted columns";
 	return 1;
