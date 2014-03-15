@@ -16,7 +16,6 @@
 #include <filesys.h>
 #include <table.h>
 #include <column.h>
-#include <insert.h>
 
 static int dbCreateTable(char *tableName, error *err) {
 
