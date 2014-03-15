@@ -14,6 +14,6 @@ void sortedPrintHeader(columnHeaderSorted *header);
 int sortedCreateHeader(columnHeaderSorted *header, char *columnName, error *err);
 void sortedDestroyHeader(columnHeaderSorted *header);
 
-int sortedInsert(void *columnHeader, FILE *fp, char *data, error *err);
+int sortedInsert(void *columnHeader, FILE *fp, int data, error *err);
 
 #endif

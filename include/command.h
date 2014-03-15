@@ -38,14 +38,25 @@ typedef struct command {
 
 typedef struct createColArgs {
 	char columnName[BUFSIZE];
-	// COL_DATA_TYPE dataType;
 	COL_STORAGE_TYPE storageType;
 } createColArgs;
 
 typedef struct insertArgs {
 	char columnName[BUFSIZE];
-	char value[BUFSIZE];
+	int value;
+	// char value[BUFSIZE];
 } insertArgs;
+
+typedef struct selectArgs {
+	char columnName[BUFSIZE];		// Name of the column from which to select
+	char varName[BUFSIZE];			// Name of the variable to store the intermediate result in
+	
+	bool hasCondition;				// False if we are selecting the whole column, true otherwise
+	bool isRange;					// True if a range of values is given, else low == high == single value
+
+	int low;
+	int high;
+} selectArgs;
 
 command* createCommand();
 void destroyCommand(command *cmd);

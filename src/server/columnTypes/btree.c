@@ -19,7 +19,7 @@ void btreeDestroyHeader(columnHeaderBtree *header) {
 	free(header);
 }
 
-int btreeInsert(void *columnHeader, FILE *fp, char *data, error *err) {
+int btreeInsert(void *columnHeader, FILE *fp, int data, error *err) {
 
 	err->err = ERR_UNIMP;
 	err->message = "Insert unimplemented for btree columns";

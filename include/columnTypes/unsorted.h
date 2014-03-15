@@ -16,6 +16,6 @@ void unsortedPrintHeader(columnHeaderUnsorted *header);
 int unsortedCreateHeader(columnHeaderUnsorted *header, char *columnName, error *err);
 void unsortedDestroyHeader(columnHeaderUnsorted *header);
 
-int unsortedInsert(void *columnHeader, FILE *fp, char *data, error *err);
+int unsortedInsert(void *columnHeader, FILE *fp, int data, error *err);
 
 #endif

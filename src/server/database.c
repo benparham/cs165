@@ -18,67 +18,7 @@
 #include <column.h>
 #include <insert.h>
 
-int cmdNeedsTable(command *cmd) {
-
-	return (cmd->cmd != CMD_USE &&
-			cmd->cmd != CMD_CREATE_TABLE &&
-			cmd->cmd != CMD_REMOVE_TABLE &&
-			cmd->cmd != CMD_EXIT);
-}
-
-int executeCommand(tableInfo *tbl, command *cmd, error *err) {
-	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
-	int result = 0;
-
-	// Check that table is in use if needed
-	if (!tbl->isValid && cmdNeedsTable(cmd)) {
-		err->err = ERR_INVALID_CMD;
-		err->message = "No table in use. Cannot execute command";
-		return 1;
-	}
-
-	switch (cmd->cmd) {
-		case CMD_USE:
-			result = dbUseTable(tbl, (char *) cmd->args, err);
-			break;
-		case CMD_CREATE_TABLE:
-			result = dbCreateTable((char *) cmd->args, err);
-			break;
-		case CMD_REMOVE_TABLE:
-			result = dbRemoveTable((char *) cmd->args, err);
-			break;
-		case CMD_CREATE:
-			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, err);
-			break;
-		case CMD_INSERT:
-			result = dbInsert(tbl, (insertArgs *) cmd->args, err);
-			break;
-		case CMD_SELECT:
-			err->err = ERR_INTERNAL;
-			err->message = "Select not yet implemented";
-			result = 1;
-			break;
-		case CMD_FETCH:
-			err->err = ERR_INTERNAL;
-			err->message = "Fetch not yet implemented";
-			result = 1;
-			break;
-		case CMD_EXIT:
-			err->err = ERR_CLIENT_EXIT;
-			err->message = "Client has exited";
-			result = 1;
-			break;
-		default:
-			err->err = ERR_INVALID_CMD;
-			err->message = "Invalid Command";
-			result = 1;
-			break;
-	}
-
-	return result;
-}
-
-int dbCreateTable(char *tableName, error *err) {
+static int dbCreateTable(char *tableName, error *err) {
 
 	char pathToTableDir[BUFSIZE];
 	sprintf(pathToTableDir, "%s/%s/%s", DATA_PATH, TABLE_DIR, tableName);
@@ -139,7 +79,7 @@ int dbCreateTable(char *tableName, error *err) {
 	return 0;
 }
 
-int dbRemoveTable(char *tableName, error *err) {
+static int dbRemoveTable(char *tableName, error *err) {
 	printf("Attempting to remove table '%s'\n", tableName);
 
 	char pathToTableDir[BUFSIZE];
@@ -159,7 +99,7 @@ int dbRemoveTable(char *tableName, error *err) {
 	return 0;
 }
 
-int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
+static int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
 	char pathToTableFile[BUFSIZE];
 	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tableName, tableName);
 
@@ -194,7 +134,7 @@ int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
 	return 0;
 }
 
-int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
+static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 	char *columnName = args->columnName;
 	COL_STORAGE_TYPE storageType = args->storageType;
 
@@ -253,7 +193,7 @@ exit:
 	return 1;
 }
 
-int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
+static int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
 
 	char *columnName = args->columnName;
 	printf("Inserting into column '%s'...\n", columnName);
@@ -284,4 +224,69 @@ cleanupColumn:
 	free(col);
 exit:
 	return 1;
+}
+
+static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
+
+	err->err = ERR_UNIMP;
+	err->message = "Select not yet implemented";
+	return 1;
+}
+
+static int cmdNeedsTable(command *cmd) {
+
+	return (cmd->cmd != CMD_USE &&
+			cmd->cmd != CMD_CREATE_TABLE &&
+			cmd->cmd != CMD_REMOVE_TABLE &&
+			cmd->cmd != CMD_EXIT);
+}
+
+int executeCommand(tableInfo *tbl, command *cmd, error *err) {
+	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
+	int result = 0;
+
+	// Check that table is in use if needed
+	if (!tbl->isValid && cmdNeedsTable(cmd)) {
+		err->err = ERR_INVALID_CMD;
+		err->message = "No table in use. Cannot execute command";
+		return 1;
+	}
+
+	switch (cmd->cmd) {
+		case CMD_USE:
+			result = dbUseTable(tbl, (char *) cmd->args, err);
+			break;
+		case CMD_CREATE_TABLE:
+			result = dbCreateTable((char *) cmd->args, err);
+			break;
+		case CMD_REMOVE_TABLE:
+			result = dbRemoveTable((char *) cmd->args, err);
+			break;
+		case CMD_CREATE:
+			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, err);
+			break;
+		case CMD_INSERT:
+			result = dbInsert(tbl, (insertArgs *) cmd->args, err);
+			break;
+		case CMD_SELECT:
+			result = dbSelect(tbl, (selectArgs *) cmd->args, err);
+			break;
+		case CMD_FETCH:
+			err->err = ERR_INTERNAL;
+			err->message = "Fetch not yet implemented";
+			result = 1;
+			break;
+		case CMD_EXIT:
+			err->err = ERR_CLIENT_EXIT;
+			err->message = "Client has exited";
+			result = 1;
+			break;
+		default:
+			err->err = ERR_INVALID_CMD;
+			err->message = "Invalid Command";
+			result = 1;
+			break;
+	}
+
+	return result;
 }

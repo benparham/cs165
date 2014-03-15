@@ -18,13 +18,26 @@ void unsortedDestroyHeader(columnHeaderUnsorted *header) {
 	free(header);
 }
 
-int unsortedInsert(void *columnHeader, FILE *fp, char *data, error *err) {
+int unsortedInsert(void *columnHeader, FILE *fp, int data, error *err) {
 
-	// int toWrite = atoi(data);
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) columnHeader;
 
-	// if (fwrite())
+	// Seek to the end of the file
+	if (fseek(fp, 0, SEEK_END) == -1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Failed to seek in column file";
+		return 1;
+	}
 
-	err->err = ERR_UNIMP;
-	err->message = "Insert unimplemented for unsorted columns";
-	return 1;
+	// Write data to file
+	if (fwrite(&data, sizeof(int), 1, fp) < 1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to write data to column file";
+		return 1;
+	}
+
+	// Update the header info
+	header->sizeBytes += sizeof(int);
+
+	return 0;
 }

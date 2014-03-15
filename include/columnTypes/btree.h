@@ -14,6 +14,6 @@ void btreePrintHeader(columnHeaderBtree *header);
 int btreeCreateHeader(columnHeaderBtree *header, char *columnName, error *err);
 void btreeDestroyHeader(columnHeaderBtree *header);
 
-int btreeInsert(void *columnHeader, FILE *fp, char *data, error *err);
+int btreeInsert(void *columnHeader, FILE *fp, int data, error *err);
 
 #endif

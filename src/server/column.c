@@ -5,26 +5,27 @@
 #include <column.h>
 #include <global.h>
 #include <filesys.h>
+#include <columnTypes/common.h>
 #include <columnTypes/unsorted.h>
 #include <columnTypes/sorted.h>
 #include <columnTypes/btree.h>
 
-int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
-	int result = 1;
+// int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
+// 	int result = 1;
 
-	if (strcmp(str, "unsorted") == 0) {
-		*type = COL_UNSORTED;
-		result = 0;
-	} else if (strcmp(str, "sorted") == 0) {
-		*type = COL_SORTED;
-		result = 0;
-	} else if (strcmp(str, "btree") == 0) {
-		*type = COL_BTREE;
-		result = 0;
-	}
+// 	if (strcmp(str, "unsorted") == 0) {
+// 		*type = COL_UNSORTED;
+// 		result = 0;
+// 	} else if (strcmp(str, "sorted") == 0) {
+// 		*type = COL_SORTED;
+// 		result = 0;
+// 	} else if (strcmp(str, "btree") == 0) {
+// 		*type = COL_BTREE;
+// 		result = 0;
+// 	}
 
-	return result;
-}
+// 	return result;
+// }
 
 int columnHeaderByteSize(COL_STORAGE_TYPE storageType) {
 	switch (storageType) {
@@ -218,22 +219,31 @@ void columnDestroy(column *col) {
 	free(col);
 }
 
-// int columnOverwriteHeader(column *col, error *err) {
-// 	// Write data to end of file
-// 	if (fseek(col->fp, sizeof(COL_STORAGE_TYPE), SEEK_SET) == -1) {
-// 		err->err = ERR_INTERNAL;
-// 		err->message = "Failed to seek in column file";
-// 		return 1;
-// 	}
-// 	if (fwrite(col->columnHeader, columnHeaderByteSize(col->storageType), 1, col->fp) < 1) {
-// 		err->err = ERR_INTERNAL;
-// 		err->message = "Unable to overwrite header to column file";
-// 		return 1;
-// 	}
 
-// 	return 0;
-// }
+static int columnOverwriteHeader(column *col, error *err) {
+	// Write data to end of file
+	if (fseek(col->fp, sizeof(COL_STORAGE_TYPE), SEEK_SET) == -1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Failed to seek in column file";
+		return 1;
+	}
+	if (fwrite(col->columnHeader, columnHeaderByteSize(col->storageType), 1, col->fp) < 1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to overwrite header to column file";
+		return 1;
+	}
 
-int columnInsert(column *col, char *data, error *err) {
-	return col->insert(col->columnHeader, col->fp, data, err);
+	return 0;
+}
+
+int columnInsert(column *col, int data, error *err) {
+	if (col->insert(col->columnHeader, col->fp, data, err)) {
+		return 1;
+	}
+
+	if (columnOverwriteHeader(col, err)) {
+		return 1;
+	}
+
+	return 0;
 }

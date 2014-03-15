@@ -19,7 +19,7 @@ void sortedDestroyHeader(columnHeaderSorted *header) {
 	free(header);
 }
 
-int sortedInsert(void *columnHeader, FILE *fp, char *data, error *err) {
+int sortedInsert(void *columnHeader, FILE *fp, int data, error *err) {
 
 	err->err = ERR_UNIMP;
 	err->message = "Insert unimplemented for sorted columns";
