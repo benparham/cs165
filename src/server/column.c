@@ -26,6 +26,19 @@ int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	return result;
 }
 
+int columnHeaderByteSize(COL_STORAGE_TYPE storageType) {
+	switch (storageType) {
+		case COL_UNSORTED:
+			return sizeof(columnHeaderUnsorted);
+		case COL_SORTED:
+			return sizeof(columnHeaderSorted);
+		case COL_BTREE:
+			return sizeof(columnHeaderBtree);
+		default:
+			assert(0);
+	}
+}
+
 void columnPrintHeader(COL_STORAGE_TYPE storageType, void *header) {
 	printf("Header:\n");
 	switch (storageType) {
@@ -178,7 +191,7 @@ int columnCreateFromDisk(tableInfo *tbl, char *columnName, column *col, error *e
 	col->columnHeader = malloc(columnHeaderSizeBytes);
 
 	// Read in the column header
-	if (fread(&(col->columnHeader), columnHeaderSizeBytes, 1, col->fp) < 1) {
+	if (fread(col->columnHeader, columnHeaderSizeBytes, 1, col->fp) < 1) {
 		err->err = ERR_MLFM_DATA;
 		err->message = "Unable to read column info from file";
 		goto cleanupColumnHeader;
@@ -204,6 +217,22 @@ void columnDestroy(column *col) {
 	fclose(col->fp);
 	free(col);
 }
+
+// int columnOverwriteHeader(column *col, error *err) {
+// 	// Write data to end of file
+// 	if (fseek(col->fp, sizeof(COL_STORAGE_TYPE), SEEK_SET) == -1) {
+// 		err->err = ERR_INTERNAL;
+// 		err->message = "Failed to seek in column file";
+// 		return 1;
+// 	}
+// 	if (fwrite(col->columnHeader, columnHeaderByteSize(col->storageType), 1, col->fp) < 1) {
+// 		err->err = ERR_INTERNAL;
+// 		err->message = "Unable to overwrite header to column file";
+// 		return 1;
+// 	}
+
+// 	return 0;
+// }
 
 int columnInsert(column *col, char *data, error *err) {
 	return col->insert(col->columnHeader, col->fp, data, err);

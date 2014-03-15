@@ -43,6 +43,8 @@ typedef struct column {
 
 } column;
 
+int columnHeaderByteSize(COL_STORAGE_TYPE storageType);
+
 void columnPrintHeader(COL_STORAGE_TYPE storageType, void *header);
 void columnPrint(column *col);
 

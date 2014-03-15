@@ -9,10 +9,7 @@ void btreePrintHeader(columnHeaderBtree *header) {
 }
 
 int btreeCreateHeader(columnHeaderBtree *header, char *columnName, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Btree column creation still unimplemented";
-	return 1;
-
+	
 	strcpy(header->name, columnName);
 	header->sizeBytes = 0;
 	return 0;

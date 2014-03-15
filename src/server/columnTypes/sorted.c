@@ -9,10 +9,7 @@ void sortedPrintHeader(columnHeaderSorted *header) {
 }
 
 int sortedCreateHeader(columnHeaderSorted *header, char *columnName, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Sorted column creation still unimplemented";
-	return 1;
-
+	
 	strcpy(header->name, columnName);
 	header->sizeBytes = 0;
 	return 0;

@@ -255,7 +255,33 @@ exit:
 
 int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
 
-	printf("Will implement insert here\n");
+	char *columnName = args->columnName;
+	printf("Inserting into column '%s'...\n", columnName);
+
+	column *col = (column *) malloc(sizeof(column));
+	if (col == NULL) {
+		err->err = ERR_MEM;
+		err->message = "Could not allocate a column buffer";
+		goto exit;
+	}
+
+	if (columnCreateFromDisk(tbl, columnName, col, err)) {
+		goto cleanupColumn;
+	}
+
+	printf("Got column '%s' from disk:\n", columnName);
+	columnPrint(col);
+
+	if (columnInsert(col, args->value, err)) {
+		goto cleanupColumn;
+	}
+
+	printf("Inserted into column '%s'\n", columnName);
 
 	return 0;
+
+cleanupColumn:
+	free(col);
+exit:
+	return 1;
 }

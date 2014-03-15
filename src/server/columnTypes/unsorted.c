@@ -20,6 +20,10 @@ void unsortedDestroyHeader(columnHeaderUnsorted *header) {
 
 int unsortedInsert(void *columnHeader, FILE *fp, char *data, error *err) {
 
+	// int toWrite = atoi(data);
+
+	// if (fwrite())
+
 	err->err = ERR_UNIMP;
 	err->message = "Insert unimplemented for unsorted columns";
 	return 1;
