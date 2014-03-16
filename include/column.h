@@ -32,7 +32,7 @@ int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *fp, colum
 void columnDestroy(column *col);
 
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);
-int columnWriteToDisk(tableInfo *tbl, column *col, error *err);
+int columnWriteToDisk(column *col, error *err);
 
 void columnPrint(column *col);
 

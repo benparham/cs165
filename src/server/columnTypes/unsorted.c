@@ -39,28 +39,41 @@ void unsortedDestroyHeader(void *header) {
 }
 
 int unsortedReadInHeader(void *_header, FILE *fp, error *err) {
-	// columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
-	err->err = ERR_UNIMP;
-	err->message = "Not yet implemented";
-	return 1;
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+	
+	if (seekToHeader(fp, err)) {
+		return 1;
+	}
+
+	if (fread(header, sizeof(columnHeaderUnsorted), 1, fp) < 1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Failed to read from column file";
+		return 1;
+	}
+
+	return 0;
 }
 
 int unsortedWriteOutHeader(void *_header, FILE *fp, error *err) {
-	// columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
-	err->err = ERR_UNIMP;
-	err->message = "Not yet implemented";
-	return 1;
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+
+	if (seekToHeader(fp, err)) {
+		return 1;
+	}
+
+	if (fwrite(header, sizeof(columnHeaderUnsorted), 1, fp) < 1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Failed to write to column file";
+		return 1;
+	}
+
+	return 0;
 }
 
 void unsortedPrintHeader(void *_header) {
 	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
 	printf("Name: %s\nSize Bytes: %d\n", header->name, header->sizeBytes);
 }
-
-// void unsortedSerializeHeader(columnHeaderUnsorted *header, void **serial, int *serialBytes) {
-// 	*serial = header;
-// 	*serialBytes = sizeof(columnHeaderUnsorted);
-// }
 
 int unsortedInsert(void *_header, FILE *fp, int data, error *err) {
 

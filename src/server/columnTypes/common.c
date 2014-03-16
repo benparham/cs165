@@ -18,3 +18,14 @@ int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 
 	return result;
 }
+
+int seekToHeader(FILE *fp, error *err) {
+
+	if (fseek(fp, sizeof(COL_STORAGE_TYPE), SEEK_SET) == -1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Failed to seek in column file";
+		return 1;
+	}
+
+	return 0;
+}

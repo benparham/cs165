@@ -32,4 +32,6 @@ typedef struct columnFunctions {
 
 } columnFunctions;
 
+int seekToHeader(FILE *fp, error *err);
+
 #endif
