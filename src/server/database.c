@@ -166,8 +166,7 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 		goto cleanupFile;
 	}
 
-	printf("Created new column:\n");
-	columnPrint(col);
+	columnPrint(col, "created new column in dbCreateColumn");
 
 	if (columnWriteToDisk(col, err)) {
 		goto cleanupColumn;
@@ -250,8 +249,7 @@ static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
 		goto exit;
 	}
 
-	printf("Got column '%s' from disk:\n", columnName);
-	columnPrint(col);
+	columnPrint(col, "read column from disk in dbSelect");
 
 	// Get result bitmap
 	struct bitmap *resultBmp;
@@ -275,6 +273,8 @@ static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
 	if (varMapAddVar(varName, resultBmp, err)) {
 		goto cleanupBitmap;
 	}
+
+	varMapPrint("updated var map in dbSelect");
 
 	columnDestroy(col);
 	return 0;

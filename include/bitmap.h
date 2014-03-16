@@ -7,12 +7,15 @@
 
 struct bitmap;
 
-struct bitmap * bitmapCreate(unsigned int nbits);
+int bitmapCreate(unsigned int nbits, struct bitmap **bmp);
 void bitmapDestroy(struct bitmap *bmp);
 
 int bitmapSize(struct bitmap *bmp);
 
+void bitmapPrint(struct bitmap *bmp);
+
 int bitmapMark(struct bitmap *bmp, int idx);
+int bitmapMarkAll(struct bitmap *bmp);
 int bitmapUnmark(struct bitmap *bmp, int idx);
 int bitmapIsSet(struct bitmap *bmp, int idx);
 

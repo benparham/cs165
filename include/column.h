@@ -34,7 +34,7 @@ void columnDestroy(column *col);
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);
 int columnWriteToDisk(column *col, error *err);
 
-void columnPrint(column *col);
+void columnPrint(column *col, char *message);
 
 int columnInsert(column *col, int data, error *err);
 int columnSelectAll(column *col, struct bitmap **bmp, error *err);

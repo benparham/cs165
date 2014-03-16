@@ -31,6 +31,7 @@ int unsortedCreateHeader(void **_header, char *columnName, error *err) {
 
 	strcpy(((columnHeaderUnsorted *) *_header)->name, columnName);
 	((columnHeaderUnsorted *) *_header)->sizeBytes = 0;
+	((columnHeaderUnsorted *) *_header)->nEntries = 0;
 	return 0;
 }
 
@@ -72,7 +73,10 @@ int unsortedWriteOutHeader(void *_header, FILE *fp, error *err) {
 
 void unsortedPrintHeader(void *_header) {
 	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
-	printf("Name: %s\nSize Bytes: %d\n", header->name, header->sizeBytes);
+
+	printf("Name: %s\n", header->name);
+	printf("Size bytes: %d\n", header->sizeBytes);
+	printf("Number of entries: %d\n", header->nEntries);
 }
 
 int unsortedInsert(void *_header, FILE *fp, int data, error *err) {
@@ -95,14 +99,34 @@ int unsortedInsert(void *_header, FILE *fp, int data, error *err) {
 
 	// Update the header info
 	header->sizeBytes += sizeof(int);
+	header->nEntries += 1;
 
 	return 0;
 }
 
 int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Select all unimplemented for unsorted columns";
-	return 1;
+	
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+
+	if (header->nEntries < 1) {
+		err->err = ERR_INTERNAL;
+		err->message = "Cannot select from column. It is empty.";
+		return 1;
+	}
+
+	if (bitmapCreate(header->nEntries, bmp)) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to create bitmap";
+		return 1;
+	}
+
+	if (bitmapMarkAll(*bmp)) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to mark bitmap";
+		return 1;
+	}
+
+	return 0;
 }
 
 int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp, error *err) {

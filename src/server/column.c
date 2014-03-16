@@ -69,7 +69,7 @@ int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err
 	char pathToColumn[BUFSIZE];
 	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
-	printf("Attempting to open column file %s\n", pathToColumn);
+	// printf("Attempting to open column file %s\n", pathToColumn);
 
 	if (!fileExists(pathToColumn)) {
 		err->err = ERR_DUP;
@@ -147,10 +147,11 @@ int columnWriteToDisk(column *col, error *err) {
 	return 0;
 }
 
-void columnPrint(column * col) {
-	printf("Column:\n");
+void columnPrint(column * col, char *message) {
+	printf(">============ Print Column: %s\n", message);
 	printf("Storage type: %d\n", col->storageType);
 	col->funcs->printHeader(col->columnHeader);
+	printf("=============\n");
 }
 
 

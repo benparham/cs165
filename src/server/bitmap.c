@@ -1,9 +1,11 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <bitmap.h>
 
 #define WORD_TYPE		unsigned char
+#define WORD_MAX		-1
 #define BITS_PER_WORD	8
 
 struct bitmap {
@@ -12,8 +14,7 @@ struct bitmap {
 } bitmap;
 
 // Allocates a bitmap based on nbits desired and returns it
-struct bitmap* bitmapCreate(unsigned int nbits) {
-	struct bitmap *bmp;
+int bitmapCreate(unsigned int nbits, struct bitmap **bmp) {
 	unsigned int words;
 
 	// Get number of words needed to store n bits
@@ -23,31 +24,29 @@ struct bitmap* bitmapCreate(unsigned int nbits) {
 	}
 
 	// Allocate the bitmap struct
-	bmp = (struct bitmap *) malloc(sizeof(struct bitmap));
-	if (bmp == NULL) {
+	*bmp = (struct bitmap *) malloc(sizeof(struct bitmap));
+	if (*bmp == NULL) {
 		goto exit;
 	}
 
 	// Allocate the words for the actual map
-	bmp->map = (WORD_TYPE *) malloc(sizeof(WORD_TYPE) * words);
-	if (bmp->map == NULL) {
+	(*bmp)->map = (WORD_TYPE *) malloc(sizeof(WORD_TYPE) * words);
+	if ((*bmp)->map == NULL) {
 		goto cleanupBitmap;
 	}
 
 	// Zero bits
-	memset(bmp->map, 0, sizeof(WORD_TYPE) * words);
+	memset((*bmp)->map, 0, sizeof(WORD_TYPE) * words);
 
 	// Set the nbits value
-	bmp->nbits = nbits;
+	(*bmp)->nbits = nbits;
 
-	return bmp;
+	return 0;
 
-// cleanupSubMap:
-// 	free(bmp->map);
 cleanupBitmap:
-	free(bmp);
+	free(*bmp);
 exit:
-	return NULL;
+	return 1;
 }
 
 void bitmapDestroy(struct bitmap *bmp) {
@@ -57,6 +56,20 @@ void bitmapDestroy(struct bitmap *bmp) {
 
 int bitmapSize(struct bitmap *bmp) {
 	return bmp->nbits;
+}
+
+void bitmapPrint(struct bitmap *bmp) {
+
+	int size = bitmapSize(bmp);
+	printf("Size: %d\n", size);
+	printf("Map:\n[");
+	for (int i = 0; i < size; i++) {
+		printf("%d", bitmapIsSet(bmp, i) ? 1 : 0);
+		if (i != size - 1) {
+			printf(",");
+		}
+	}
+	printf("]\n");
 }
 
 static void bitmapTranslate(unsigned int bitNum, unsigned int *wordIdx, WORD_TYPE *mask) {
@@ -77,6 +90,17 @@ int bitmapMark(struct bitmap *bmp, int idx) {
 	bitmapTranslate(idx, &wordIdx, &mask);
 
 	bmp->map[wordIdx] |= mask;
+
+	return 0;
+}
+
+int bitmapMarkAll(struct bitmap *bmp) {
+	unsigned int nWords = bmp->nbits / BITS_PER_WORD;
+	if (bmp->nbits % BITS_PER_WORD > 0) {
+		nWords += 1;
+	}
+
+	memset(bmp->map, WORD_MAX, sizeof(WORD_TYPE) * nWords);
 
 	return 0;
 }

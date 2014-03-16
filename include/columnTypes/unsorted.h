@@ -13,6 +13,7 @@ extern columnFunctions unsortedColumnFunctions;
 typedef struct columnHeaderUnsorted {
 	char name[NAME_SIZE];
 	int sizeBytes;
+	int nEntries;
 } columnHeaderUnsorted;
 
 int unsortedCreateHeader(void **_header, char *columnName, error *err);

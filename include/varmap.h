@@ -15,6 +15,7 @@ typedef struct varMapNode {
 
 int varMapBootstrap();
 void varMapCleanup();
+void varMapPrint();
 
 int varMapAddVar(char *varName, struct bitmap *bmp, error *err);
 int varMapGetVar(char *varName, struct bitmap **bmp);
