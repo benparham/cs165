@@ -19,12 +19,45 @@ int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	return result;
 }
 
-int seekToHeader(FILE *fp, error *err) {
+int seekHeader(FILE *fp, int offset, error *err) {
 
-	if (fseek(fp, sizeof(COL_STORAGE_TYPE), SEEK_SET) == -1) {
+	if (fseek(fp, sizeof(COL_STORAGE_TYPE) + offset, SEEK_SET) == -1) {
 		err->err = ERR_INTERNAL;
 		err->message = "Failed to seek in column file";
 		return 1;
+	}
+
+	return 0;
+}
+
+int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, error *err) {
+
+	// Seek to data
+	if (seekHeader(fp, headerSizeBytes, err)) {
+		return 1;
+	}
+
+	printf("Fetch results:\n");
+
+	int length = bitmapSize(bmp);
+	for (int i = 0; i < length; i++) {
+		if (bitmapIsSet(bmp, i)) {
+			int entry;
+			if (fread(&entry, sizeof(int), 1, fp) < 1) {
+				err->err = ERR_INTERNAL;
+				err->message = "Failed to read from column file";
+				return 1;
+			}
+
+			printf("%d,", entry);
+
+		} else {
+			if (fseek(fp, sizeof(int), SEEK_CUR) == -1) {
+				err->err = ERR_INTERNAL;
+				err->message = "Failed to seek in column file";
+				return 1;
+			}
+		}
 	}
 
 	return 0;

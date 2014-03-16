@@ -206,8 +206,7 @@ static int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
 		goto exit;
 	}
 
-	// printf("Got column '%s' from disk:\n", columnName);
-	// columnPrint(col);
+	columnPrint(col, "read column from disk in dbInsert");
 
 	if (columnInsert(col, args->value, err)) {
 		goto cleanupColumn;
