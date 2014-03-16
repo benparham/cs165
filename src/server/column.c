@@ -28,16 +28,38 @@ static int columnSetFunctions(column *col, error *err) {
 }
 
 // Allocates a new column struct and initializes it
-int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, column *col, error *err) {
-	
+int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *fp, column **col, error *err) {
 
+	*col = (column *) malloc(sizeof(column));
+	if (*col == NULL) {
+		err->err = ERR_MEM;
+		err->message = "Failed to allocate a new column buffer";
+		goto exit;
+	}
 
-	err->err = ERR_UNIMP;
-	err->message = "Not yet implemented";
+	(*col)->storageType = storageType;
+	(*col)->fp = fp;
+
+	if (columnSetFunctions(*col, err)) {
+		goto cleanupColumn;
+	}
+
+	if ((*col)->funcs->createHeader(&((*col)->columnHeader), columnName, err)) {
+		goto cleanupColumn;
+	}
+
+	return 0;
+
+cleanupColumn:
+	free(*col);
+exit:
 	return 1;
 }
-void columnDestroy(column *col) {
 
+void columnDestroy(column *col) {
+	fclose(col->fp);
+	col->funcs->destroyHeader(col->columnHeader);
+	free(col);
 }
 
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err) {
@@ -53,7 +75,9 @@ int columnWriteToDisk(tableInfo *tbl, column *col, error *err) {
 }
 
 void columnPrint(column * col) {
-
+	printf("Column:\n");
+	printf("Storage type: %d\n", col->storageType);
+	col->funcs->printHeader(col->columnHeader);
 }
 
 

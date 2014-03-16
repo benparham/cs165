@@ -15,7 +15,7 @@ typedef struct columnHeaderUnsorted {
 	int sizeBytes;
 } columnHeaderUnsorted;
 
-int unsortedCreateHeader(void *_header, char *columnName, error *err);
+int unsortedCreateHeader(void **_header, char *columnName, error *err);
 void unsortedDestroyHeader(void *_header);
 int unsortedReadInHeader(void *_header, FILE *fp, error *err);
 int unsortedWriteOutHeader(void *_header, FILE *fp, error *err);

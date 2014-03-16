@@ -28,7 +28,7 @@ typedef struct column {
 
 } column;
 
-int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, column *col, error *err);
+int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *fp, column **col, error *err);
 void columnDestroy(column *col);
 
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);

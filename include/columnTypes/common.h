@@ -17,8 +17,8 @@ int strToColStorage(char *str, COL_STORAGE_TYPE *type);
 typedef struct columnFunctions {
 
 	// Header Functions
-	int (* createHeader) (void *columnHeader, char *columnName, error *err);
-	void (* destoryHeader) (void *columnHeader);
+	int (* createHeader) (void **columnHeader, char *columnName, error *err);
+	void (* destroyHeader) (void *columnHeader);
 	int (* readInHeader) (void *columnHeader, FILE *fp, error *err);
 	int (* writeOutHeader) (void *columnHeader, FILE *fp, error *err);
 	void (* printHeader) (void *columnHeader);

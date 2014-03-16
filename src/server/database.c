@@ -140,16 +140,28 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 	char *columnName = args->columnName;
 	COL_STORAGE_TYPE storageType = args->storageType;
 
-	column *col;
-	//  = (column *) malloc(sizeof(column));
-	// if (col == NULL) {
-	// 	err->err = ERR_MEM;
-	// 	err->message = "Unable to allocate a new column buffer";
-	// 	goto exit;
-	// }
+	char pathToColumn[BUFSIZE];
+	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
-	if (columnCreate(columnName, storageType, col, err)) {
+	printf("Attempting to create column file %s\n", pathToColumn);
+
+	if (fileExists(pathToColumn)) {
+		err->err = ERR_DUP;
+		err->message = "Cannot create column. Alread exists";
 		goto exit;
+	}
+
+	// Open the new column info file
+	FILE *fp = fopen(pathToColumn, "wb");
+	if (fp == NULL) {
+		err->err = ERR_INTERNAL;
+		err->message = "Unable to create file for column";
+		goto exit;
+	}
+
+	column *col;
+	if (columnCreate(columnName, storageType, fp, &col, err)) {
+		goto cleanupFile;
 	}
 
 	printf("Created new column:\n");
@@ -167,6 +179,11 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 
 cleanupColumn:
 	columnDestroy(col);
+	goto removeFile;
+cleanupFile:
+	fclose(fp);
+removeFile:
+	remove(pathToColumn);
 exit:
 	return 1;
 // 	char *columnName = args->columnName;

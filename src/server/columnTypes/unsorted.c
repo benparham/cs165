@@ -21,11 +21,16 @@ columnFunctions unsortedColumnFunctions = {
 	&unsortedFetch
 };
 
-int unsortedCreateHeader(void *_header, char *columnName, error *err) {
-	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+int unsortedCreateHeader(void **_header, char *columnName, error *err) {
+	*_header = malloc(sizeof(columnHeaderUnsorted));
+	if (*_header == NULL) {
+		err->err = ERR_MEM;
+		err->message = "Failed to allocate unsorted column header";
+		return 1;
+	}
 
-	strcpy(header->name, columnName);
-	header->sizeBytes = 0;
+	strcpy(((columnHeaderUnsorted *) *_header)->name, columnName);
+	((columnHeaderUnsorted *) *_header)->sizeBytes = 0;
 	return 0;
 }
 
