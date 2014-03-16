@@ -203,88 +203,88 @@ static int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
 	}
 
 	if (columnReadFromDisk(tbl, columnName, col, err)) {
-		goto cleanupColumn;
+		free(col);
+		goto exit;
 	}
 
-	printf("Got column '%s' from disk:\n", columnName);
-	columnPrint(col);
+	// printf("Got column '%s' from disk:\n", columnName);
+	// columnPrint(col);
 
 	if (columnInsert(col, args->value, err)) {
 		goto cleanupColumn;
 	}
 
 	printf("Inserted into column '%s'\n", columnName);
-	free(col);
+	columnDestroy(col);
 
 	return 0;
 
 cleanupColumn:
-	free(col);
+	columnDestroy(col);
 exit:
 	return 1;
 }
 
 static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Not yet implemented";
+
+	char *columnName = args->columnName;
+	printf("Selecting from column '%s'...\n", columnName);
+
+	char *varName = args->varName;
+	if (varName == NULL || strcmp(varName, "") == 0) {
+		err->err = ERR_INTERNAL;
+		err->message = "Invalid variable name";
+		goto exit;
+	}
+
+	// Retrieve the column from disk
+	column *col = (column *) malloc(sizeof(column));
+	if (col == NULL) {
+		err->err = ERR_MEM;
+		err->message = "Could not allocate a column buffer";
+		goto exit;
+	}
+
+	if (columnReadFromDisk(tbl, columnName, col, err)) {
+		free(col);
+		goto exit;
+	}
+
+	printf("Got column '%s' from disk:\n", columnName);
+	columnPrint(col);
+
+	// Get result bitmap
+	struct bitmap *resultBmp;
+	if (args->hasCondition) {
+		if (args->isRange) {
+			if (columnSelectRange(col, args->low, args->high, &resultBmp, err)) {
+				goto cleanupColumn;
+			}
+		} else {
+			if (columnSelectValue(col, args->low, &resultBmp, err)) {
+				goto cleanupColumn;
+			}
+		}
+	} else {
+		if (columnSelectAll(col, &resultBmp, err)) {
+			goto cleanupColumn;
+		}
+	}
+
+	// Add variable-bitmap pair to varmap
+	if (varMapAddVar(varName, resultBmp, err)) {
+		goto cleanupBitmap;
+	}
+
+	columnDestroy(col);
+	return 0;
+
+cleanupBitmap:
+	bitmapDestroy(resultBmp);
+cleanupColumn:
+	columnDestroy(col);
+exit:
 	return 1;
-// 	char *columnName = args->columnName;
-// 	printf("Selecting from column '%s'...\n", columnName);
-
-// 	char *varName = args->varName;
-// 	if (varName == NULL || strcmp(varName, "") == 0) {
-// 		err->err = ERR_INTERNAL;
-// 		err->message = "Invalid variable name";
-// 		goto exit;
-// 	}
-
-// 	// Retrieve the column from disk
-// 	column *col = (column *) malloc(sizeof(column));
-// 	if (col == NULL) {
-// 		err->err = ERR_MEM;
-// 		err->message = "Could not allocate a column buffer";
-// 		goto exit;
-// 	}
-
-// 	if (columnCreateFromDisk(tbl, columnName, col, err)) {
-// 		goto cleanupColumn;
-// 	}
-
-// 	printf("Got column '%s' from disk:\n", columnName);
-// 	columnPrint(col);
-
-// 	// Get result bitmap
-// 	struct bitmap *resultBmp;
-// 	if (args->hasCondition) {
-// 		if (args->isRange) {
-// 			if (columnSelectRange(col, args->low, args->high, &resultBmp, err)) {
-// 				goto cleanupColumn;
-// 			}
-// 		} else {
-// 			if (columnSelectValue(col, args->low, &resultBmp, err)) {
-// 				goto cleanupColumn;
-// 			}
-// 		}
-// 	} else {
-// 		if (columnSelectAll(col, &resultBmp, err)) {
-// 			goto cleanupColumn;
-// 		}
-// 	}
-
-// 	// Add variable-bitmap pair to varmap
-// 	if (varMapAddVar(varName, resultBmp, err)) {
-// 		goto cleanupBitmap;
-// 	}
-
-// 	free(col);
-// 	return 0;
-
-// cleanupBitmap:
-// 	bitmapDestroy(resultBmp);
-// cleanupColumn:
-// 	free(col);
-// exit:
-// 	return 1;
 }
 
 static int cmdNeedsTable(command *cmd) {
