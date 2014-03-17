@@ -25,8 +25,7 @@ columnFunctions unsortedColumnFunctions = {
 int unsortedCreateHeader(void **_header, char *columnName, error *err) {
 	*_header = malloc(sizeof(columnHeaderUnsorted));
 	if (*_header == NULL) {
-		err->err = ERR_MEM;
-		err->message = "Failed to allocate unsorted column header";
+		ERROR(err, E_NOMEM);
 		return 1;
 	}
 
@@ -48,8 +47,7 @@ int unsortedReadInHeader(void *_header, FILE *fp, error *err) {
 	}
 
 	if (fread(header, sizeof(columnHeaderUnsorted), 1, fp) < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Failed to read from column file";
+		ERROR(err, E_FRD);
 		return 1;
 	}
 
@@ -64,8 +62,7 @@ int unsortedWriteOutHeader(void *_header, FILE *fp, error *err) {
 	}
 
 	if (fwrite(header, sizeof(columnHeaderUnsorted), 1, fp) < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Failed to write to column file";
+		ERROR(err, E_FWR);
 		return 1;
 	}
 
@@ -86,15 +83,13 @@ int unsortedInsert(void *_header, FILE *fp, int data, error *err) {
 
 	// Seek to the end of the file
 	if (fseek(fp, 0, SEEK_END) == -1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Failed to seek in column file";
+		ERROR(err, E_FSK);
 		return 1;
 	}
 
 	// Write data to file
 	if (fwrite(&data, sizeof(int), 1, fp) < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to write data to column file";
+		ERROR(err, E_FWR);
 		return 1;
 	}
 
@@ -110,22 +105,15 @@ int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err) 
 	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
 
 	if (header->nEntries < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Cannot select from column. It is empty.";
+		ERROR(err, E_COLEMT);
 		return 1;
 	}
 
-	if (bitmapCreate(header->nEntries, bmp)) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to create bitmap";
+	if (bitmapCreate(header->nEntries, bmp, err)) {
 		return 1;
 	}
 
-	if (bitmapMarkAll(*bmp)) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to mark bitmap";
-		return 1;
-	}
+	bitmapMarkAll(*bmp);
 
 	return 0;
 }
@@ -135,14 +123,11 @@ int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp,
 	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
 
 	if (header->nEntries < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Cannot select from column. It is empty.";
+		ERROR(err, E_COLEMT);
 		return 1;
 	}
 
-	if (bitmapCreate(header->nEntries, bmp)) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to create bitmap";
+	if (bitmapCreate(header->nEntries, bmp, err)) {
 		return 1;
 	}
 
@@ -155,13 +140,14 @@ int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp,
 		int entry;
 
 		if (fread(&entry, sizeof(int), 1, fp) < 1) {
-			err->err = ERR_INTERNAL;
-			err->message = "Failed to read from column file";
+			ERROR(err, E_FRD);
 			return 1;
 		}
 
 		if (entry == value) {
-			bitmapMark(*bmp, i);
+			if (bitmapMark(*bmp, i, err)) {
+				return 1;
+			}
 		}
 	} 
 
@@ -173,14 +159,11 @@ int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitma
 	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
 
 	if (header->nEntries < 1) {
-		err->err = ERR_INTERNAL;
-		err->message = "Cannot select from column. It is empty.";
+		ERROR(err, E_COLEMT);
 		return 1;
 	}
 
-	if (bitmapCreate(header->nEntries, bmp)) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to create bitmap";
+	if (bitmapCreate(header->nEntries, bmp, err)) {
 		return 1;
 	}
 
@@ -193,13 +176,14 @@ int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitma
 		int entry;
 
 		if (fread(&entry, sizeof(int), 1, fp) < 1) {
-			err->err = ERR_INTERNAL;
-			err->message = "Failed to read from column file";
+			ERROR(err, E_FRD);
 			return 1;
 		}
 
 		if (entry >= low && entry <= high) {
-			bitmapMark(*bmp, i);
+			if (bitmapMark(*bmp, i, err)) {
+				return 1;
+			}
 		}
 	} 
 
@@ -208,8 +192,7 @@ int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitma
 
 int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, error *err) {
 	if (bitmapSize(bmp) != ((columnHeaderUnsorted *) _header)->nEntries) {
-		err->err = ERR_INTERNAL;
-		err->message = "Cannot fetch from column. Size of bitmap does not equal column size";
+		ERROR(err, E_BADFTC);
 		return 1;
 	}
 

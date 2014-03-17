@@ -51,10 +51,12 @@ void *listenToClient(void *tempArgs) {
 	int done = 0;
 	while (!done) {
 		if (connectionReceiveCommand(con)) {
-			done = handleReceiveErrors(con->err);
+			// done = handleReceiveErrors(con->err);
+			done = connectionSendError(con);
 		} else {
 			if (executeCommand(con->tbl, con->cmd, con->err)) {
-				done = handleExecuteErrors(con->err);
+				done = connectionSendError(con);
+				// done = handleExecuteErrors(con->err);
 			}
 		}
 	}

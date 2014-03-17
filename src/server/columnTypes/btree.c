@@ -21,32 +21,26 @@ void btreeDestroyHeader(columnHeaderBtree *header) {
 }
 
 int btreeInsert(void *columnHeader, FILE *fp, int data, error *err) {
-
-	err->err = ERR_UNIMP;
-	err->message = "Insert unimplemented for btree columns";
+	ERROR(err, E_UNIMP);
 	return 1;
 }
 
 int btreeSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Select all unimplemented for btree columns";
+	ERROR(err, E_UNIMP);
 	return 1;
 }
 
 int btreeSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Select value unimplemented for btree columns";
+	ERROR(err, E_UNIMP);
 	return 1;
 }
 
 int btreeSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Select range unimplemented for btree columns";
+	ERROR(err, E_UNIMP);
 	return 1;
 }
 
 int btreeFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err) {
-	err->err = ERR_UNIMP;
-	err->message = "Fetch unimplemented for btree columns";
+	ERROR(err, E_UNIMP);
 	return 1;
 }

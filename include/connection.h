@@ -22,6 +22,6 @@ void connectionDestroy(connection *con);
 int connectionReceiveCommand(connection *con);//int socketFD, command *cmd, error *err);
 // int receiveData(int socketFD, void *data, error *err);
 
-void connecitonSendError(connection *con);
+int connectionSendError(connection *con);
 
 #endif

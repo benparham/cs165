@@ -52,10 +52,19 @@ int connectionReceiveCommand(connection *con) {//int socketFD, command *cmd, err
 
 	bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
 	if (bytesRecieved < 1) {
-		err->err = ERR_CLIENT_EXIT;
-		err->message = "Client has closed connection";
+		ERROR(err, E_EXIT);
 		return 1;
 	}
+	// if (bytesRecieved < 1) {
+	// 	err->err = ERR_CLIENT_EXIT;
+	// 	err->message = "Client has closed connection";
+	// 	return 1;
+	// }
 
 	return parseCommand(buf, cmd, err);
+}
+
+int connectionSendError(connection *con) {
+	char *message;
+	return handleError(con->err, &message);
 }

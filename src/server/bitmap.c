@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <bitmap.h>
+#include <error.h>
 
 #define WORD_TYPE		unsigned char
 #define WORD_MAX		-1
@@ -14,7 +15,7 @@ struct bitmap {
 } bitmap;
 
 // Allocates a bitmap based on nbits desired and returns it
-int bitmapCreate(unsigned int nbits, struct bitmap **bmp) {
+int bitmapCreate(unsigned int nbits, struct bitmap **bmp, error *err) {
 	unsigned int words;
 
 	// Get number of words needed to store n bits
@@ -26,12 +27,14 @@ int bitmapCreate(unsigned int nbits, struct bitmap **bmp) {
 	// Allocate the bitmap struct
 	*bmp = (struct bitmap *) malloc(sizeof(struct bitmap));
 	if (*bmp == NULL) {
+		ERROR(err, E_NOMEM);
 		goto exit;
 	}
 
 	// Allocate the words for the actual map
 	(*bmp)->map = (WORD_TYPE *) malloc(sizeof(WORD_TYPE) * words);
 	if ((*bmp)->map == NULL) {
+		ERROR(err, E_NOMEM);
 		goto cleanupBitmap;
 	}
 
@@ -58,7 +61,7 @@ int bitmapSize(struct bitmap *bmp) {
 	return bmp->nbits;
 }
 
-void bitmapPrint(struct bitmap *bmp) {
+void bitmapPrint(struct bitmap *bmp, error *err) {
 
 	int size = bitmapSize(bmp);
 	printf("Size: %d\n", size);
@@ -79,11 +82,12 @@ static void bitmapTranslate(unsigned int bitNum, unsigned int *wordIdx, WORD_TYP
 	*mask = ((WORD_TYPE) 1) << offset;
 }
 
-int bitmapMark(struct bitmap *bmp, int idx) {
+int bitmapMark(struct bitmap *bmp, int idx, error *err) {
 	unsigned int wordIdx;
 	WORD_TYPE mask;
 
 	if (idx >= bmp->nbits || idx < 0) {
+		ERROR(err, E_OUTRNG);
 		return 1;
 	}
 
@@ -94,23 +98,22 @@ int bitmapMark(struct bitmap *bmp, int idx) {
 	return 0;
 }
 
-int bitmapMarkAll(struct bitmap *bmp) {
+void bitmapMarkAll(struct bitmap *bmp) {
 	unsigned int nWords = bmp->nbits / BITS_PER_WORD;
 	if (bmp->nbits % BITS_PER_WORD > 0) {
 		nWords += 1;
 	}
 
 	memset(bmp->map, WORD_MAX, sizeof(WORD_TYPE) * nWords);
-
-	return 0;
 }
 
-int bitmapUnmark(struct bitmap *bmp, int idx) {
+int bitmapUnmark(struct bitmap *bmp, int idx, error *err) {
 
 	unsigned int wordIdx;
 	WORD_TYPE mask;
 
 	if (idx >= bmp->nbits || idx < 0) {
+		ERROR(err, E_OUTRNG);
 		return 1;
 	}
 
@@ -128,7 +131,7 @@ int bitmapIsSet(struct bitmap *bmp, int idx) {
 	WORD_TYPE mask;
 
 	if (idx >= bmp->nbits || idx < 0) {
-		return 1;
+		return 0;
 	}
 
 	bitmapTranslate(idx, &wordIdx, &mask);

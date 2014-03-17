@@ -26,8 +26,7 @@ int dirExists(char *pathToDir) {
 int removeDir(char *pathToDir, error *err) {
 	DIR *dp = opendir(pathToDir);
 	if (dp == NULL) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to open directory";
+		ERROR(err, E_DOP);
 		return 1;
 	}
 
@@ -44,8 +43,7 @@ int removeDir(char *pathToDir, error *err) {
 			removeDir(pathToElement, err);
 		} else {
 			if (remove(pathToElement) != 0) {
-				err->err = ERR_INTERNAL;
-				err->message = "Unable to remove file";
+				ERROR(err, E_FRM);
 
 				closedir(dp);
 				return 1;
@@ -55,8 +53,7 @@ int removeDir(char *pathToDir, error *err) {
 
 	closedir(dp);
 	if (rmdir(pathToDir) != 0) {
-		err->err = ERR_INTERNAL;
-		err->message = "Unable to remove directory";
+		ERROR(err, E_DRM);
 		return 1;
 	}
 

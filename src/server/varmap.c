@@ -52,8 +52,7 @@ static int varMapPush(varMapNode **slot, char *varName, struct bitmap *bmp, erro
 	if (*slot == NULL) {
 		varMapNode *newNode = varMapNodeCreate(varName, bmp);
 		if (newNode == NULL) {
-			err->err = ERR_MEM;
-			err->message = "Failed to create new variable node";
+			ERROR(err, E_VARND);
 			return 1;
 		}
 
@@ -107,23 +106,23 @@ void varMapCleanup() {
 	}
 }
 
-void varMapNodePrint(varMapNode *node) {
+void varMapNodePrint(varMapNode *node, error *err) {
 	printf("Variable: %s\n", node->varName);
 	printf("Bitmap:\n");
-	bitmapPrint(node->bmp);
+	bitmapPrint(node->bmp, err);
 }
 
-static void _varMapPrint(varMapNode *node) {
+static void _varMapPrint(varMapNode *node, error *err) {
 	if (node != NULL) {
-		varMapNodePrint(node);
-		_varMapPrint(node->next);
+		varMapNodePrint(node, err);
+		_varMapPrint(node->next, err);
 	}
 }
 
-void varMapPrint(char *message) {
+void varMapPrint(char *message, error *err) {
 	printf(">============ Print Var Map: %s\n", message);
 	printf("Node count: %d\n", nodeCount);
-	_varMapPrint(gVarMapHead);
+	_varMapPrint(gVarMapHead, err);
 	printf("=============\n");
 }
 

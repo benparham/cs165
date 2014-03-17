@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "command.h"
-#include "error.h"
+#include <command.h>
+#include <error.h>
 
 
 // Definition of global array of command strings matched to enum CMD
@@ -197,8 +197,7 @@ int parseCommand(char *buf, command *cmd, error *err) {
 
 			char *cmdTerm = cmdParseMap[i].cmdTerm;
 			if (cmdParseMap[i].setArgs(cmd, strtok(&newBuf[cmdLen], cmdTerm), varName)) {
-				err->err = ERR_INVALID_CMD;
-				err->message = "Arguments are invalid";
+				ERROR(err, E_BADARG);
 				return 1;
 			}
 
@@ -206,7 +205,6 @@ int parseCommand(char *buf, command *cmd, error *err) {
 		}
 	}
 
-	err->err = ERR_INVALID_CMD;
-	err->message = "Unknown command";
+	ERROR(err, E_UNKCMD);
 	return 1;
 }
