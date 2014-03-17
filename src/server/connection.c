@@ -83,8 +83,8 @@ int connectionSendError(connection *con) {
 }
 
 int connectionSendResponse(connection *con) {
-	// char *message;
-	char message[BUFSIZE];
+	char *message;
+	// char message[BUFSIZE];
 
 	if (handleResponse(con->res, &message)) {
 		return 1;

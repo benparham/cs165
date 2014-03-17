@@ -6,6 +6,7 @@ BUILD_DIR = build
 
 SERVER = server
 CLIENT = client
+COMMON = common
 
 SERV_SOURCE_DIR = $(SOURCE_DIR)/$(SERVER)
 SERV_BUILD_DIR = $(BUILD_DIR)/$(SERVER)
@@ -13,19 +14,26 @@ SERV_BUILD_DIR = $(BUILD_DIR)/$(SERVER)
 CLIENT_SOURCE_DIR = $(SOURCE_DIR)/$(CLIENT)
 CLIENT_BUILD_DIR = $(BUILD_DIR)/$(CLIENT)
 
+COMMON_SOURCE_DIR = $(SOURCE_DIR)/$(COMMON)
+COMMON_BUILD_DIR = $(BUILD_DIR)/$(COMMON)
+
 # Flags
 CFLAGS = -g -Wall -std=c99 -I $(INCLUDE_DIR)
 
 # Header files
 INC = $(shell find $(INCLUDE_DIR) -type f -name '*.h')
 
+# Common files
+COMMON_SRC = $(shell find $(COMMON_SOURCE_DIR) -type f -name '*.c')
+
 # Server files
-SERV_SRC = $(shell find $(SERV_SOURCE_DIR) -type f -name '*.c')
-SERV_OBJ = $(patsubst $(SERV_SOURCE_DIR)/%.c, $(SERV_BUILD_DIR)/%.o, $(SERV_SRC))
+SERV_SRC = $(shell find $(SERV_SOURCE_DIR) -type f -name '*.c') $(COMMON_SRC)
+SERV_OBJ = $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SERV_SRC))
 
 # Client files
-CLIENT_SRC = $(shell find $(CLIENT_SOURCE_DIR) -type f -name '*.c')
-CLIENT_OBJ = $(patsubst $(CLIENT_SOURCE_DIR)/%.c, $(CLIENT_BUILD_DIR)/%.o, $(CLIENT_SRC))
+CLIENT_SRC = $(shell find $(CLIENT_SOURCE_DIR) -type f -name '*.c') $(COMMON_SRC)
+CLIENT_OBJ = $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(CLIENT_SRC))
+
 
 # Rules #######################
 
