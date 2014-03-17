@@ -16,8 +16,12 @@ typedef struct connection {
 	tableInfo *tbl;
 } connection;
 
-int initConnection(connection *con, threadArgs *tArgs);
+int connectionCreate(connection **con, threadArgs *tArgs);
+void connectionDestroy(connection *con);
 
-int destroyConnection(connection *con);
+int connectionReceiveCommand(connection *con);//int socketFD, command *cmd, error *err);
+// int receiveData(int socketFD, void *data, error *err);
+
+void connecitonSendError(connection *con);
 
 #endif

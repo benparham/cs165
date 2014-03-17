@@ -1,6 +1,8 @@
 #ifndef _GLOBAL_H_
 #define _GLOBAL_H_
 
+#define DEBUG
+
 #define BUFSIZE				1024			// Size of buffer used for string manipulation
 
 #define NAME_SIZE			16				// Maximum size of table/column names

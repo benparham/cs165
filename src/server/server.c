@@ -12,11 +12,59 @@
 #include <string.h>
 #include <assert.h>
 
-#include <server.h>
 #include <error.h>
 #include <command.h>
 #include <database.h>
 #include <varmap.h>
+#include <connection.h>
+
+
+#define BACKLOG 				10
+#define HOST_LOOKUP_CMD 		"ifconfig | grep -P 'inet (?!127.0.0.1)'"
+
+// Initialize all overhead
+static int bootstrap() {
+
+	// Add other bootstraps to this with ||
+	if (varMapBootstrap()) {
+		return 1;
+	}
+
+	return 0;
+}
+
+static void cleanup() {
+	varMapCleanup();
+}
+
+
+void *listenToClient(void *tempArgs) {
+
+	// Setup global connection struct for thread
+	threadArgs *args = (threadArgs *) tempArgs;
+	connection *con;
+	if (connectionCreate(&con, args)) {
+		goto exit;
+	}
+
+	// Begin command loop
+	int done = 0;
+	while (!done) {
+		if (connectionReceiveCommand(con)) {
+			done = handleReceiveErrors(con->err);
+		} else {
+			if (executeCommand(con->tbl, con->cmd, con->err)) {
+				done = handleExecuteErrors(con->err);
+			}
+		}
+	}
+
+	// Destroy thread's global connection struct
+	connectionDestroy(con);
+
+exit:
+	pthread_exit(NULL);
+}
 
 int main(int argc, char *argv[]) {
 	printf("Initiating Database Server...\n\n");
@@ -101,7 +149,6 @@ int main(int argc, char *argv[]) {
 	// Loop for accepting connections
 	printf("Ready for client connections...\n");
 	while (1) {
-		// printf("\nWaiting for connection from client...\n");
 		int sockAccept = accept(sockListen, &clientAddress, &addressLen);
 		if (sockAccept == -1) {
 			printf("Failed to accept connection on listening socket %d\n", sockListen);
@@ -124,82 +171,4 @@ int main(int argc, char *argv[]) {
 	cleanup();
 
 	return 0;
-}
-
-void *listenToClient(void *tempArgs) {
-
-	// Cast args to proper struct
-	threadArgs *args = (threadArgs *) tempArgs;
-
-	// Allocate command and error structs
-	error *err = (error *) malloc(sizeof(error));
-	command *cmd = createCommand();
-
-	tableInfo *currentTable = malloc(sizeof(tableInfo));	// Info for current table in use
-
-	// Begin command loop
-	int done = 0;
-	while (!done) {
-		if (receiveCommand(args->socketFD, cmd, err)) {
-			done = handleReceiveErrors(err);
-		} else {
-			if (executeCommand(currentTable, cmd, err)) {
-				done = handleExecuteErrors(err);
-			}
-		}
-	}
-
-	// Terminate connection from server end
-	terminateConnection(args->socketFD);
-
-	// Cleanup
-	free(args);
-	free(err);
-	destroyCommand(cmd);
-	free(currentTable);
-
-	pthread_exit(NULL);
-}
-
-// Initialize all overhead
-int bootstrap() {
-
-	// Add other bootstraps to this with ||
-	if (varMapBootstrap()) {
-		return 1;
-	}
-
-	return 0;
-}
-
-void cleanup() {
-	varMapCleanup();
-}
-
-void terminateConnection(int socketFD) {
-	printf("Terminating connection from server end...\n");
-	printf("Closing socket %d\n", socketFD);
-	close(socketFD);
-}
-
-int receiveCommand(int socketFD, command *cmd, error *err) {
-	if (cmd->args != NULL) {
-		free(cmd->args);
-		cmd->args = NULL;
-	}
-
-	char buf[BUFSIZE];
-	int bytesRecieved;
-
-	printf("Waiting to receive command from client...\n");
-	memset(buf, 0, BUFSIZE);
-
-	bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
-	if (bytesRecieved < 1) {
-		err->err = ERR_CLIENT_EXIT;
-		err->message = "Client has closed connection";
-		return 1;
-	}
-
-	return parseCommand(buf, cmd, err);
 }
