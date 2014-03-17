@@ -12,6 +12,7 @@
 
 #include <database.h>
 #include <error.h>
+#include <response.h>
 #include <command.h>
 #include <filesys.h>
 #include <table.h>
@@ -19,7 +20,7 @@
 #include <bitmap.h>
 #include <varmap.h>
 
-static int dbCreateTable(char *tableName, error *err) {
+static int dbCreateTable(char *tableName, response *res, error *err) {
 
 	char pathToTableDir[BUFSIZE];
 	sprintf(pathToTableDir, "%s/%s/%s", DATA_PATH, TABLE_DIR, tableName);
@@ -72,10 +73,12 @@ static int dbCreateTable(char *tableName, error *err) {
 	fclose(fp);
 
 	printf("Created new table '%s'\n", tableName);
+	RESPONSE_SUCCESS(res);
+
 	return 0;
 }
 
-static int dbRemoveTable(char *tableName, error *err) {
+static int dbRemoveTable(char *tableName, response *res, error *err) {
 	printf("Attempting to remove table '%s'\n", tableName);
 
 	char pathToTableDir[BUFSIZE];
@@ -91,10 +94,12 @@ static int dbRemoveTable(char *tableName, error *err) {
 	}
 
 	printf("Removed table %s\n", tableName);
+	RESPONSE_SUCCESS(res);
+
 	return 0;
 }
 
-static int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
+static int dbUseTable(tableInfo *tbl, char *tableName, response *res, error *err) {
 	char pathToTableFile[BUFSIZE];
 	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tableName, tableName);
 
@@ -122,11 +127,14 @@ static int dbUseTable(tableInfo *tbl, char *tableName, error *err) {
 	fclose(fp);
 
 	printf("Using table '%s'\n", tbl->name);
-	printtableInfo(tbl);
+	RESPONSE_SUCCESS(res);
+
+	// printtableInfo(tbl);
+	
 	return 0;
 }
 
-static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
+static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, error *err) {
 	
 	// TODO: Add code that updates the table info and writes it to disk
 
@@ -155,13 +163,14 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, error *err) {
 		goto cleanupFile;
 	}
 
-	columnPrint(col, "created new column in dbCreateColumn");
+	// columnPrint(col, "created new column in dbCreateColumn");
 
 	if (columnWriteToDisk(col, err)) {
 		goto cleanupColumn;
 	}
 
 	printf("Wrote new column to disk\n");
+	RESPONSE_SUCCESS(res);
 
 	columnDestroy(col);
 
@@ -178,7 +187,7 @@ exit:
 	return 1;
 }
 
-static int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
+static int dbInsert(tableInfo *tbl, insertArgs *args, response *res, error *err) {
 	
 	char *columnName = args->columnName;
 	printf("Inserting into column '%s'...\n", columnName);
@@ -194,13 +203,15 @@ static int dbInsert(tableInfo *tbl, insertArgs *args, error *err) {
 		goto exit;
 	}
 
-	columnPrint(col, "read column from disk in dbInsert");
+	// columnPrint(col, "read column from disk in dbInsert");
 
 	if (columnInsert(col, args->value, err)) {
 		goto cleanupColumn;
 	}
 
 	printf("Inserted into column '%s'\n", columnName);
+	RESPONSE_SUCCESS(res);
+
 	columnDestroy(col);
 
 	return 0;
@@ -211,7 +222,7 @@ exit:
 	return 1;
 }
 
-static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
+static int dbSelect(tableInfo *tbl, selectArgs *args, response *res, error *err) {
 
 	char *columnName = args->columnName;
 	printf("Selecting from column '%s'...\n", columnName);
@@ -234,7 +245,7 @@ static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
 		goto exit;
 	}
 
-	columnPrint(col, "read column from disk in dbSelect");
+	// columnPrint(col, "read column from disk in dbSelect");
 
 	// Get result bitmap
 	struct bitmap *resultBmp;
@@ -259,7 +270,9 @@ static int dbSelect(tableInfo *tbl, selectArgs *args, error *err) {
 		goto cleanupBitmap;
 	}
 
-	varMapPrint("updated var map in dbSelect", err);
+	// varMapPrint("updated var map in dbSelect", err);
+	printf("Added variable '%s'\n", varName);
+	RESPONSE_SUCCESS(res);
 
 	columnDestroy(col);
 	return 0;
@@ -280,7 +293,7 @@ static int cmdNeedsTable(command *cmd) {
 			cmd->cmd != CMD_EXIT);
 }
 
-int executeCommand(tableInfo *tbl, command *cmd, error *err) {
+int executeCommand(tableInfo *tbl, command *cmd, response *res, error *err) {
 	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
 	int result = 0;
 
@@ -292,29 +305,29 @@ int executeCommand(tableInfo *tbl, command *cmd, error *err) {
 
 	switch (cmd->cmd) {
 		case CMD_USE:
-			result = dbUseTable(tbl, (char *) cmd->args, err);
+			result = dbUseTable(tbl, (char *) cmd->args, res, err);
 			break;
 		case CMD_CREATE_TABLE:
-			result = dbCreateTable((char *) cmd->args, err);
+			result = dbCreateTable((char *) cmd->args, res, err);
 			break;
 		case CMD_REMOVE_TABLE:
-			result = dbRemoveTable((char *) cmd->args, err);
+			result = dbRemoveTable((char *) cmd->args, res, err);
 			break;
 		case CMD_CREATE:
-			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, err);
+			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, res, err);
 			break;
 		case CMD_INSERT:
-			result = dbInsert(tbl, (insertArgs *) cmd->args, err);
+			result = dbInsert(tbl, (insertArgs *) cmd->args, res, err);
 			break;
 		case CMD_SELECT:
-			result = dbSelect(tbl, (selectArgs *) cmd->args, err);
+			result = dbSelect(tbl, (selectArgs *) cmd->args, res, err);
 			break;
 		case CMD_FETCH:
 			ERROR(err, E_UNIMP);
 			result = 1;
 			break;
 		case CMD_EXIT:
-			ERROR(err, E_UNIMP);
+			ERROR(err, E_EXIT);
 			result = 1;
 			break;
 		default:

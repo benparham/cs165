@@ -3,6 +3,7 @@
 
 #include <command.h>
 #include <error.h>
+#include <response.h>
 #include <table.h>
 
 typedef struct threadArgs {
@@ -12,6 +13,7 @@ typedef struct threadArgs {
 typedef struct connection {
 	threadArgs *tArgs;
 	command *cmd;
+	response *res;
 	error *err;
 	tableInfo *tbl;
 } connection;

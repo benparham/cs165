@@ -4,11 +4,10 @@
 #include <stdlib.h>
 
 #include <error.h>
-#include <global.h>
+#include <response.h>
 #include <command.h>
 #include <table.h>
-#include <column.h>
 
-int executeCommand(tableInfo *tbl, command *cmd, error *err);
+int executeCommand(tableInfo *tbl, command *cmd, response *res, error *err);
 
 #endif

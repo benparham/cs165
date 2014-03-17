@@ -5,6 +5,7 @@
 #include <connection.h>
 #include <command.h>
 #include <error.h>
+#include <response.h>
 #include <table.h>
 
 int connectionCreate(connection **con, threadArgs *tArgs) {
@@ -16,6 +17,10 @@ int connectionCreate(connection **con, threadArgs *tArgs) {
 	(*con)->tArgs = tArgs;
 	(*con)->cmd = createCommand();
 	(*con)->err = (error *) malloc(sizeof(error));
+	if (responseCreate(&((*con)->res))) {
+		// TODO: cleanup other stuff here
+		return 1;
+	}
 	(*con)->tbl = (tableInfo *) malloc(sizeof(tableInfo));
 
 	return 0;
@@ -29,12 +34,13 @@ void connectionDestroy(connection *con) {
 	free(con->tArgs);
 	destroyCommand(con->cmd);
 	free(con->err);
+	responseDestroy(con->res);
 	free(con->tbl);
 
 	free(con);
 }
 
-int connectionReceiveCommand(connection *con) {//int socketFD, command *cmd, error *err) {
+int connectionReceiveCommand(connection *con) {
 	int socketFD = con->tArgs->socketFD;
 	command *cmd = con->cmd;
 	error *err = con->err;
@@ -55,14 +61,14 @@ int connectionReceiveCommand(connection *con) {//int socketFD, command *cmd, err
 		ERROR(err, E_EXIT);
 		return 1;
 	}
-	// if (bytesRecieved < 1) {
-	// 	err->err = ERR_CLIENT_EXIT;
-	// 	err->message = "Client has closed connection";
-	// 	return 1;
-	// }
 
 	return parseCommand(buf, cmd, err);
 }
+
+// static int sendMessage(char *message) {
+
+// 	return 0;
+// }
 
 int connectionSendError(connection *con) {
 	char *message;
@@ -72,6 +78,19 @@ int connectionSendError(connection *con) {
 	}
 
 	// Send message to the user
+
+	return 0;
+}
+
+int connectionSendResponse(connection *con) {
+	// char *message;
+	char message[BUFSIZE];
+
+	if (handleResponse(con->res, &message)) {
+		return 1;
+	}
+
+	// Send response to user
 
 	return 0;
 }
