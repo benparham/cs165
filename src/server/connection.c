@@ -66,5 +66,12 @@ int connectionReceiveCommand(connection *con) {//int socketFD, command *cmd, err
 
 int connectionSendError(connection *con) {
 	char *message;
-	return handleError(con->err, &message);
+	
+	if (handleError(con->err, &message)) {
+		return 1;
+	}
+
+	// Send message to the user
+
+	return 0;
 }
