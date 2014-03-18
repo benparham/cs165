@@ -124,7 +124,7 @@ static int messageDeserialize(void *serial, int serialBytes, message *msg) {
 		return 1;
 	}
 
-	char *msgStr = (char *) malloc(msgStrLen * sizeof(char));
+	char *msgStr = (char *) malloc((msgStrLen * sizeof(char)) + 1);
 	if (msgStr == NULL) {
 		return 1;
 	}
@@ -285,7 +285,7 @@ exit:
 	return 1;
 }
 
-int messageReceive(int socketFD, char **msgStr, int *dataBytes, void **data) {
+int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data) {
 
 	unsigned char serial[BUFSIZE];
 	memset(serial, 0, BUFSIZE);
@@ -307,8 +307,9 @@ int messageReceive(int socketFD, char **msgStr, int *dataBytes, void **data) {
 		goto cleanupMessage;
 	}
 
-	*msgStr = msg->msgStr;
-	
+	//*msgStr = msg->msgStr;
+	strcpy(msgStr, msg->msgStr);
+
 	if (msg->hasData) {
 		if (dataReceive(socketFD, dataBytes, data)) {
 			goto cleanupMessage;

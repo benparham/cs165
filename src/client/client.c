@@ -9,6 +9,8 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include <message.h>
+
 #define DEFAULT_TARGET_ADDRESS "127.0.0.1"
 #define MAX_INPUT 1024
 
@@ -74,7 +76,11 @@ int main(int argc, char *argv[]) {
 		// 	break;	
 		// }
 		// else {
-			send(socketFD, input, MAX_INPUT, 0);
+
+			messageSend(socketFD, input);
+			// send(socketFD, input, MAX_INPUT, 0);
+		
+
 			/*
 			int bytes_recieved = recv(socketFD, response, MAX_INPUT, 0);
 			if (bytes_recieved > 0) {

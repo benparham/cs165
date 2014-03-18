@@ -7,6 +7,7 @@
 #include <error.h>
 #include <response.h>
 #include <table.h>
+#include <message.h>
 
 int connectionCreate(connection **con, threadArgs *tArgs) {
 	*con = (connection *) malloc(sizeof(connection));
@@ -50,17 +51,23 @@ int connectionReceiveCommand(connection *con) {
 		cmd->args = NULL;
 	}
 
-	char buf[BUFSIZE];
-	int bytesRecieved;
+	// char buf[BUFSIZE];
+	// int bytesRecieved;
 
 	printf("Waiting to receive command from client...\n");
+	// memset(buf, 0, BUFSIZE);
+
+	// bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
+	// if (bytesRecieved < 1) {
+	// 	ERROR(err, E_EXIT);
+	// 	return 1;
+	// }
+	char buf[BUFSIZE];
 	memset(buf, 0, BUFSIZE);
 
-	bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
-	if (bytesRecieved < 1) {
-		ERROR(err, E_EXIT);
-		return 1;
-	}
+	int dataBytes;
+	void *data;
+	messageReceive(socketFD, buf, &dataBytes, &data);
 
 	return parseCommand(buf, cmd, err);
 }
