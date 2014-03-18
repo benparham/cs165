@@ -190,11 +190,11 @@ int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitma
 	return 0;
 }
 
-int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, error *err) {
+int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 	if (bitmapSize(bmp) != ((columnHeaderUnsorted *) _header)->nEntries) {
 		ERROR(err, E_BADFTC);
 		return 1;
 	}
 
-	return commonFetch(sizeof(columnHeaderUnsorted), fp, bmp, err);
+	return commonFetch(sizeof(columnHeaderUnsorted), fp, bmp, resultBytes, results, err);
 }

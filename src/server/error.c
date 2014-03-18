@@ -30,7 +30,9 @@ char *errorMessages[] = {
 	"Could not remove directory",
 	"Could not remove file",
 	"Could not create new var map node",
-	"Message error"
+	"Message error",
+	"Internal error",
+	"Variable does not exist"
 };
 
 void recordError(error *err, int errno) {
@@ -62,6 +64,12 @@ int handleError(error *err, char **message) {
 	printf("Error: %s\n", *message);
 	printf("File '%s', Function '%s', Line '%d'\n", err->fileName, err->funcName, err->lineNum);
 	#endif
+
+	// Wipe error
+	err->errno = E_INTERN;
+	err->fileName = "NA";
+	err->funcName = "NA";
+	err->lineNum = -1;
 
 	return result;
 }

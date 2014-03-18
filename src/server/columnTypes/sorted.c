@@ -40,7 +40,7 @@ int sortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bi
 	return 1;
 }
 
-int sortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err) {
+int sortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }

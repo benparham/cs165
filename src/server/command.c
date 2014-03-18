@@ -161,7 +161,7 @@ int setArgsFetchArgs(command *cmd, char *args, char *ignore) {
 		return 1;
 	}
 
-	strcpy(fetArgs->columnName, columnName);
+	strcpy(fetArgs->columnName, columnName); 
 	strcpy(fetArgs->varName, varName);
 
 	cmd->args = fetArgs;

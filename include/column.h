@@ -40,6 +40,6 @@ int columnInsert(column *col, int data, error *err);
 int columnSelectAll(column *col, struct bitmap **bmp, error *err);
 int columnSelectValue(column *col, int value, struct bitmap **bmp, error *err);
 int columnSelectRange(column *col, int low, int high, struct bitmap **bmp, error *err);
-int columnFetch(column *col, struct bitmap *bmp, error *err);
+int columnFetch(column *col, struct bitmap *bmp, int *nResults, int **results, error *err);
 
 #endif

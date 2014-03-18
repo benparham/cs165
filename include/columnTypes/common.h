@@ -28,12 +28,12 @@ typedef struct columnFunctions {
 	int (* selectAll) (void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
 	int (* selectValue) (void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
 	int (* selectRange) (void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-	int (* fetch) (void *columnHeader, FILE *fp, struct bitmap *bmp, error *err);
+	int (* fetch) (void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 } columnFunctions;
 
 int seekHeader(FILE *fp, int offset, error *err);
 
-int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, error *err);
+int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif

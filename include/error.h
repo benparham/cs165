@@ -43,6 +43,10 @@
 
 #define E_MSG				25		// Message error
 
+#define E_INTERN 			26		// Internal error
+
+#define E_NOVAR				27		// Variable does not exist
+
 
 /*
  * Errors

@@ -40,7 +40,7 @@ int btreeSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bit
 	return 1;
 }
 
-int btreeFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err) {
+int btreeFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }

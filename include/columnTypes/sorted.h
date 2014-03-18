@@ -19,6 +19,6 @@ int sortedInsert(void *columnHeader, FILE *fp, int data, error *err);
 int sortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
 int sortedSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
 int sortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-int sortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, error *err);
+int sortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif

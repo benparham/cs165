@@ -288,14 +288,67 @@ exit:
 
 static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 	
-	int *returnData = (int *) malloc(5 * sizeof(int));
-	for (int i = 0; i < 5; i++) {
-		returnData[i] = i + 1;
+	char *columnName = args->columnName;
+	char *varName = args->varName;
+
+	if (columnName == NULL || varName == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+	
+	printf("Fetching from column '%s'...\n", columnName);
+
+	// Get bitmap from var name
+	struct bitmap *bmp;
+	if (varMapGetVar(varName, &bmp)) {
+		ERROR(err, E_NOVAR);
+		goto exit;
 	}
 
-	RESPONSE(res, "Fetch results:", sizeof(int) * 5, returnData);
+	printf("Got bitmap for variable '%s'\n", varName);
+	bitmapPrint(bmp, err);
+
+
+	// Retrieve the column from disk
+	column *col = (column *) malloc(sizeof(column));
+	if (col == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	if (columnReadFromDisk(tbl, columnName, col, err)) {
+		free(col);
+		goto exit;
+	}
+
+	// Fetch the results
+	int resultBytes;
+	int *results;
+	if (columnFetch(col, bmp, &resultBytes, &results, err)) {
+		goto cleanupColumn;
+	}
+
+	int nResults = resultBytes / sizeof(int);
+	printf("Got %d results from fetch\n", nResults);
+	printf("[");
+	for (int i = 0; i < nResults; i++) {
+		printf("%d,", results[i]);
+	}
+	printf("]\n");
+	
+	// int *returnData = (int *) malloc(5 * sizeof(int));
+	// for (int i = 0; i < 5; i++) {
+	// 	returnData[i] = i + 1;
+	// }
+
+	RESPONSE(res, "Fetch results:", resultBytes, results);
 	
 	return 0;
+
+cleanupColumn:
+	columnDestroy(col);
+exit:
+	return 1;
 }
 
 static int cmdNeedsTable(command *cmd) {

@@ -58,7 +58,7 @@ int connectionReceiveCommand(connection *con) {
 		cmd->args = NULL;
 	}
 
-	printf("Waiting to receive command from client...\n");
+	printf("\n>====== Waiting to receive command from client...\n");
 
 	char buf[BUFSIZE];
 	memset(buf, 0, BUFSIZE);

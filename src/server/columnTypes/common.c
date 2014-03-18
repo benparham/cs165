@@ -31,17 +31,24 @@ int seekHeader(FILE *fp, int offset, error *err) {
 	return 0;
 }
 
-int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, error *err) {
+int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 
 	// Seek to data
 	if (seekHeader(fp, headerSizeBytes, err)) {
 		return 1;
 	}
 
-	printf("Fetch results:\n");
+	// printf("Fetch results:\n");
+	int resultBuf[BUFSIZE];
+	int resultOffset = 0;
 
 	int length = bitmapSize(bmp);
 	for (int i = 0; i < length; i++) {
+		if (resultOffset >= BUFSIZE) {
+			ERROR(err, E_NOMEM);
+			return 1;
+		}
+
 		if (bitmapIsSet(bmp, i)) {
 			int entry;
 			if (fread(&entry, sizeof(int), 1, fp) < 1) {
@@ -51,7 +58,9 @@ int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, error *err) {
 				return 1;
 			}
 
-			printf("%d,", entry);
+			// printf("%d,", entry);
+			resultBuf[resultOffset] = entry;
+			resultOffset += 1;
 
 		} else {
 			if (fseek(fp, sizeof(int), SEEK_CUR) == -1) {
@@ -63,5 +72,14 @@ int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, error *err) {
 		}
 	}
 
+	*resultBytes = resultOffset * sizeof(int);
+
+	*results = (int *) malloc(*resultBytes);
+	if (*results == NULL) {
+		ERROR(err, E_NOMEM);
+		return 1;
+	}
+	memcpy(*results, resultBuf, *resultBytes);
+	
 	return 0;
 }

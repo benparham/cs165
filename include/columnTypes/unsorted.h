@@ -27,6 +27,6 @@ int unsortedInsert(void *_header, FILE *fp, int data, error *err);
 int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err);
 int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp, error *err);
 int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, error *err);
+int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif
