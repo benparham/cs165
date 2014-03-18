@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 
 #include <message.h>
+#include <global.h>
 
 #define SRL_MSG_NON_STR_BYTES		2 * sizeof(int)
 #define SRL_DATA_NON_DATA_BYTES		sizeof(int)
@@ -251,7 +252,78 @@ exit:
 	return 1;
 }
 
+static int dataReceive(int socketFD, int *dataBytes, void **data) {
+
+	unsigned char serial[BUFSIZE];
+	memset(serial, 0, BUFSIZE);
+
+	int minSerialSize = SRL_DATA_NON_DATA_BYTES + sizeof(unsigned char);
+
+	int bytesRecieved = recv(socketFD, serial, BUFSIZE, 0);
+	if (bytesRecieved < minSerialSize) {
+		goto exit;
+	}
+
+	rawData *rData;
+	if (rawDataCreate(&rData)) {
+		goto exit;
+	}
+	if (rawDataDeserialize(serial, bytesRecieved, rData)) {
+		goto cleanupRawData;
+	}
+
+	*dataBytes = rData->dataBytes;
+	*data = rData->data;
+
+	rawDataDestroy(rData);
+
+	return 0;
+
+cleanupRawData:
+	rawDataDestroy(rData);
+exit:
+	return 1;
+}
+
 int messageReceive(int socketFD, char **msgStr, int *dataBytes, void **data) {
 
+	unsigned char serial[BUFSIZE];
+	memset(serial, 0, BUFSIZE);
+
+	int minSerialSize = SRL_MSG_NON_STR_BYTES + sizeof(unsigned char);
+
+	// Get serialized message
+	int bytesRecieved = recv(socketFD, serial, BUFSIZE, 0);
+	if (bytesRecieved < minSerialSize) {
+		goto exit;
+	}
+
+	// Deserialize into message
+	message *msg;
+	if (messageCreate(&msg)) {
+		goto exit;
+	}
+	if (messageDeserialize(serial, bytesRecieved, msg)) {
+		goto cleanupMessage;
+	}
+
+	*msgStr = msg->msgStr;
+	
+	if (msg->hasData) {
+		if (dataReceive(socketFD, dataBytes, data)) {
+			goto cleanupMessage;
+		}
+	} else {
+		*dataBytes = 0;
+		*data = NULL;
+	}
+
+	messageDestroy(msg);
+
+	return 0;
+
+cleanupMessage:
+	messageDestroy(msg);
+exit:
 	return 1;
 }
