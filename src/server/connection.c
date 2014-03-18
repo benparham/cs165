@@ -24,6 +24,9 @@ int connectionCreate(connection **con, threadArgs *tArgs) {
 	}
 	(*con)->tbl = (tableInfo *) malloc(sizeof(tableInfo));
 
+	(*con)->dataBytes = 0;
+	(*con)->data = NULL;
+
 	return 0;
 }
 
@@ -37,6 +40,10 @@ void connectionDestroy(connection *con) {
 	free(con->err);
 	responseDestroy(con->res);
 	free(con->tbl);
+
+	if (con->data != NULL) {
+		free(con->data);
+	}
 
 	free(con);
 }
@@ -65,10 +72,10 @@ int connectionReceiveCommand(connection *con) {
 	char buf[BUFSIZE];
 	memset(buf, 0, BUFSIZE);
 
-	int dataBytes;
-	void *data;
+	// int dataBytes;
+	// void *data;
 	int term;
-	if (messageReceive(socketFD, buf, &dataBytes, &data, &term)) {
+	if (messageReceive(socketFD, buf, &(con->dataBytes), &(con->data), &term)) {
 		if (term) {
 			ERROR(err, E_EXIT);
 		} else {

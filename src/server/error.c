@@ -57,10 +57,9 @@ int handleError(error *err, char **message) {
 			result = 0;
 			break;
 	}
-
-	printf("Error: %s\n", *message);
 	
 	#ifdef DEBUG
+	printf("Error: %s\n", *message);
 	printf("File '%s', Function '%s', Line '%d'\n", err->fileName, err->funcName, err->lineNum);
 	#endif
 

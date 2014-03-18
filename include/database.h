@@ -7,7 +7,8 @@
 #include <response.h>
 #include <command.h>
 #include <table.h>
+#include <connection.h>
 
-int executeCommand(tableInfo *tbl, command *cmd, response *res, error *err);
+int executeCommand(connection *con);//tableInfo *tbl, command *cmd, response *res, error *err);
 
 #endif

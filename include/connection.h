@@ -16,6 +16,9 @@ typedef struct connection {
 	response *res;
 	error *err;
 	tableInfo *tbl;
+
+	int dataBytes;
+	void *data;
 } connection;
 
 int connectionCreate(connection **con, threadArgs *tArgs);

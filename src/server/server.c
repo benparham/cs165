@@ -53,7 +53,7 @@ void *listenToClient(void *tempArgs) {
 		if (connectionReceiveCommand(con)) {
 			done = connectionSendError(con);
 		} else {
-			if (executeCommand(con->tbl, con->cmd, con->res, con->err)) {
+			if (executeCommand(con)) {//con->tbl, con->cmd, con->res, con->err)) {
 				done = connectionSendError(con);
 			} else {
 				done = connectionSendResponse(con);

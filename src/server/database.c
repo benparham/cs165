@@ -19,6 +19,7 @@
 #include <column.h>
 #include <bitmap.h>
 #include <varmap.h>
+#include <connection.h>
 
 static int dbCreateTable(char *tableName, response *res, error *err) {
 
@@ -293,7 +294,12 @@ static int cmdNeedsTable(command *cmd) {
 			cmd->cmd != CMD_EXIT);
 }
 
-int executeCommand(tableInfo *tbl, command *cmd, response *res, error *err) {
+int executeCommand(connection *con) {//tableInfo *tbl, command *cmd, response *res, error *err) {
+	tableInfo *tbl = con->tbl;
+	command *cmd = con->cmd;
+	response *res = con->res;
+	error *err = con->err;
+
 	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
 	int result = 0;
 
