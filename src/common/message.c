@@ -192,7 +192,9 @@ static int messageSendDataFlag(int socketFD, char *msgStr, int hasData) {
 	}
 
 	msg->hasData = hasData;
-	msg->msgStr = msgStr;
+	// msg->msgStr = msgStr;
+	msg->msgStr = (char *) malloc(strlen(msgStr) * sizeof(char));
+	strcpy(msg->msgStr, msgStr);
 
 	void *serial;
 	int serialBytes;
@@ -285,7 +287,10 @@ exit:
 	return 1;
 }
 
-int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data) {
+int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int *term) {
+
+	// Flag for terminated connection
+	*term = 0;
 
 	unsigned char serial[BUFSIZE];
 	memset(serial, 0, BUFSIZE);
@@ -295,6 +300,9 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data) {
 	// Get serialized message
 	int bytesRecieved = recv(socketFD, serial, BUFSIZE, 0);
 	if (bytesRecieved < minSerialSize) {
+		if (bytesRecieved == 0) {
+			*term = 1;
+		}
 		goto exit;
 	}
 

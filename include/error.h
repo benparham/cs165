@@ -41,6 +41,8 @@
 
 #define E_VARND				24		// Failed to create var map node
 
+#define E_MSG				25		// Message error
+
 
 /*
  * Errors

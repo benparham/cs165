@@ -29,7 +29,8 @@ char *errorMessages[] = {
 	"Could not open directory",
 	"Could not remove directory",
 	"Could not remove file",
-	"Could not create new var map node"
+	"Could not create new var map node",
+	"Message error"
 };
 
 void recordError(error *err, int errno) {

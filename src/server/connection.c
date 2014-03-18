@@ -67,7 +67,16 @@ int connectionReceiveCommand(connection *con) {
 
 	int dataBytes;
 	void *data;
-	messageReceive(socketFD, buf, &dataBytes, &data);
+	int term;
+	if (messageReceive(socketFD, buf, &dataBytes, &data, &term)) {
+		if (term) {
+			ERROR(err, E_EXIT);
+		} else {
+			ERROR(err, E_MSG);
+		}
+
+		return 1;
+	}
 
 	return parseCommand(buf, cmd, err);
 }
