@@ -93,7 +93,8 @@ int connectionSendError(connection *con) {
 		return 1;
 	}
 
-	// Send message to the user
+	// Ignore errors in sending message
+	messageSend(con->tArgs->socketFD, message);
 
 	return 0;
 }
@@ -106,7 +107,8 @@ int connectionSendResponse(connection *con) {
 		return 1;
 	}
 
-	// Send response to user
+	// Ignore errors in sending message
+	messageSend(con->tArgs->socketFD, message);
 
 	return 0;
 }

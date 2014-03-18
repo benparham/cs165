@@ -87,7 +87,8 @@ static int messageSerialize(message *msg, void **serial, int *serialBytes) {
 		return 1;
 	}
 
-	int msgStrLen = strlen(msg->msgStr);
+	// +1 for null terminator
+	int msgStrLen = strlen(msg->msgStr) + 1;
 
 	// int intBytes = 2 * sizeof(int);
 	int strBytes = msgStrLen * sizeof(char);

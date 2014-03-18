@@ -77,7 +77,29 @@ int main(int argc, char *argv[]) {
 		// }
 		// else {
 
-			messageSend(socketFD, input);
+			if (messageSend(socketFD, input)) {
+				printf("Error sending message\n");
+			}
+
+			if (strcmp(input, "exit\n") == 0) {
+				break;	
+			}
+
+			int dataBytes;
+			void *data;
+			int term;
+			if (messageReceive(socketFD, response, &dataBytes, &data, &term)) {
+				if (term) {
+					printf("Server has exited\n");
+					break;
+				} else {
+					printf("Error receiving message\n");
+				}
+			}
+
+
+			printf("%s\n", response);
+
 			// send(socketFD, input, MAX_INPUT, 0);
 		
 
@@ -89,10 +111,6 @@ int main(int argc, char *argv[]) {
 			else {
 				printf("Error recieving response from server\n");
 			}*/
-
-			if (strcmp(input, "exit\n") == 0) {
-				break;	
-			}
 		// }
 	}
 	
