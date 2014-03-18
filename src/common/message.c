@@ -44,7 +44,6 @@ typedef struct rawData {
 	void *data;
 } rawData;
 
-
 static int rawDataCreate(rawData **rData) {
 	*rData = (rawData *) malloc(sizeof(rawData));
 	if (*rData == NULL) {
@@ -57,14 +56,15 @@ static int rawDataCreate(rawData **rData) {
 	return 0;
 }
 
+// Does NOT automatically free the data
 static void rawDataDestroy(rawData *rData) {
 	if (rData == NULL) {
 		return;
 	}
 
-	if (rData->data != NULL) {
-		free(rData->data);
-	}
+	// if (rData->data != NULL) {
+	// 	free(rData->data);
+	// }
 
 	free(rData);
 }

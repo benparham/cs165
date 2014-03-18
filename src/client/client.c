@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <message.h>
 
@@ -99,6 +100,29 @@ int main(int argc, char *argv[]) {
 
 
 			printf("%s\n", response);
+
+			if (dataBytes > 0) {
+				
+				assert(dataBytes % sizeof(int) == 0);
+				int nEntries = dataBytes / sizeof(int);
+
+				printf("[");
+
+				for (int i = 0; i < nEntries; i++) {
+					
+					char *entry;
+					sprintf(entry, "%d", ((int *) data)[i]);
+
+					printf("%s", entry);
+					if (i != nEntries - 1) {
+						printf(",");
+					}
+				}
+
+				printf("]\n");
+
+				free(data);
+			}
 
 			// send(socketFD, input, MAX_INPUT, 0);
 		

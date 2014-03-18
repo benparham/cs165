@@ -286,6 +286,18 @@ exit:
 	return 1;
 }
 
+static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
+	
+	int *returnData = (int *) malloc(5 * sizeof(int));
+	for (int i = 0; i < 5; i++) {
+		returnData[i] = i + 1;
+	}
+
+	RESPONSE(res, "Fetch results:", sizeof(int) * 5, returnData);
+	
+	return 0;
+}
+
 static int cmdNeedsTable(command *cmd) {
 
 	return (cmd->cmd != CMD_USE &&
@@ -294,7 +306,7 @@ static int cmdNeedsTable(command *cmd) {
 			cmd->cmd != CMD_EXIT);
 }
 
-int executeCommand(connection *con) {//tableInfo *tbl, command *cmd, response *res, error *err) {
+int executeCommand(connection *con) {
 	tableInfo *tbl = con->tbl;
 	command *cmd = con->cmd;
 	response *res = con->res;
@@ -329,8 +341,7 @@ int executeCommand(connection *con) {//tableInfo *tbl, command *cmd, response *r
 			result = dbSelect(tbl, (selectArgs *) cmd->args, res, err);
 			break;
 		case CMD_FETCH:
-			ERROR(err, E_UNIMP);
-			result = 1;
+			result = dbFetch(tbl, (fetchArgs *) cmd->args, res, err);
 			break;
 		case CMD_EXIT:
 			ERROR(err, E_EXIT);

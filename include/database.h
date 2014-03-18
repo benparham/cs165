@@ -9,6 +9,6 @@
 #include <table.h>
 #include <connection.h>
 
-int executeCommand(connection *con);//tableInfo *tbl, command *cmd, response *res, error *err);
+int executeCommand(connection *con);
 
 #endif

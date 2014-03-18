@@ -58,22 +58,11 @@ int connectionReceiveCommand(connection *con) {
 		cmd->args = NULL;
 	}
 
-	// char buf[BUFSIZE];
-	// int bytesRecieved;
-
 	printf("Waiting to receive command from client...\n");
-	// memset(buf, 0, BUFSIZE);
 
-	// bytesRecieved = recv(socketFD, buf, BUFSIZE, 0);
-	// if (bytesRecieved < 1) {
-	// 	ERROR(err, E_EXIT);
-	// 	return 1;
-	// }
 	char buf[BUFSIZE];
 	memset(buf, 0, BUFSIZE);
 
-	// int dataBytes;
-	// void *data;
 	int term;
 	if (messageReceive(socketFD, buf, &(con->dataBytes), &(con->data), &term)) {
 		if (term) {
@@ -87,11 +76,6 @@ int connectionReceiveCommand(connection *con) {
 
 	return parseCommand(buf, cmd, err);
 }
-
-// static int sendMessage(char *message) {
-
-// 	return 0;
-// }
 
 int connectionSendError(connection *con) {
 	char *message;
@@ -107,15 +91,24 @@ int connectionSendError(connection *con) {
 }
 
 int connectionSendResponse(connection *con) {
-	char *message;
-	// char message[BUFSIZE];
+	// char *message;
+	// int dataBytes;
+	// void *data;
 
-	if (handleResponse(con->res, &message)) {
-		return 1;
+	// if (handleResponse(con->res, &message, &dataBytes, &data)) {
+	// 	return 1;
+	// }
+	int socketFD = con->tArgs->socketFD;
+	response *res = con->res;
+
+	if (res->dataBytes > 0) {
+		dataSend(socketFD, res->message, res->dataBytes, res->data);
+	} else {
+		// Ignore errors in sending message
+		messageSend(socketFD, res->message);
 	}
 
-	// Ignore errors in sending message
-	messageSend(con->tArgs->socketFD, message);
+	responseWipe(res);
 
 	return 0;
 }

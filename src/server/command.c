@@ -143,14 +143,28 @@ int setArgsSelectArgs(command *cmd, char *args, char *varName) {
 
 	cmd->args = selArgs;
 
-	// TODO: Delete this (testing stuff)
-	// printf("Select arguments:\n");
-	// printf("Column name: %s\n", ((selectArgs *) cmd->args)->columnName);
-	// printf("Variable name: %s\n", ((selectArgs *) cmd->args)->varName);
-	// printf("Has condition: %s\n", ((selectArgs *) cmd->args)->hasCondition ? "true" : "false");
-	// printf("Is range: %s\n", ((selectArgs *) cmd->args)->isRange ? "true" : "false");
-	// printf("Low: %d\n", ((selectArgs *) cmd->args)->low);
-	// printf("High: %d\n", ((selectArgs *) cmd->args)->high);
+	return 0;
+}
+
+int setArgsFetchArgs(command *cmd, char *args, char *ignore) {
+	(void) ignore;
+
+	char *columnName = strtok(args, ",");
+	char *varName = strtok(NULL, "\n");
+
+	if (columnName == NULL || varName == NULL) {
+		return 1;
+	}
+
+	fetchArgs *fetArgs = (fetchArgs *) malloc(sizeof(fetchArgs));
+	if (fetArgs == NULL) {
+		return 1;
+	}
+
+	strcpy(fetArgs->columnName, columnName);
+	strcpy(fetArgs->varName, varName);
+
+	cmd->args = fetArgs;
 
 	return 0;
 }
@@ -169,7 +183,7 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"create(", ")", CMD_CREATE, &setArgsColArgs},
 	{"select(", ")", CMD_SELECT, &setArgsSelectArgs},
 	{"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
-	{"fetch(", ")", CMD_FETCH, &setArgsString},
+	{"fetch(", ")", CMD_FETCH, &setArgsFetchArgs},
 	{"load(", ")", CMD_LOAD, &setArgsString},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
 	{NULL, NULL, 0, NULL}

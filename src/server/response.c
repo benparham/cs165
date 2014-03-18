@@ -11,10 +11,29 @@ int responseCreate(response **res) {
 		return 1;
 	}
 
-	(*res)->nEntries = -1;
+	(*res)->dataBytes = -1;
+	(*res)->message = NULL;
 	(*res)->data = NULL;
 
 	return 0;
+}
+
+void responseWipe(response *res) {
+	if (res == NULL) {
+		return;
+	}
+
+	res->dataBytes = -1;
+	
+	if (res->message != NULL) {
+		// free(res->message);
+		res->message = NULL;
+	}
+
+	if (res->data != NULL) {
+		free(res->data);
+		res->data = NULL;
+	}
 }
 
 void responseDestroy(response *res) {
@@ -22,61 +41,66 @@ void responseDestroy(response *res) {
 		return;
 	}
 
-	if (res->data != NULL) {
-		free(res->data);
-	}
+	responseWipe(res);
 
 	free(res);
 }
 
 // Should only be called after handle response, never twice in a row, thus the asserts
-void recordResponse(response *res, unsigned int nEntries, int *data) {
-	assert(res->nEntries == -1);
+void recordResponse(response *res, char *message, unsigned int dataBytes, int *data) {
+	assert(res->dataBytes == -1);
+	assert(res->message == NULL);
 	assert(res->data == NULL);
 
-	if (nEntries == 0) {
+	assert(message != NULL);
+	assert(dataBytes >= 0);
+	if (dataBytes == 0) {
 		assert(data == NULL);
-
-		res->nEntries = 0;
-		res->data = NULL;
-		return;
+	} else {
+		assert(data != NULL);
 	}
 
-	res->nEntries = nEntries;
+	res->dataBytes = dataBytes;
+	res->message = message;
 	res->data = data;
 }
 
-int handleResponse(response *res, char **message) {
-	int result;
+// int handleResponse(response *res, char **message, int *dataBytes, void **data) {
+// 	int result;
 
-	if (res->nEntries < 0) {
+// 	if (res->nEntries < 0) {
 		
-		*message = "Response error, terminating connection";
-		result = 1;
+// 		*message = "Response error, terminating connection";
+// 		result = 1;
 
-	} else if (res->nEntries == 0) {
+// 	} else if (res->nEntries == 0) {
 
-		assert(res->data == NULL);
+// 		assert(res->data == NULL);
 
-		*message = "Success";
-		result = 0;
+// 		*message = "Success";
+// 		result = 0;
 
-	} else {
+// 	} else {
 
-		// int length = res->nEntries;
-		// for (int i = 0; i < length; i++) {
+// 		// int length = res->nEntries;
+// 		// for (int i = 0; i < length; i++) {
 
-		// }
-		// strcat(*message, "Data");
-		*message = "Data";
-		result = 0;
+// 		// }
+// 		// strcat(*message, "Data");
+// 		*message = "Data";
 
-	}
+// 		*dataBytes
 
-	res->nEntries = -1;
-	res->data = NULL;
+// 		result = 0;
 
-	printf("Response: %s\n", *message);
+// 	}
 
-	return result;
-}
+// 	res->nEntries = -1;
+// 	res->data = NULL;
+
+// 	#ifdef DEBUG
+// 	printf("Response: %s\n", *message);
+// 	#endif
+
+// 	return result;
+// }

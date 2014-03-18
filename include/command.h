@@ -44,7 +44,6 @@ typedef struct createColArgs {
 typedef struct insertArgs {
 	char columnName[BUFSIZE];
 	int value;
-	// char value[BUFSIZE];
 } insertArgs;
 
 typedef struct selectArgs {
@@ -57,6 +56,11 @@ typedef struct selectArgs {
 	int low;
 	int high;
 } selectArgs;
+
+typedef struct fetchArgs {
+	char columnName[BUFSIZE];
+	char varName[BUFSIZE];
+} fetchArgs;
 
 command* createCommand();
 void destroyCommand(command *cmd);
