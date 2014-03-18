@@ -10,21 +10,14 @@ static int columnSetFunctions(column *col, error *err) {
 			col->funcs = &unsortedColumnFunctions;
 			break;
 		case COL_SORTED:
-			// err->err = ERR_UNIMP;
-			// err->message = "Sorted columns not yet implemented";
 			ERROR(err, E_UNIMP);
 			return 1;
 			break;
 		case COL_BTREE:
-			// err->err = ERR_UNIMP;
-			// err->message = "B-tree columns not yet implemented";
 			ERROR(err, E_UNIMP);
-			return 1;
 			return 1;
 			break;
 		default:
-			// err->err = ERR_INTERNAL;
-			// err->message = "Unsupported column storage type";
 			ERROR(err, E_COLST);
 			return 1;
 	}
@@ -37,8 +30,6 @@ int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *fp, colum
 
 	*col = (column *) malloc(sizeof(column));
 	if (*col == NULL) {
-		// err->err = ERR_MEM;
-		// err->message = "Failed to allocate a new column buffer";
 		ERROR(err, E_NOMEM);
 		goto exit;
 	}
@@ -77,8 +68,6 @@ int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err
 	// printf("Attempting to open column file %s\n", pathToColumn);
 
 	if (!fileExists(pathToColumn)) {
-		// err->err = ERR_DUP;
-		// err->message = "Cannot read column. Does not exist";
 		ERROR(err, E_NOCOL);
 		goto exit;
 	}
@@ -86,16 +75,12 @@ int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err
 	// Open the column file
 	col->fp = fopen(pathToColumn, "rb+");
 	if (col->fp == NULL) {
-		// err->err = ERR_INTERNAL;
-		// err->message = "Unable to open file for column";
 		ERROR(err, E_FOP);
 		goto exit;
 	}
 
 	// Read in the storage type
 	if (fread(&(col->storageType), sizeof(COL_STORAGE_TYPE), 1, col->fp) < 1) {
-		// err->err = ERR_INTERNAL;
-		// err->message = "Unable to read from column file";
 		ERROR(err, E_FRD);
 		goto cleanupFile;
 	}
@@ -129,16 +114,12 @@ int columnWriteToDisk(column *col, error *err) {
 
 	// Seek to the beginning of the file
 	if (fseek(col->fp, 0, SEEK_SET) == -1) {
-		// err->err = ERR_INTERNAL;
-		// err->message = "Failed to seek in column file";
 		ERROR(err, E_FSK);
 		return 1;
 	}
 
 	// Write the storage type to disk first
 	if (fwrite(&(col->storageType), sizeof(COL_STORAGE_TYPE), 1, col->fp) < 1) {
-		// err->err = ERR_INTERNAL;
-		// err->message = "Unable to write storage type to column file";
 		ERROR(err, E_FWR);
 		return 1;
 	}
@@ -149,8 +130,6 @@ int columnWriteToDisk(column *col, error *err) {
 	}
 
 	if (fflush(col->fp)) {
-		// err->err = ERR_INTERNAL;
-		// err->message = "Unable to flush column file";
 		ERROR(err, E_FFL);
 		return 1;
 	}
@@ -177,8 +156,6 @@ int columnInsert(column *col, int data, error *err) {
 	}
 
 	if (fflush(col->fp)) {
-		// err->err = ERR_INTERNAL;
-		// err->message = "Unable to flush column file";
 		ERROR(err, E_FFL);
 		return 1;
 	}
