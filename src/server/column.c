@@ -3,6 +3,7 @@
 #include <filesys.h>
 #include <columnTypes/common.h>
 #include <columnTypes/unsorted.h>
+#include <columnTypes/sorted.h>
 
 static int columnSetFunctions(column *col, error *err) {
 	switch (col->storageType) {
@@ -10,8 +11,7 @@ static int columnSetFunctions(column *col, error *err) {
 			col->funcs = &unsortedColumnFunctions;
 			break;
 		case COL_SORTED:
-			ERROR(err, E_UNIMP);
-			return 1;
+			col->funcs = &sortedColumnFunctions;
 			break;
 		case COL_BTREE:
 			ERROR(err, E_UNIMP);

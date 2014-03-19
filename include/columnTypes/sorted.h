@@ -4,6 +4,9 @@
 #include <global.h>
 #include <error.h>
 #include <bitmap.h>
+#include <columnTypes/common.h>
+
+extern columnFunctions sortedColumnFunctions;
 
 typedef struct columnHeaderSorted {
 	char *name;
@@ -17,6 +20,8 @@ typedef struct columnHeaderSorted {
 
 int sortedCreateHeader(void **_header, char *columnName, error *err);
 void sortedDestroyHeader(void *_header);
+int sortedReadInHeader(void *_header, FILE *fp, error *err);
+int sortedWriteOutHeader(void *_header, FILE *fp, error *err);
 void sortedPrintHeader(void *_header);
 
 int sortedInsert(void *columnHeader, FILE *fp, int data, error *err);

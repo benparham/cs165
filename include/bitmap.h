@@ -17,12 +17,15 @@ int bitmapSize(struct bitmap *bmp);
 
 void bitmapPrint(struct bitmap *bmp);
 
+int bitmapAddBits(struct bitmap *bmp, int addBits);
+
 int bitmapMark(struct bitmap *bmp, int idx, error *err);
 void bitmapMarkAll(struct bitmap *bmp);
 int bitmapUnmark(struct bitmap *bmp, int idx, error *err);
 int bitmapIsSet(struct bitmap *bmp, int idx);
 
-void bitmapSerialize(struct bitmap *bmp, serializer *slzr);
-void bitmapDeserialize(struct bitmap **bmp, serializer *slzr);
+void bitmapSerialAddSize(serializer *slzr, struct bitmap *bmp);
+void bitmapSerialWrite(serializer *slzr, struct bitmap *bmp);
+void bitmapSerialRead(serializer *slzr, struct bitmap **bmp);
 
 #endif
