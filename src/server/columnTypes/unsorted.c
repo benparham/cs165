@@ -39,11 +39,16 @@ void unsortedDestroyHeader(void *header) {
 	free(header);
 }
 
-// TODO: Needs to take void **_header and allocate it. Also, should switch
-// 		 header->name as a char * and use serializer here and in writeOutHeader
-int unsortedReadInHeader(void *_header, FILE *fp, error *err) {
-	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
-	
+// TODO: header->name as a char * and use serializer here and in writeOutHeader
+int unsortedReadInHeader(void **_header, FILE *fp, error *err) {
+	*_header = malloc(sizeof(columnHeaderUnsorted));
+	if (*_header == NULL) {
+		ERROR(err, E_NOMEM);
+		return 1;
+	}
+
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) *_header;
+
 	if (seekHeader(fp, 0, err)) {
 		return 1;
 	}

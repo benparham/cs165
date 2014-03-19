@@ -91,20 +91,13 @@ int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err
 		goto cleanupFile;
 	}
 
-	// Create the column header
-	if (col->funcs->createHeader(&(col->columnHeader), columnName, err)) {
-		goto cleanupFile;
-	}
-
 	// Read in the column header
-	if (col->funcs->readInHeader(col->columnHeader, col->fp, err)) {
-		goto cleanupHeader;
+	if (col->funcs->readInHeader(&(col->columnHeader), col->fp, err)) {
+		goto cleanupFile;
 	}
 
 	return 0;
 
-cleanupHeader:
-	col->funcs->destroyHeader(col->columnHeader);
 cleanupFile:
 	fclose(col->fp);
 exit:

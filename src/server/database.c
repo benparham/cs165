@@ -145,7 +145,7 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, er
 	char pathToColumn[BUFSIZE];
 	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
-	printf("Attempting to create column file %s\n", pathToColumn);
+	// printf("Attempting to create column file %s\n", pathToColumn);
 
 	if (fileExists(pathToColumn)) {
 		ERROR(err, E_DUPCOL);
@@ -164,11 +164,11 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, er
 		goto cleanupFile;
 	}
 
-	// columnPrint(col, "created new column in dbCreateColumn");
-
 	if (columnWriteToDisk(col, err)) {
 		goto cleanupColumn;
 	}
+
+	// columnPrint(col, "created new column in dbCreateColumn");
 
 	printf("Wrote new column to disk\n");
 	RESPONSE_SUCCESS(res);

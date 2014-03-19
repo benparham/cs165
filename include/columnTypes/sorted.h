@@ -20,7 +20,7 @@ typedef struct columnHeaderSorted {
 
 int sortedCreateHeader(void **_header, char *columnName, error *err);
 void sortedDestroyHeader(void *_header);
-int sortedReadInHeader(void *_header, FILE *fp, error *err);
+int sortedReadInHeader(void **_header, FILE *fp, error *err);
 int sortedWriteOutHeader(void *_header, FILE *fp, error *err);
 void sortedPrintHeader(void *_header);
 

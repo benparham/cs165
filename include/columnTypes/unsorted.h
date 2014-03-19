@@ -19,7 +19,7 @@ typedef struct columnHeaderUnsorted {
 
 int unsortedCreateHeader(void **_header, char *columnName, error *err);
 void unsortedDestroyHeader(void *_header);
-int unsortedReadInHeader(void *_header, FILE *fp, error *err);
+int unsortedReadInHeader(void **_header, FILE *fp, error *err);
 int unsortedWriteOutHeader(void *_header, FILE *fp, error *err);
 void unsortedPrintHeader(void *_header);
 
