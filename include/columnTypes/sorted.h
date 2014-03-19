@@ -6,14 +6,18 @@
 #include <bitmap.h>
 
 typedef struct columnHeaderSorted {
-	char name[NAME_SIZE];
+	char *name;
 	int sizeBytes;
+
+	int entriesTotal;
+	int entriesUsed;
+
+	struct bitmap *bmp;
 } columnHeaderSorted;
 
-void sortedPrintHeader(columnHeaderSorted *header);
-
-int sortedCreateHeader(columnHeaderSorted *header, char *columnName, error *err);
-void sortedDestroyHeader(columnHeaderSorted *header);
+int sortedCreateHeader(void **_header, char *columnName, error *err);
+void sortedDestroyHeader(void *_header);
+void sortedPrintHeader(void *_header);
 
 int sortedInsert(void *columnHeader, FILE *fp, int data, error *err);
 int sortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);

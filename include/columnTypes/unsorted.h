@@ -21,7 +21,6 @@ void unsortedDestroyHeader(void *_header);
 int unsortedReadInHeader(void *_header, FILE *fp, error *err);
 int unsortedWriteOutHeader(void *_header, FILE *fp, error *err);
 void unsortedPrintHeader(void *_header);
-// void unsortedSerializeHeader(columnHeaderUnsorted *header, void **serial, int *serialBytes);
 
 int unsortedInsert(void *_header, FILE *fp, int data, error *err);
 int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err);

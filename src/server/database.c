@@ -306,7 +306,7 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 	}
 
 	printf("Got bitmap for variable '%s'\n", varName);
-	bitmapPrint(bmp, err);
+	bitmapPrint(bmp);
 
 
 	// Retrieve the column from disk

@@ -6,6 +6,7 @@
 #define _BITMAP_H_
 
 #include <error.h>
+#include <serial.h>
 
 struct bitmap;
 
@@ -14,14 +15,14 @@ void bitmapDestroy(struct bitmap *bmp);
 
 int bitmapSize(struct bitmap *bmp);
 
-void bitmapPrint(struct bitmap *bmp, error *err);
+void bitmapPrint(struct bitmap *bmp);
 
 int bitmapMark(struct bitmap *bmp, int idx, error *err);
 void bitmapMarkAll(struct bitmap *bmp);
 int bitmapUnmark(struct bitmap *bmp, int idx, error *err);
 int bitmapIsSet(struct bitmap *bmp, int idx);
 
-void bitmapSerialize(struct bitmap *bmp, void *serial, int *offset);
-void bitmapDeserialize(struct bitmap **bmp, void *serial, int *offset);
+void bitmapSerialize(struct bitmap *bmp, serializer *slzr);
+void bitmapDeserialize(struct bitmap **bmp, serializer *slzr);
 
 #endif

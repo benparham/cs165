@@ -113,7 +113,6 @@ void serialWriteRaw(serializer *slzr, void *toWrite, int nBytes) {
 
 // Allocates *toRead
 void serialReadRaw(serializer *slzr, void **toRead, int *bytesRead) {
-	// int nBytes;
 	serialReadInt(slzr, bytesRead);
 
 	*toRead = malloc(*bytesRead);

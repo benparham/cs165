@@ -4,13 +4,15 @@
 
 #include <bitmap.h>
 #include <error.h>
+#include <serial.h>
 
-#define WORD_TYPE		unsigned char
-#define WORD_MAX		-1
-#define BITS_PER_WORD	8
+#define WORD_TYPE			unsigned char
+#define WORD_MAX			-1
+#define BITS_PER_WORD		8
 
 struct bitmap {
 	unsigned int nbits;
+	int nBytes;
 	WORD_TYPE *map;
 } bitmap;
 
@@ -32,14 +34,15 @@ int bitmapCreate(unsigned int nbits, struct bitmap **bmp, error *err) {
 	}
 
 	// Allocate the words for the actual map
-	(*bmp)->map = (WORD_TYPE *) malloc(sizeof(WORD_TYPE) * words);
+	(*bmp)->nBytes = sizeof(WORD_TYPE) * words;
+	(*bmp)->map = (WORD_TYPE *) malloc((*bmp)->nBytes);
 	if ((*bmp)->map == NULL) {
 		ERROR(err, E_NOMEM);
 		goto cleanupBitmap;
 	}
 
 	// Zero bits
-	memset((*bmp)->map, 0, sizeof(WORD_TYPE) * words);
+	memset((*bmp)->map, 0, (*bmp)->nBytes);
 
 	// Set the nbits value
 	(*bmp)->nbits = nbits;
@@ -61,10 +64,11 @@ int bitmapSize(struct bitmap *bmp) {
 	return bmp->nbits;
 }
 
-void bitmapPrint(struct bitmap *bmp, error *err) {
+void bitmapPrint(struct bitmap *bmp) {
 
 	int size = bitmapSize(bmp);
 	printf("Size: %d\n", size);
+	printf("Bytes: %d\n", bmp->nBytes);
 	printf("Map:\n[");
 	for (int i = 0; i < size; i++) {
 		printf("%d", bitmapIsSet(bmp, i) ? 1 : 0);
@@ -99,12 +103,12 @@ int bitmapMark(struct bitmap *bmp, int idx, error *err) {
 }
 
 void bitmapMarkAll(struct bitmap *bmp) {
-	unsigned int nWords = bmp->nbits / BITS_PER_WORD;
-	if (bmp->nbits % BITS_PER_WORD > 0) {
-		nWords += 1;
-	}
+	// unsigned int nWords = bmp->nbits / BITS_PER_WORD;
+	// if (bmp->nbits % BITS_PER_WORD > 0) {
+	// 	nWords += 1;
+	// }
 
-	memset(bmp->map, WORD_MAX, sizeof(WORD_TYPE) * nWords);
+	memset(bmp->map, WORD_MAX, bmp->nBytes);//sizeof(WORD_TYPE) * nWords);
 }
 
 int bitmapUnmark(struct bitmap *bmp, int idx, error *err) {
@@ -140,25 +144,44 @@ int bitmapIsSet(struct bitmap *bmp, int idx) {
 
 }
 
-void bitmapSerialize(struct bitmap *bmp, void *serial, int *offset) {
+void bitmapSerialize(struct bitmap *bmp, serializer *slzr) {
 
-	// int numWords = bmp->nbits / BITS_PER_WORD;
+	// int nWords = bmp->nbits / BITS_PER_WORD;
 	// if (bmp->nbits % BITS_PER_WORD > 0) {
-	// 	numWords += 1;
+	// 	nWords += 1;
 	// }
 
-	// serialWrite(serial, offset, &(bmp->nbits), sizeof(unsigned int));
-	// serialWrite(serial, offset, &numWords, sizeof(int));
-	// serialWrite(serial, offset, bmp->map, numWords * sizeof(WORD_TYPE));
+	// int sizeBytes = nWords * BYTES_PER_WORD;
+
+	serialAddSerialSizeInt(slzr);
+	// serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeRaw(slzr, bmp->nBytes);
+
+	serializerAllocSerial(slzr);
+
+	serialWriteInt(slzr, bmp->nbits);
+	// serialWriteInt(slzr, bmp->nBytes);
+	serialWriteRaw(slzr, bmp->map, bmp->nBytes);
+
 }
 
-void bitmapDeserialize(struct bitmap **bmp, void *serial, int *offset) {
+void bitmapDeserialize(struct bitmap **bmp, serializer *slzr) {
 
-	// unsigned int nBits;
-	// int numWords;
-
-	// serialRead(serial, offset, &nBits, sizeof(unsigned int));
-	// serialRead(serial, offset, &numWords, sizeof(int));
+	int nbits;
 	
+	int mapBytes;
+	WORD_TYPE *map;
+
+	serialReadInt(slzr, &nbits);
+	serialReadRaw(slzr, (void **) &map, &mapBytes);
+
+	*bmp = (struct bitmap *) malloc(sizeof(struct bitmap));
+	if (*bmp == NULL) {
+		return;
+	}
+
+	(*bmp)->nbits = nbits;
+	(*bmp)->nBytes = mapBytes;
+	(*bmp)->map = map;
 
 }

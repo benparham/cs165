@@ -106,23 +106,23 @@ void varMapCleanup() {
 	}
 }
 
-void varMapNodePrint(varMapNode *node, error *err) {
+static void varMapNodePrint(varMapNode *node) {
 	printf("Variable: %s\n", node->varName);
 	printf("Bitmap:\n");
-	bitmapPrint(node->bmp, err);
+	bitmapPrint(node->bmp);
 }
 
-static void _varMapPrint(varMapNode *node, error *err) {
+static void _varMapPrint(varMapNode *node) {
 	if (node != NULL) {
-		varMapNodePrint(node, err);
-		_varMapPrint(node->next, err);
+		varMapNodePrint(node);
+		_varMapPrint(node->next);
 	}
 }
 
-void varMapPrint(char *message, error *err) {
+void varMapPrint(char *message) {
 	printf(">============ Print Var Map: %s\n", message);
 	printf("Node count: %d\n", nodeCount);
-	_varMapPrint(gVarMapHead, err);
+	_varMapPrint(gVarMapHead);
 	printf("=============\n");
 }
 
