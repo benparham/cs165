@@ -21,5 +21,7 @@ void bitmapMarkAll(struct bitmap *bmp);
 int bitmapUnmark(struct bitmap *bmp, int idx, error *err);
 int bitmapIsSet(struct bitmap *bmp, int idx);
 
+void bitmapSerialize(struct bitmap *bmp, void *serial, int *offset);
+void bitmapDeserialize(struct bitmap **bmp, void *serial, int *offset);
 
 #endif

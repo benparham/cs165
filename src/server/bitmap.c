@@ -139,3 +139,26 @@ int bitmapIsSet(struct bitmap *bmp, int idx) {
 	return (bmp->map[wordIdx] & mask);
 
 }
+
+void bitmapSerialize(struct bitmap *bmp, void *serial, int *offset) {
+
+	// int numWords = bmp->nbits / BITS_PER_WORD;
+	// if (bmp->nbits % BITS_PER_WORD > 0) {
+	// 	numWords += 1;
+	// }
+
+	// serialWrite(serial, offset, &(bmp->nbits), sizeof(unsigned int));
+	// serialWrite(serial, offset, &numWords, sizeof(int));
+	// serialWrite(serial, offset, bmp->map, numWords * sizeof(WORD_TYPE));
+}
+
+void bitmapDeserialize(struct bitmap **bmp, void *serial, int *offset) {
+
+	// unsigned int nBits;
+	// int numWords;
+
+	// serialRead(serial, offset, &nBits, sizeof(unsigned int));
+	// serialRead(serial, offset, &numWords, sizeof(int));
+	
+
+}

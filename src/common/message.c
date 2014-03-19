@@ -4,9 +4,10 @@
 
 #include <message.h>
 #include <global.h>
+#include <serial.h>
 
-#define SRL_MSG_NON_STR_BYTES		2 * sizeof(int)
-#define SRL_DATA_NON_DATA_BYTES		sizeof(int)
+// #define SRL_MSG_NON_STR_BYTES		2 * sizeof(int)
+// #define SRL_DATA_NON_DATA_BYTES		sizeof(int)
 
 
 typedef struct message {
@@ -70,70 +71,105 @@ static void rawDataDestroy(rawData *rData) {
 }
 
 
-static void writeToSerial(void *serial, int *offset, void *toWrite, int nBytes) {
-	memcpy(serial + (*offset), toWrite, nBytes);
-	*offset += nBytes;
-}
+// static void serialWrite(void *serial, int *offset, void *toWrite, int nBytes) {
+// 	memcpy(serial + (*offset), toWrite, nBytes);
+// 	*offset += nBytes;
+// }
 
-static void readFromSerial(void *serial, int *offset, void *readBuf, int nBytes) {
-	memcpy(readBuf, serial + (*offset), nBytes);
-	*offset += nBytes;
-}
+// static void serialRead(void *serial, int *offset, void *readBuf, int nBytes) {
+// 	memcpy(readBuf, serial + (*offset), nBytes);
+// 	*offset += nBytes;
+// }
 
+
+// // Allocates *serial
+// static int messageSerialize(message *msg, void **serial, int *serialBytes) {
+// 	if (msg == NULL) {
+// 		return 1;
+// 	}
+
+// 	// +1 for null terminator
+// 	int msgStrLen = strlen(msg->msgStr) + 1;
+
+// 	// int intBytes = 2 * sizeof(int);
+// 	int strBytes = msgStrLen * sizeof(char);
+// 	*serialBytes = SRL_MSG_NON_STR_BYTES + strBytes;
+
+// 	*serial = malloc(*serialBytes);
+// 	if (*serial == NULL) {
+// 		return 1;
+// 	}
+
+// 	int offset = 0;
+// 	serialWrite(*serial, &offset, &(msg->hasData), sizeof(int));
+// 	serialWrite(*serial, &offset, &msgStrLen, sizeof(int));
+// 	serialWrite(*serial, &offset, msg->msgStr, msgStrLen);
+
+// 	return 0;
+// }
 
 // Allocates *serial
-static int messageSerialize(message *msg, void **serial, int *serialBytes) {
-	if (msg == NULL) {
+static int messageSerialize(message *msg, serializer *slzr) {
+	if (msg == NULL || slzr == NULL) {
 		return 1;
 	}
 
-	// +1 for null terminator
-	int msgStrLen = strlen(msg->msgStr) + 1;
+	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeStr(slzr, msg->msgStr);
 
-	// int intBytes = 2 * sizeof(int);
-	int strBytes = msgStrLen * sizeof(char);
-	*serialBytes = SRL_MSG_NON_STR_BYTES + strBytes;
-
-	*serial = malloc(*serialBytes);
-	if (*serial == NULL) {
+	if (serializerAllocSerial(slzr)) {
 		return 1;
 	}
 
-	int offset = 0;
-	writeToSerial(*serial, &offset, &(msg->hasData), sizeof(int));
-	writeToSerial(*serial, &offset, &msgStrLen, sizeof(int));
-	writeToSerial(*serial, &offset, msg->msgStr, msgStrLen);
+	serialWriteInt(slzr, msg->hasData);
+	serialWriteStr(slzr, msg->msgStr);
 
 	return 0;
 }
 
-// Allocates msg->msgStr
-static int messageDeserialize(void *serial, int serialBytes, message *msg) {
-	int minSerialSize = SRL_MSG_NON_STR_BYTES + (sizeof(unsigned char));
-	if (serial == NULL || serialBytes < minSerialSize) {
+// // Allocates msg->msgStr
+// static int messageDeserialize(void *serial, int serialBytes, message *msg) {
+// 	int minSerialSize = SRL_MSG_NON_STR_BYTES + (sizeof(unsigned char));
+// 	if (serial == NULL || serialBytes < minSerialSize) {
+// 		return 1;
+// 	}
+
+// 	int hasData;
+// 	int msgStrLen;
+
+// 	int offset = 0;
+// 	serialRead(serial, &offset, &hasData, sizeof(int));
+// 	serialRead(serial, &offset, &msgStrLen, sizeof(int));
+
+// 	if (msgStrLen != serialBytes - SRL_MSG_NON_STR_BYTES) {
+// 		return 1;
+// 	}
+
+// 	char *msgStr = (char *) malloc((msgStrLen * sizeof(char)) + 1);
+// 	if (msgStr == NULL) {
+// 		return 1;
+// 	}
+
+// 	serialRead(serial, &offset, msgStr, msgStrLen);
+
+// 	msg->hasData = hasData;
+// 	msg->msgStr = msgStr;
+
+// 	return 0;
+// }
+
+
+static int messageDeserialize(message *msg, serializer *slzr) {
+
+	if (msg == NULL || msg->msgStr == NULL || slzr == NULL) {
 		return 1;
 	}
 
-	int hasData;
-	int msgStrLen;
+	serialReadInt(slzr, &(msg->hasData));
+	serialReadStr(slzr, msg->msgStr);
 
-	int offset = 0;
-	readFromSerial(serial, &offset, &hasData, sizeof(int));
-	readFromSerial(serial, &offset, &msgStrLen, sizeof(int));
-
-	if (msgStrLen != serialBytes - SRL_MSG_NON_STR_BYTES) {
-		return 1;
-	}
-
-	char *msgStr = (char *) malloc((msgStrLen * sizeof(char)) + 1);
-	if (msgStr == NULL) {
-		return 1;
-	}
-
-	readFromSerial(serial, &offset, msgStr, msgStrLen);
-
-	msg->hasData = hasData;
-	msg->msgStr = msgStr;
+	// msg->hasData = hasData;
+	// msg->msgStr = msgStr;
 
 	return 0;
 }
@@ -151,8 +187,8 @@ static int rawDataSerialize(rawData *rData, void **serial, int *serialBytes) {
 	}
 
 	int offset = 0;
-	writeToSerial(*serial, &offset, &(rData->dataBytes), sizeof(int));
-	writeToSerial(*serial, &offset, rData->data, rData->dataBytes);
+	serialWrite(*serial, &offset, &(rData->dataBytes), sizeof(int));
+	serialWrite(*serial, &offset, rData->data, rData->dataBytes);
 
 	return 0;
 }
@@ -166,7 +202,7 @@ static int rawDataDeserialize(void *serial, int serialBytes, rawData *rData) {
 	int dataBytes;
 
 	int offset = 0;
-	readFromSerial(serial, &offset, &dataBytes, sizeof(int));
+	serialRead(serial, &offset, &dataBytes, sizeof(int));
 
 	if (dataBytes != serialBytes - SRL_DATA_NON_DATA_BYTES) {
 		return 1;
@@ -177,7 +213,7 @@ static int rawDataDeserialize(void *serial, int serialBytes, rawData *rData) {
 		return 1;
 	}
 
-	readFromSerial(serial, &offset, data, dataBytes);
+	serialRead(serial, &offset, data, dataBytes);
 
 	rData->dataBytes = dataBytes;
 	rData->data = data;
@@ -193,32 +229,38 @@ static int messageSendDataFlag(int socketFD, char *msgStr, int hasData) {
 	}
 
 	msg->hasData = hasData;
-	// msg->msgStr = msgStr;
 	msg->msgStr = (char *) malloc(strlen(msgStr) * sizeof(char));
 	strcpy(msg->msgStr, msgStr);
 
-	void *serial;
-	int serialBytes;
-	if (messageSerialize(msg, &serial, &serialBytes)) {
+	// void *serial;
+	// int serialBytes;
+	// if (messageSerialize(msg, &serial, &serialBytes)) {
+	// 	goto cleanupMsg;
+	// }
+	serializer *slzr;
+	if (serializerCreate(&slzr)) {
 		goto cleanupMsg;
 	}
 
-	// Send serial over socket
-	send(socketFD, serial, serialBytes, 0);
+	if (messageSerialize(msg, slzr)) {
+		goto cleanupSerial;
+	}
 
-	free(serial);
+	// Send serial over socket
+	send(socketFD, slzr->serial, slzr->serialSizeBytes, 0);
+
+	// free(serial);
+	serializerDestroy(slzr);
 	messageDestroy(msg);
 
 	return 0;
 
+cleanupSerial:
+	serializerDestroy(slzr);
 cleanupMsg:
 	messageDestroy(msg);
 exit:
 	return 1;
-}
-
-int messageSend(int socketFD, char *msgStr) {
-	return messageSendDataFlag(socketFD, msgStr, 0);
 }
 
 int dataSend(int socketFD, char *msgStr, int dataBytes, void *data) {
@@ -253,6 +295,10 @@ cleanupRawData:
 	rawDataDestroy(rData);
 exit:
 	return 1;
+}
+
+int messageSend(int socketFD, char *msgStr) {
+	return messageSendDataFlag(socketFD, msgStr, 0);
 }
 
 static int dataReceive(int socketFD, int *dataBytes, void **data) {
@@ -296,42 +342,59 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int 
 	unsigned char serial[BUFSIZE];
 	memset(serial, 0, BUFSIZE);
 
-	int minSerialSize = SRL_MSG_NON_STR_BYTES + sizeof(unsigned char);
+	// int minSerialSize = SRL_MSG_NON_STR_BYTES + sizeof(unsigned char);
 
 	// Get serialized message
 	int bytesRecieved = recv(socketFD, serial, BUFSIZE, 0);
-	if (bytesRecieved < minSerialSize) {
-		if (bytesRecieved == 0) {
-			*term = 1;
-		}
+	if (bytesRecieved < 1) {
+		*term = 1;
 		goto exit;
 	}
+	// if (bytesRecieved < minSerialSize) {
+	// 	if (bytesRecieved == 0) {
+	// 		*term = 1;
+	// 	}
+	// 	goto exit;
+	// }
 
 	// Deserialize into message
 	message *msg;
 	if (messageCreate(&msg)) {
 		goto exit;
 	}
-	if (messageDeserialize(serial, bytesRecieved, msg)) {
+	msg->msgStr = msgStr;
+
+	serializer *slzr;
+	if (serializerCreate(&slzr)) {
+		goto cleanupMessage;
+	}
+	if (serializerSetSerial(slzr, serial, bytesRecieved)) {
 		goto cleanupMessage;
 	}
 
-	//*msgStr = msg->msgStr;
-	strcpy(msgStr, msg->msgStr);
+	if (messageDeserialize(msg, slzr)) {//serial, bytesRecieved, msg)) {
+		goto cleanupSerial;
+	}
+
+	// //*msgStr = msg->msgStr;
+	// strcpy(msgStr, msg->msgStr);
 
 	if (msg->hasData) {
 		if (dataReceive(socketFD, dataBytes, data)) {
-			goto cleanupMessage;
+			goto cleanupSerial;
 		}
 	} else {
 		*dataBytes = 0;
 		*data = NULL;
 	}
 
+	serializerDestroy(slzr);
 	messageDestroy(msg);
 
 	return 0;
 
+cleanupSerial:
+	serializerDestroy(slzr);
 cleanupMessage:
 	messageDestroy(msg);
 exit:
