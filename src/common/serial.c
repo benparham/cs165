@@ -113,15 +113,15 @@ void serialWriteRaw(serializer *slzr, void *toWrite, int nBytes) {
 
 // Allocates *toRead
 void serialReadRaw(serializer *slzr, void **toRead, int *bytesRead) {
-	int nBytes;
-	serialReadInt(slzr, &nBytes);
+	// int nBytes;
+	serialReadInt(slzr, bytesRead);
 
-	*toRead = malloc(nBytes);
+	*toRead = malloc(*bytesRead);
 	if (*toRead == NULL) {
 		return;
 	}
 
-	serialRead(slzr, *toRead, nBytes);
+	serialRead(slzr, *toRead, *bytesRead);
 }
 
 // ================ Strings

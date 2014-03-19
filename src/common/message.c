@@ -314,15 +314,16 @@ int messageSend(int socketFD, char *msgStr) {
 	return messageSendDataFlag(socketFD, msgStr, 0);
 }
 
-static int dataReceive(int socketFD, int *dataBytes, void **data) {
+static int dataReceive(int socketFD, int *dataBytes, void **data, int *term) {
 
 	unsigned char serial[BUFSIZE];
 	memset(serial, 0, BUFSIZE);
 
 	// int minSerialSize = SRL_DATA_NON_DATA_BYTES + sizeof(unsigned char);
 
-	int bytesRecieved = recv(socketFD, serial, BUFSIZE, 0);
-	if (bytesRecieved < 1) {
+	int bytesReceived = recv(socketFD, serial, BUFSIZE, 0);
+	if (bytesReceived < 1) {
+		*term = 1;
 		goto exit;
 	}
 	// if (bytesRecieved < minSerialSize) {
@@ -342,7 +343,7 @@ static int dataReceive(int socketFD, int *dataBytes, void **data) {
 		goto exit;
 	}
 
-	if (serializerSetSerial(slzr, serial, bytesRecieved)) {
+	if (serializerSetSerial(slzr, serial, bytesReceived)) {
 		goto cleanupSerial;
 	}
 
@@ -375,8 +376,8 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int 
 	// int minSerialSize = SRL_MSG_NON_STR_BYTES + sizeof(unsigned char);
 
 	// Get serialized message
-	int bytesRecieved = recv(socketFD, serial, BUFSIZE, 0);
-	if (bytesRecieved < 1) {
+	int bytesReceived = recv(socketFD, serial, BUFSIZE, 0);
+	if (bytesReceived < 1) {
 		*term = 1;
 		goto exit;
 	}
@@ -397,7 +398,7 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int 
 	if (serializerCreate(&slzr)) {
 		goto cleanupMessage;
 	}
-	if (serializerSetSerial(slzr, serial, bytesRecieved)) {
+	if (serializerSetSerial(slzr, serial, bytesReceived)) {
 		goto cleanupMessage;
 	}
 
@@ -410,7 +411,7 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int 
 	strcpy(msgStr, msg->msgStr);
 
 	if (msg->hasData) {
-		if (dataReceive(socketFD, dataBytes, data)) {
+		if (dataReceive(socketFD, dataBytes, data, term)) {
 			goto cleanupSerial;
 		}
 	} else {
