@@ -70,15 +70,15 @@ void serializerDestroy(serializer *slzr) {
 
 
 
-static void serialWrite(serializer *slzr, void *toWrite, int nBytes) {
-	assert(slzr->offset + nBytes < slzr->serialSizeBytes);
+static void serialWrite(serializer *slzr, void *writeBuf, int nBytes) {
+	assert(slzr->offset + nBytes <= slzr->serialSizeBytes);
 
-	memcpy(slzr->serial + slzr->offset, toWrite, nBytes);
+	memcpy(slzr->serial + slzr->offset, writeBuf, nBytes);
 	slzr->offset += nBytes;
 }
 
 static void serialRead(serializer *slzr, void *readBuf, int nBytes) {
-	assert(slzr->offset + nBytes < slzr->serialSizeBytes);
+	assert(slzr->offset + nBytes <= slzr->serialSizeBytes);
 
 	memcpy(readBuf, slzr->serial + slzr->offset, nBytes);
 	slzr->offset += nBytes;
@@ -111,10 +111,17 @@ void serialWriteRaw(serializer *slzr, void *toWrite, int nBytes) {
 	serialWrite(slzr, toWrite, nBytes);
 }
 
-void serialReadRaw(serializer *slzr, void *toRead) {
+// Allocates *toRead
+void serialReadRaw(serializer *slzr, void **toRead, int *bytesRead) {
 	int nBytes;
 	serialReadInt(slzr, &nBytes);
-	serialRead(slzr, toRead, nBytes);
+
+	*toRead = malloc(nBytes);
+	if (*toRead == NULL) {
+		return;
+	}
+
+	serialRead(slzr, *toRead, nBytes);
 }
 
 // ================ Strings
@@ -131,6 +138,10 @@ void serialWriteStr(serializer *slzr, char *strToWrite) {
 	serialWriteRaw(slzr, strToWrite, strBytes);
 }
 
-void serialReadStr(serializer *slzr, char *strToRead) {
-	serialReadRaw(slzr, strToRead);
+// Allocates *strToRead via serialReadRaw
+void serialReadStr(serializer *slzr, char **strToRead) {
+	int bytesRead;
+	serialReadRaw(slzr, (void **) strToRead, &bytesRead);
+
+	assert(bytesRead = (strlen(*strToRead) + 1) * sizeof(char));
 }

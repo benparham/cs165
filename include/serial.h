@@ -20,10 +20,10 @@ void serialReadInt(serializer *slzr, int *intToRead);
 
 void serialAddSerialSizeRaw(serializer *slzr, int nBytes);
 void serialWriteRaw(serializer *slzr, void *toWrite, int nBytes);
-void serialReadRaw(serializer *slzr, void *readBuf);
+void serialReadRaw(serializer *slzr, void **toRead, int *bytesRead);
 
 void serialAddSerialSizeStr(serializer *slzr, char *str);
 void serialWriteStr(serializer *slzr, char *strToWrite);
-void serialReadStr(serializer *slzr, char *strToRead);
+void serialReadStr(serializer *slzr, char **strToRead);
 
 #endif
