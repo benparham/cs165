@@ -59,6 +59,7 @@ void columnDestroy(column *col) {
 	free(col);
 }
 
+// TODO: get rid of the call to createHeader, only call readInHeader
 // Requires and allocated column as argument
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err) {
 

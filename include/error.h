@@ -47,6 +47,8 @@
 
 #define E_NOVAR				27		// Variable does not exist
 
+#define E_SRL				28		// Serialization error
+
 
 /*
  * Errors

@@ -165,7 +165,7 @@ static int dataReceive(int socketFD, int *dataBytes, void **data, int *term) {
 	}
 
 	// Init serializer with received data
-	if (serializerSetSerial(slzr, serial, bytesReceived)) {
+	if (serializerSetSerial(slzr, serial/*, bytesReceived*/)) {
 		goto cleanupSerial;
 	}
 
@@ -213,7 +213,7 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int 
 	}
 
 	// Init serializer with received message
-	if (serializerSetSerial(slzr, serial, bytesReceived)) {
+	if (serializerSetSerial(slzr, serial/*, bytesReceived*/)) {
 		goto cleanupMessage;
 	}
 

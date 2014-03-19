@@ -32,7 +32,8 @@ char *errorMessages[] = {
 	"Could not create new var map node",
 	"Message error",
 	"Internal error",
-	"Variable does not exist"
+	"Variable does not exist",
+	"Serialization error"
 };
 
 void recordError(error *err, int errno) {

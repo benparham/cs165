@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -28,17 +29,25 @@ int serializerAllocSerial(serializer *slzr) {
 		return 1;
 	}
 
+	// Add room for the size of the entire serial
+	serialAddSerialSizeInt(slzr);
+
 	slzr->serial = (serializer *) malloc(slzr->serialSizeBytes);
 	if (slzr->serial == NULL) {
 		return 1;
 	}
+
+	// Write the size of the entire serial
+	// Note: this size is inclusive of itself, whereas generally
+	// 		 a size excludes itself
+	serialWriteInt(slzr, slzr->serialSizeBytes);
 
 	slzr->serialIsAlloc = 1;
 
 	return 0;
 }
 
-int serializerSetSerial(serializer *slzr, void *serial, int sizeBytes) {
+int serializerSetSerial(serializer *slzr, void *serial) {
 	if (slzr == NULL || serial == NULL) {
 		return 1;
 	}
@@ -48,11 +57,61 @@ int serializerSetSerial(serializer *slzr, void *serial, int sizeBytes) {
 	}
 
 	slzr->serial = serial;
-	slzr->serialSizeBytes = sizeBytes;
+
+	// Set this to pass the assert in serialRead
+	slzr->serialSizeBytes = sizeof(int);
+	serialReadInt(slzr, &(slzr->serialSizeBytes));
 
 	slzr->serialIsAlloc = 0;
 
 	return 0;
+}
+
+int serializerSetSerialFromFile(serializer *slzr, FILE *fp) {
+	if (slzr == NULL || fp == NULL) {
+		goto exit;
+	}
+
+	if (slzr->serialIsAlloc) {
+		free(slzr->serial);
+	}
+
+	// Read in the size of the serial in bytes
+	int sizeBytes;
+	if (fread(&sizeBytes, sizeof(int), 1, fp)) {
+		goto exit;
+	}
+
+	// Seek back to beginning of serial
+	if (fseek(fp, -sizeof(int), SEEK_CUR) == -1) {
+		goto exit;
+	}
+
+	// Allocate space for the serial
+	void *serial = malloc(sizeBytes);
+	if (serial == NULL) {
+		goto exit;
+	}
+
+	// Read in entire serial
+	if (fread(serial, sizeBytes, 1, fp)) {
+		goto cleanupSerial;
+	}
+
+	// Set the size and serial to read in values
+	slzr->serialSizeBytes = sizeBytes;
+	slzr->serial = serial;
+
+	// Set the offset to after the size and indicate serial was allocated
+	slzr->offset = sizeof(int);
+	slzr->serialIsAlloc = 1;
+
+	return 0;
+
+cleanupSerial:
+	free(serial);
+exit:
+	return 1;
 }
 
 void serializerDestroy(serializer *slzr) {

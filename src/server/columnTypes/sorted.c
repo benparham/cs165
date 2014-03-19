@@ -61,30 +61,55 @@ void sortedDestroyHeader(void *_header) {
 	free(_header);
 }
 
+// TODO: Needs to take void **_header and allocate it
 int sortedReadInHeader(void *_header, FILE *fp, error *err) {
 	
 	ERROR(err, E_UNIMP);
 	return 1;
 
-	// columnHeaderSorted *header = (columnHeaderSorted *) _header;
+	columnHeaderSorted *header = (columnHeaderSorted *) _header;
 
 	// Seek to header location in file
 	if (seekHeader(fp, 0, err)) {
 		goto exit;
 	}
 
+	// Create serializer
+	serializer *slzr;
+	if (serializerCreate(slzr)) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
 
+	// Set up serial buffer
+	unsigned char serial[BUFSIZE];
+	memset(serial, 0, BUFSIZE);
+
+	// Read in serial from memory
+	if (serializerSetSerialFromFile(slzr, fp)) {
+		ERROR(err, E_SRL);
+		goto cleanupSerial;
+	}
+
+	// serialWriteStr(slzr, header->name);
+	// serialWriteInt(slzr, header->sizeBytes);
+	// serialWriteInt(slzr, header->entriesTotal);
+	// serialWriteInt(slzr, header->entriesUsed);
+	// bitmapSerialWrite(slzr, header->bmp);
+
+	// serialReadStr(slzr, header->name);
+
+	serializerDestroy(slzr);
 
 	return 0;
 
+cleanupSerial:
+	serializerDestroy(slzr);
 exit:
 	return 1;
 }
 
 int sortedWriteOutHeader(void *_header, FILE *fp, error *err) {
-	
-	ERROR(err, E_UNIMP);
-	return 1;
 
 	columnHeaderSorted *header = (columnHeaderSorted *) _header;
 

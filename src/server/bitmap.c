@@ -192,22 +192,6 @@ void bitmapSerialWrite(serializer *slzr, struct bitmap *bmp) {
 	serialWriteRaw(slzr, bmp->map, mapBytes);
 }
 
-// void bitmapSerialize(serializer *slzr, struct bitmap *bmp) {
-
-// 	// int mapBytes = bmp->nWords * sizeof(WORD_TYPE);
-
-// 	// serialAddSerialSizeInt(slzr);
-// 	// serialAddSerialSizeInt(slzr);
-// 	// serialAddSerialSizeRaw(slzr, mapBytes);
-
-// 	serializerAllocSerial(slzr);
-
-// 	serialWriteInt(slzr, bmp->nbits);
-// 	serialWriteInt(slzr, bmp->nWords);
-// 	serialWriteRaw(slzr, bmp->map, mapBytes);
-
-// }
-
 void bitmapSerialRead(serializer *slzr, struct bitmap **bmp) {
 
 	int nbits;

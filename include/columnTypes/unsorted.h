@@ -10,6 +10,7 @@
 
 extern columnFunctions unsortedColumnFunctions;
 
+// TODO: Change name to a char *
 typedef struct columnHeaderUnsorted {
 	char name[NAME_SIZE];
 	int sizeBytes;

@@ -1,6 +1,8 @@
 #ifndef _SERIAL_H_
 #define _SERIAL_H_
 
+#include <stdio.h>
+
 typedef struct serializer {
 	int offset;
 
@@ -11,7 +13,8 @@ typedef struct serializer {
 
 int serializerCreate(serializer **slzr);
 int serializerAllocSerial(serializer *slzr);
-int serializerSetSerial(serializer *slzr, void *serial, int sizeBytes);
+int serializerSetSerial(serializer *slzr, void *serial);
+int serializerSetSerialFromFile(serializer *slzr, FILE *fp);
 void serializerDestroy(serializer *slzr);
 
 void serialAddSerialSizeInt(serializer *slzr);
