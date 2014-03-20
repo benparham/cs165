@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 	// Setup address to connect to
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(serv->s_port);
-	endservent();	// closes etc/services
+	endservent();	 // closes etc/services
 	if (inet_pton(AF_INET, target_address, &addr.sin_addr) != 1) {
 		printf("Failed to convert string %s to a network address\n", target_address);
 		close(socketFD);
@@ -63,79 +63,77 @@ int main(int argc, char *argv[]) {
 		close(socketFD);
 		return 0;
 	}
+
+	printf("\n");
 	
+	// Detect whether we are in interactive mode
+	int inAtty = isatty(0);
+	int outAtty = isatty(1);
+
 	char *input = malloc(sizeof(char) * MAX_INPUT);
 	char *response = malloc(sizeof(char) * MAX_INPUT);
 	
 	while(1) {
 		memset(input, 0, sizeof(input));
 		memset(response, 0, sizeof(response));
-	
-		printf("Input string to send to server: ");
-		fgets(input, MAX_INPUT, stdin);
-		// if (strcmp(input, "exit\n") == 0) {
-		// 	break;	
-		// }
-		// else {
-
-			if (messageSend(socketFD, input)) {
-				printf("Error sending message\n");
-			}
-
-			if (strcmp(input, "exit\n") == 0) {
-				break;	
-			}
-
-			int dataBytes;
-			void *data;
-			int term;
-			if (messageReceive(socketFD, response, &dataBytes, &data, &term)) {
-				if (term) {
-					printf("Server has exited\n");
-					break;
-				} else {
-					printf("Error receiving message\n");
-				}
-			}
-
-
-			printf("%s\n", response);
-
-			if (dataBytes > 0) {
-				
-				assert(dataBytes % sizeof(int) == 0);
-				int nEntries = dataBytes / sizeof(int);
-
-				printf("[");
-
-				for (int i = 0; i < nEntries; i++) {
-					
-					char *entry;
-					sprintf(entry, "%d", ((int *) data)[i]);
-
-					printf("%s", entry);
-					if (i != nEntries - 1) {
-						printf(",");
-					}
-				}
-
-				printf("]\n");
-
-				free(data);
-			}
-
-			// send(socketFD, input, MAX_INPUT, 0);
 		
+		// Prompt/get input
+		printf(">: ");
+		fgets(input, MAX_INPUT, stdin);
 
-			/*
-			int bytes_recieved = recv(socketFD, response, MAX_INPUT, 0);
-			if (bytes_recieved > 0) {
-				printf("Recieved response \"%s\" from server\n", response);
+		// Display input if not in interactive mode
+		if (!inAtty) {
+			printf("%s", input);
+		}
+
+		if (messageSend(socketFD, input)) {
+			printf("->: Error sending message\n");
+		}
+
+		if (strcmp(input, "exit\n") == 0) {
+			break;
+		}
+
+		int dataBytes;
+		void *data;
+		int term;
+		if (messageReceive(socketFD, response, &dataBytes, &data, &term)) {
+			if (term) {
+				printf("->: Server has exited\n");
+				break;
+			} else {
+				printf("->: Error receiving message\n");
 			}
-			else {
-				printf("Error recieving response from server\n");
-			}*/
-		// }
+		}
+
+
+		printf("->: %s\n", response);
+
+		if (dataBytes > 0) {
+			
+			assert(dataBytes % sizeof(int) == 0);
+			int nEntries = dataBytes / sizeof(int);
+
+			printf("->: [");
+
+			for (int i = 0; i < nEntries; i++) {
+				
+				// char *entry;
+				// sprintf(entry, "%d", ((int *) data)[i]);
+
+				// printf("%s", entry);
+				printf("%d", ((int *) data)[i]);
+
+
+				if (i != nEntries - 1) {
+					printf(",");
+				}
+			}
+
+			printf("]\n");
+
+			free(data);
+		}
 	}
 	
 	// Cleanup socket
