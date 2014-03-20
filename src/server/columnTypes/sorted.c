@@ -63,7 +63,7 @@ void sortedDestroyHeader(void *_header) {
 	free(_header);
 }
 
-int sortedReadInHeader(void **_header, FILE *fp, error *err) {
+int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
 	
 	ERROR(err, E_UNIMP);
 	return 1;
@@ -78,7 +78,7 @@ int sortedReadInHeader(void **_header, FILE *fp, error *err) {
 	columnHeaderSorted *header = (columnHeaderSorted *) *_header;
 
 	// Seek to header location in file
-	if (seekHeader(fp, 0, err)) {
+	if (seekHeader(headerFp, err)) {
 		goto exit;
 	}
 
@@ -94,7 +94,7 @@ int sortedReadInHeader(void **_header, FILE *fp, error *err) {
 	memset(serial, 0, BUFSIZE);
 
 	// Read in serial from memory
-	if (serializerSetSerialFromFile(slzr, fp)) {
+	if (serializerSetSerialFromFile(slzr, headerFp)) {
 		ERROR(err, E_SRL);
 		goto cleanupSerial;
 	}
@@ -119,12 +119,12 @@ exit:
 	return 1;
 }
 
-int sortedWriteOutHeader(void *_header, FILE *fp, error *err) {
+int sortedWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 
 	columnHeaderSorted *header = (columnHeaderSorted *) _header;
 
 	// Seek to header location in file
-	if (seekHeader(fp, 0, err)) {
+	if (seekHeader(headerFp, err)) {
 		goto exit;
 	}
 
@@ -151,7 +151,7 @@ int sortedWriteOutHeader(void *_header, FILE *fp, error *err) {
 	bitmapSerialWrite(slzr, header->bmp);
 
 	// Write serialized header to disk
-	if (fwrite(slzr->serial, slzr->serialSizeBytes, 1, fp) < 1) {
+	if (fwrite(slzr->serial, slzr->serialSizeBytes, 1, headerFp) < 1) {
 		ERROR(err, E_FWR);
 		goto cleanupSerial;
 	}
@@ -181,27 +181,27 @@ void sortedPrintHeader(void *_header) {
 
 
 
-int sortedInsert(void *columnHeader, FILE *fp, int data, error *err) {
+int sortedInsert(void *columnHeader, FILE *dataFp, int data, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }
 
-int sortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err) {
+int sortedSelectAll(void *columnHeader, FILE *dataFp, struct bitmap **bmp, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }
 
-int sortedSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err) {
+int sortedSelectValue(void *columnHeader, FILE *dataFp, int value, struct bitmap **bmp, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }
 
-int sortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err) {
+int sortedSelectRange(void *columnHeader, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }
 
-int sortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+int sortedFetch(void *columnHeader, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
 }

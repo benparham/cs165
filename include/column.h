@@ -11,7 +11,8 @@
 // ================ Abstract Column Interface ==================
 
 typedef struct column {
-	FILE *fp;							// Pointer to column's file
+	FILE *headerFp;						// Pointer to column's header file
+	FILE *dataFp;						// Pointer to column's data file
 	COL_STORAGE_TYPE storageType;		// Storage type of column
 	
 	/*
@@ -28,11 +29,11 @@ typedef struct column {
 
 } column;
 
-int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *fp, column **col, error *err);
+int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *headerFp, FILE *dataFp, column **col, error *err);
 void columnDestroy(column *col);
 
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);
-int columnWriteToDisk(column *col, error *err);
+int columnWriteHeaderToDisk(column *col, error *err);
 
 void columnPrint(column *col, char *message);
 

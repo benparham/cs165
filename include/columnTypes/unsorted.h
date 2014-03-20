@@ -19,14 +19,14 @@ typedef struct columnHeaderUnsorted {
 
 int unsortedCreateHeader(void **_header, char *columnName, error *err);
 void unsortedDestroyHeader(void *_header);
-int unsortedReadInHeader(void **_header, FILE *fp, error *err);
-int unsortedWriteOutHeader(void *_header, FILE *fp, error *err);
+int unsortedReadInHeader(void **_header, FILE *headerFp, error *err);
+int unsortedWriteOutHeader(void *_header, FILE *headerFp, error *err);
 void unsortedPrintHeader(void *_header);
 
-int unsortedInsert(void *_header, FILE *fp, int data, error *err);
-int unsortedSelectAll(void *_header, FILE *fp, struct bitmap **bmp, error *err);
-int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp, error *err);
-int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-int unsortedFetch(void *_header, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int unsortedInsert(void *_header, FILE *dataFp, int data, error *err);
+int unsortedSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err);
+int unsortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp, error *err);
+int unsortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
+int unsortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif

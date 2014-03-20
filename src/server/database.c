@@ -22,39 +22,41 @@
 #include <connection.h>
 
 static int dbCreateTable(char *tableName, response *res, error *err) {
+	char currentPath[BUFSIZE];
 
-	char pathToTableDir[BUFSIZE];
-	sprintf(pathToTableDir, "%s/%s/%s", DB_PATH, TABLE_DIR, tableName);
 
-	if (dirExists(pathToTableDir)) {
+	tablePath(currentPath, tableName);
+
+	if (dirExists(currentPath)) {
 		ERROR(err, E_DUPTBL);
 		return 1;
 	}
 	
 	// Create directory for new table
-	if (mkdir(pathToTableDir, S_IRWXU | S_IRWXG) == -1) {
+	if (mkdir(currentPath, S_IRWXU | S_IRWXG) == -1) {
 		ERROR(err, E_MKDIR);
 		return 1;
 	}
 
-	char pathToTableColumnDir[BUFSIZE];
-	sprintf(pathToTableColumnDir, "%s/%s", pathToTableDir, COLUMN_DIR);
+
+	tablePathColumns(currentPath, tableName);
 
 	// Create directory for new table's columns
-	if (mkdir(pathToTableColumnDir, S_IRWXU | S_IRWXG) == -1) {
+	if (mkdir(currentPath, S_IRWXU | S_IRWXG) == -1) {
 		ERROR(err, E_MKDIR);
 		return 1;
 	}
 
-	char pathToTableFile[BUFSIZE];
-	sprintf(pathToTableFile, "%s/%s.bin", pathToTableDir, tableName);
+
+	tablePathHeader(currentPath, tableName);
 
 	// Open the new table info file for writing
-	FILE *fp = fopen(pathToTableFile, "wb");
+	FILE *fp = fopen(currentPath, "wb");
 	if (fp == NULL) {
 		ERROR(err, E_FOP);
 		return 1;
 	}
+
 
 	// Initialize new table info with proper values
 	tableInfo tempTbl;
@@ -83,7 +85,8 @@ static int dbRemoveTable(char *tableName, response *res, error *err) {
 	printf("Attempting to remove table '%s'\n", tableName);
 
 	char pathToTableDir[BUFSIZE];
-	sprintf(pathToTableDir, "%s/%s/%s", DB_PATH, TABLE_DIR, tableName);
+	tablePath(pathToTableDir, tableName);
+	// sprintf(pathToTableDir, "%s/%s/%s", DB_PTH, TBL_DIR, tableName);
 
 	if (!dirExists(pathToTableDir)) {
 		ERROR(err, E_NOTBL);
@@ -101,16 +104,19 @@ static int dbRemoveTable(char *tableName, response *res, error *err) {
 }
 
 static int dbUseTable(tableInfo *tbl, char *tableName, response *res, error *err) {
-	char pathToTableFile[BUFSIZE];
-	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DB_PATH, TABLE_DIR, tableName, tableName);
+	// char pathToTableFile[BUFSIZE];
+	// sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DB_PTH, TBL_DIR, tableName, tableName);
 
-	if (!fileExists(pathToTableFile)) {
+	char pathToTableHeader[BUFSIZE];
+	tablePathHeader(pathToTableHeader, tableName);
+
+	if (!fileExists(pathToTableHeader)) {
 		ERROR(err, E_NOTBL);
 		return 1;
 	}
 
 	// Open the table file
-	FILE *fp = fopen(pathToTableFile, "rb");
+	FILE *fp = fopen(pathToTableHeader, "rb");
 	if (fp == NULL) {
 		ERROR(err, E_FOP);
 		return 1;
@@ -139,33 +145,53 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, er
 	
 	// TODO: Add code that updates the table info and writes it to disk
 
+	char *tableName = tbl->name;
 	char *columnName = args->columnName;
 	COL_STORAGE_TYPE storageType = args->storageType;
 
-	char pathToColumn[BUFSIZE];
-	COL_PTH_HDR(pathToColumn, tbl->name, columnName);
-	//sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
-	// printf("Attempting to create column file %s\n", pathToColumn);
+	char currentPath[BUFSIZE];
 
-	if (fileExists(pathToColumn)) {
+	columnPath(currentPath, tableName, columnName);
+
+	if (dirExists(currentPath)) {
 		ERROR(err, E_DUPCOL);
 		goto exit;
 	}
-
-	// Open the new column info file
-	FILE *fp = fopen(pathToColumn, "wb");
-	if (fp == NULL) {
-		ERROR(err, E_FOP);
+	
+	// Create directory for new column
+	if (mkdir(currentPath, S_IRWXU | S_IRWXG) == -1) {
+		ERROR(err, E_MKDIR);
 		goto exit;
 	}
 
-	column *col;
-	if (columnCreate(columnName, storageType, fp, &col, err)) {
-		goto cleanupFile;
+
+	columnPathData(currentPath, tableName, columnName);
+
+	// Create the column's data file
+	FILE *dataFp = fopen(currentPath, "wb");
+	if (dataFp == NULL) {
+		ERROR(err, E_FOP);
+		goto cleanupDir;
 	}
 
-	if (columnWriteToDisk(col, err)) {
+
+	columnPathHeader(currentPath, tableName, columnName);
+
+	// Create the column's header file
+	FILE *headerFp = fopen(currentPath, "wb");
+	if (headerFp == NULL) {
+		ERROR(err, E_FOP);
+		goto cleanupDataFile;
+	}
+
+
+	column *col;
+	if (columnCreate(columnName, storageType, headerFp, dataFp, &col, err)) {
+		goto cleanupHeaderFile;
+	}
+
+	if (columnWriteHeaderToDisk(col, err)) {
 		goto cleanupColumn;
 	}
 
@@ -180,11 +206,15 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, er
 
 cleanupColumn:
 	columnDestroy(col);
-	goto removeFile;
-cleanupFile:
-	fclose(fp);
-removeFile:
-	remove(pathToColumn);
+cleanupHeaderFile:
+	fclose(headerFp);
+cleanupDataFile:
+	fclose(dataFp);
+cleanupDir:
+	columnPath(currentPath, tableName, columnName);
+	if (removeDir(currentPath, err)) {
+		goto exit;
+	}
 exit:
 	return 1;
 }

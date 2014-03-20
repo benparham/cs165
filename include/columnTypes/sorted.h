@@ -21,14 +21,14 @@ typedef struct columnHeaderSorted {
 
 int sortedCreateHeader(void **_header, char *columnName, error *err);
 void sortedDestroyHeader(void *_header);
-int sortedReadInHeader(void **_header, FILE *fp, error *err);
-int sortedWriteOutHeader(void *_header, FILE *fp, error *err);
+int sortedReadInHeader(void **_header, FILE *headerFp, error *err);
+int sortedWriteOutHeader(void *_header, FILE *headerFp, error *err);
 void sortedPrintHeader(void *_header);
 
-int sortedInsert(void *columnHeader, FILE *fp, int data, error *err);
-int sortedSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
-int sortedSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
-int sortedSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-int sortedFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int sortedInsert(void *columnHeader, FILE *dataFp, int data, error *err);
+int sortedSelectAll(void *columnHeader, FILE *dataFp, struct bitmap **bmp, error *err);
+int sortedSelectValue(void *columnHeader, FILE *dataFp, int value, struct bitmap **bmp, error *err);
+int sortedSelectRange(void *columnHeader, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
+int sortedFetch(void *columnHeader, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif

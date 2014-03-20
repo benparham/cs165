@@ -19,9 +19,9 @@ int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	return result;
 }
 
-int seekHeader(FILE *fp, int offset, error *err) {
+int seekHeader(FILE *headerFp, error *err) {
 
-	if (fseek(fp, sizeof(COL_STORAGE_TYPE) + offset, SEEK_SET) == -1) {
+	if (fseek(headerFp, sizeof(COL_STORAGE_TYPE), SEEK_SET) == -1) {
 		ERROR(err, E_FSK);
 		return 1;
 	}
@@ -29,17 +29,23 @@ int seekHeader(FILE *fp, int offset, error *err) {
 	return 0;
 }
 
-int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err) {
-	return seekHeader(fp, fileHeaderSizeBytes + offset, err);
-}
+// int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err) {
+// 	return seekHeader(fp, fileHeaderSizeBytes + offset, err);
+// }
 
-int commonFetch(int fileHeaderSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 
 	// Seek to data
 	// if (seekHeader(fp, headerSizeBytes, err)) {
 	// 	return 1;
 	// }
-	if (seekData(fp, fileHeaderSizeBytes, 0, err)) {
+	// if (seekData(fp, fileHeaderSizeBytes, 0, err)) {
+	// 	return 1;
+	// }
+
+	// Seek to beginning of file
+	if (fseek(dataFp, 0, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
 		return 1;
 	}
 
@@ -55,7 +61,7 @@ int commonFetch(int fileHeaderSizeBytes, FILE *fp, struct bitmap *bmp, int *resu
 
 		if (bitmapIsSet(bmp, i)) {
 			int entry;
-			if (fread(&entry, sizeof(int), 1, fp) < 1) {
+			if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
 				ERROR(err, E_FRD);
 				return 1;
 			}
@@ -64,7 +70,7 @@ int commonFetch(int fileHeaderSizeBytes, FILE *fp, struct bitmap *bmp, int *resu
 			resultOffset += 1;
 
 		} else {
-			if (fseek(fp, sizeof(int), SEEK_CUR) == -1) {
+			if (fseek(dataFp, sizeof(int), SEEK_CUR) == -1) {
 				ERROR(err, E_FSK);
 				return 1;
 			}

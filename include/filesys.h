@@ -9,15 +9,16 @@
 #define COL_DIR					"columns"
 #define DATA_DIR				"data"
 
-#define TBL_HDR_FL_NM			"tableHeader"
-#define COL_HDR_FL_NM			"columnHeader"
-#define DATA_FL_NM				"data"
+#define TBL_HDR_FL_NM			"tableHeader.bin"
+#define COL_HDR_FL_NM			"columnHeader.bin"
+#define DATA_FL_NM				"data.bin"
 
 #define DB_PTH					"./db"
 
 
 void tablePath(char *strPtr, char *tableName);
 void tablePathHeader(char *strPtr, char *tableName);
+void tablePathColumns(char *strPtr, char *tableName);
 
 void columnPath(char *strPtr, char *tableName, char *columnName);
 void columnPathHeader(char *strPtr, char *tableName, char *columnName);

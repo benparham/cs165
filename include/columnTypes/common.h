@@ -19,22 +19,22 @@ typedef struct columnFunctions {
 	// Header Functions
 	int (* createHeader) (void **columnHeader, char *columnName, error *err);
 	void (* destroyHeader) (void *columnHeader);
-	int (* readInHeader) (void **columnHeader, FILE *fp, error *err);
-	int (* writeOutHeader) (void *columnHeader, FILE *fp, error *err);
+	int (* readInHeader) (void **columnHeader, FILE *headerFp, error *err);
+	int (* writeOutHeader) (void *columnHeader, FILE *headerFp, error *err);
 	void (* printHeader) (void *columnHeader);
 
 	// Data functions
-	int (* insert) (void *columnHeader, FILE *fp, int data, error *err);
-	int (* selectAll) (void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
-	int (* selectValue) (void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
-	int (* selectRange) (void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-	int (* fetch) (void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+	int (* insert) (void *columnHeader, FILE *dataFp, int data, error *err);
+	int (* selectAll) (void *columnHeader, FILE *dataFp, struct bitmap **bmp, error *err);
+	int (* selectValue) (void *columnHeader, FILE *dataFp, int value, struct bitmap **bmp, error *err);
+	int (* selectRange) (void *columnHeader, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
+	int (* fetch) (void *columnHeader, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 } columnFunctions;
 
-int seekHeader(FILE *fp, int offset, error *err);
-int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err);
+int seekHeader(FILE *headerFp, error *err);
+// int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err);
 
-int commonFetch(int fileHeaderSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif

@@ -10,32 +10,32 @@
 #include <global.h>
 
 
-#define TBL_PTH(TBL_NM)					DB_PATH ## "/" ## TBL_DIR ## "/" ## TBL_NM
-#define TBL_PTH_HDR(TBL_NM)				TBL_PTH(TBL_HDR) ## "/" ## TBL_HDR_FL_NM
-
-#define COL_PTH(TBL_NM, COL_NM)			TBL_PATH(TBL_NM) ## "/" ## COL_DIR ## "/" COL_NM
-#define COL_PTH_HDR(TBL_NM, COL_NM)		COL_PTH(TBL_NM, COL_NM) ## "/" ## COL_HDR_FL_NM
-#define COL_PTH_DATA(TBL_NM, COL_NM)	COL_PTH(TBL_NM, COL_NM) ## "/" ## COL_DATA_FL_NM
-
 void tablePath(char *strPtr, char *tableName) {
-
+	sprintf(strPtr, "%s/%s/%s", DB_PTH, TBL_DIR, tableName);
 }
 
 void tablePathHeader(char *strPtr, char *tableName) {
-
+	sprintf(strPtr, "%s/%s/%s/%s", DB_PTH, TBL_DIR, tableName, TBL_HDR_FL_NM);
 }
 
-void columnPath(char *strPtr, char *tableName, char *columnName) {
+void tablePathColumns(char *strPtr, char *tableName) {
+	sprintf(strPtr, "%s/%s/%s/%s", DB_PTH, TBL_DIR, tableName, COL_DIR);
+}
 
+
+
+void columnPath(char *strPtr, char *tableName, char *columnName) {
+	sprintf(strPtr, "%s/%s/%s/%s/%s", DB_PTH, TBL_DIR, tableName, COL_DIR, columnName);
 }
 
 void columnPathHeader(char *strPtr, char *tableName, char *columnName) {
-
+	sprintf(strPtr, "%s/%s/%s/%s/%s/%s", DB_PTH, TBL_DIR, tableName, COL_DIR, columnName, COL_HDR_FL_NM);
 }
 
 void columnPathData(char *strPtr, char *tableName, char *columnName) {
-	
+	sprintf(strPtr, "%s/%s/%s/%s/%s/%s", DB_PTH, TBL_DIR, tableName, COL_DIR, columnName, DATA_FL_NM);
 }
+
 
 
 int fileExists(char *pathToFile) {
