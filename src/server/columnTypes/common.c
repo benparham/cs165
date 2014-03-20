@@ -29,10 +29,17 @@ int seekHeader(FILE *fp, int offset, error *err) {
 	return 0;
 }
 
-int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err) {
+	return seekHeader(fp, fileHeaderSizeBytes + offset, err);
+}
+
+int commonFetch(int fileHeaderSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 
 	// Seek to data
-	if (seekHeader(fp, headerSizeBytes, err)) {
+	// if (seekHeader(fp, headerSizeBytes, err)) {
+	// 	return 1;
+	// }
+	if (seekData(fp, fileHeaderSizeBytes, 0, err)) {
 		return 1;
 	}
 

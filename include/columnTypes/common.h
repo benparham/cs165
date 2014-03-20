@@ -33,7 +33,8 @@ typedef struct columnFunctions {
 } columnFunctions;
 
 int seekHeader(FILE *fp, int offset, error *err);
+int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err);
 
-int commonFetch(int headerSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int commonFetch(int fileHeaderSizeBytes, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 
 #endif

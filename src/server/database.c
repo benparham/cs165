@@ -24,7 +24,7 @@
 static int dbCreateTable(char *tableName, response *res, error *err) {
 
 	char pathToTableDir[BUFSIZE];
-	sprintf(pathToTableDir, "%s/%s/%s", DATA_PATH, TABLE_DIR, tableName);
+	sprintf(pathToTableDir, "%s/%s/%s", DB_PATH, TABLE_DIR, tableName);
 
 	if (dirExists(pathToTableDir)) {
 		ERROR(err, E_DUPTBL);
@@ -83,7 +83,7 @@ static int dbRemoveTable(char *tableName, response *res, error *err) {
 	printf("Attempting to remove table '%s'\n", tableName);
 
 	char pathToTableDir[BUFSIZE];
-	sprintf(pathToTableDir, "%s/%s/%s", DATA_PATH, TABLE_DIR, tableName);
+	sprintf(pathToTableDir, "%s/%s/%s", DB_PATH, TABLE_DIR, tableName);
 
 	if (!dirExists(pathToTableDir)) {
 		ERROR(err, E_NOTBL);
@@ -102,7 +102,7 @@ static int dbRemoveTable(char *tableName, response *res, error *err) {
 
 static int dbUseTable(tableInfo *tbl, char *tableName, response *res, error *err) {
 	char pathToTableFile[BUFSIZE];
-	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tableName, tableName);
+	sprintf(pathToTableFile, "%s/%s/%s/%s.bin", DB_PATH, TABLE_DIR, tableName, tableName);
 
 	if (!fileExists(pathToTableFile)) {
 		ERROR(err, E_NOTBL);
@@ -143,7 +143,8 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, er
 	COL_STORAGE_TYPE storageType = args->storageType;
 
 	char pathToColumn[BUFSIZE];
-	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
+	COL_PTH_HDR(pathToColumn, tbl->name, columnName);
+	//sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
 	// printf("Attempting to create column file %s\n", pathToColumn);
 

@@ -40,7 +40,9 @@ int sortedCreateHeader(void **_header, char *columnName, error *err) {
 	}
 	strcpy(header->name, columnName);
 
-	header->sizeBytes = sizeof(int);
+	header->fileHeaderSizeBytes = 0;	// This will be set during readInHeader
+	header->fileDataSizeBytes = sizeof(int);
+	// header->sizeBytes = sizeof(int);
 
 	header->entriesTotal = 1;
 	header->entriesUsed = 0;
@@ -97,14 +99,12 @@ int sortedReadInHeader(void **_header, FILE *fp, error *err) {
 		goto cleanupSerial;
 	}
 
-	// serialWriteStr(slzr, header->name);
-	// serialWriteInt(slzr, header->sizeBytes);
-	// serialWriteInt(slzr, header->entriesTotal);
-	// serialWriteInt(slzr, header->entriesUsed);
-	// bitmapSerialWrite(slzr, header->bmp);
+	// Use the serial size to tell the header its own serial size
+	header->fileHeaderSizeBytes = slzr->serialSizeBytes;
 
+	// Deserialize for all other header info
 	serialReadStr(slzr, &(header->name));
-	serialReadInt(slzr, &(header->sizeBytes));
+	serialReadInt(slzr, &(header->fileDataSizeBytes));
 	serialReadInt(slzr, &(header->entriesTotal));
 	serialReadInt(slzr, &(header->entriesUsed));
 	bitmapSerialRead(slzr, &(header->bmp));
@@ -145,7 +145,7 @@ int sortedWriteOutHeader(void *_header, FILE *fp, error *err) {
 	serializerAllocSerial(slzr);
 
 	serialWriteStr(slzr, header->name);
-	serialWriteInt(slzr, header->sizeBytes);
+	serialWriteInt(slzr, header->fileDataSizeBytes);
 	serialWriteInt(slzr, header->entriesTotal);
 	serialWriteInt(slzr, header->entriesUsed);
 	bitmapSerialWrite(slzr, header->bmp);
@@ -171,7 +171,8 @@ void sortedPrintHeader(void *_header) {
 	columnHeaderSorted *header = (columnHeaderSorted *) _header;
 
 	printf("Name: %s\n", header->name);
-	printf("Size bytes: %d\n", header->sizeBytes);
+	printf("File header size bytes: %d\n", header->fileHeaderSizeBytes);
+	printf("File data size bytes: %d\n", header->fileDataSizeBytes);
 	printf("Entries total: %d\n", header->entriesTotal);
 	printf("Entries used: %d\n", header->entriesUsed);
 	printf("Bitmap:\n");

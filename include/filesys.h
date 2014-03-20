@@ -1,11 +1,27 @@
 #ifndef _FILESYS_H_
 #define _FILESYS_H_
 
-#include "error.h"
+#include <string.h>
 
-#define DATA_PATH			"./db"
-#define TABLE_DIR			"tables"
-#define COLUMN_DIR			"columns"
+#include <error.h>
+
+#define TBL_DIR					"tables"
+#define COL_DIR					"columns"
+#define DATA_DIR				"data"
+
+#define TBL_HDR_FL_NM			"tableHeader"
+#define COL_HDR_FL_NM			"columnHeader"
+#define DATA_FL_NM				"data"
+
+#define DB_PTH					"./db"
+
+
+void tablePath(char *strPtr, char *tableName);
+void tablePathHeader(char *strPtr, char *tableName);
+
+void columnPath(char *strPtr, char *tableName, char *columnName);
+void columnPathHeader(char *strPtr, char *tableName, char *columnName);
+void columnPathData(char *strPtr, char *tableName, char *columnName);
 
 int fileExists(char *pathToFile);
 int dirExists(char *pathToDir);

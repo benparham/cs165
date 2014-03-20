@@ -138,7 +138,10 @@ int unsortedSelectValue(void *_header, FILE *fp, int value, struct bitmap **bmp,
 		return 1;
 	}
 
-	if (seekHeader(fp, sizeof(columnHeaderUnsorted), err)) {
+	// if (seekHeader(fp, sizeof(columnHeaderUnsorted), err)) {
+	// 	return 1;
+	// }
+	if (seekData(fp, sizeof(columnHeaderUnsorted), 0, err)) {
 		return 1;
 	}
 
@@ -174,7 +177,10 @@ int unsortedSelectRange(void *_header, FILE *fp, int low, int high, struct bitma
 		return 1;
 	}
 
-	if (seekHeader(fp, sizeof(columnHeaderUnsorted), err)) {
+	// if (seekHeader(fp, sizeof(columnHeaderUnsorted), err)) {
+	// 	return 1;
+	// }
+	if (seekData(fp, sizeof(columnHeaderUnsorted), 0, err)) {
 		return 1;
 	}
 

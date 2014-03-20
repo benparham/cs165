@@ -63,8 +63,9 @@ void columnDestroy(column *col) {
 // Requires and allocated column as argument
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err) {
 
-	char pathToColumn[BUFSIZE];
-	sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
+	// char pathToColumn[BUFSIZE];
+	char *pathToColumn = COL_PTH_HDR(tbl->name, columnName);
+	//sprintf(pathToColumn, "%s/%s/%s/%s/%s.bin", DATA_PATH, TABLE_DIR, tbl->name, COLUMN_DIR, columnName);
 
 	// printf("Attempting to open column file %s\n", pathToColumn);
 

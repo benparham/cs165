@@ -10,7 +10,8 @@ extern columnFunctions sortedColumnFunctions;
 
 typedef struct columnHeaderSorted {
 	char *name;
-	int sizeBytes;
+	int fileHeaderSizeBytes;
+	int fileDataSizeBytes;
 
 	int entriesTotal;
 	int entriesUsed;
