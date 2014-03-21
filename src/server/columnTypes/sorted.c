@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include <columnTypes/sorted.h>
 #include <columnTypes/common.h>
@@ -41,15 +42,15 @@ int sortedCreateHeader(void **_header, char *columnName, error *err) {
 	strcpy(header->name, columnName);
 
 	header->fileHeaderSizeBytes = 0;	// This will be set during readInHeader
-	header->fileDataSizeBytes = sizeof(int);
-	// header->sizeBytes = sizeof(int);
+	header->fileDataSizeBytes = 0;
+	header->nEntries = 0;
 
-	header->entriesTotal = 1;
-	header->entriesUsed = 0;
+	// header->entriesTotal = 1;
+	// header->entriesUsed = 0;
 
-	if (bitmapCreate(1, &(header->bmp), err)) {
-		return 1;
-	}
+	// if (bitmapCreate(1, &(header->bmp), err)) {
+	// 	return 1;
+	// }
 
 	return 0;
 }
@@ -58,15 +59,12 @@ void sortedDestroyHeader(void *_header) {
 	columnHeaderSorted *header = (columnHeaderSorted *) _header;
 
 	free(header->name);
-	bitmapDestroy(header->bmp);
+	// bitmapDestroy(header->bmp);
 
 	free(_header);
 }
 
 int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
-	
-	ERROR(err, E_UNIMP);
-	return 1;
 
 	// Allocate header
 	*_header = malloc(sizeof(columnHeaderSorted));
@@ -105,9 +103,10 @@ int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
 	// Deserialize for all other header info
 	serialReadStr(slzr, &(header->name));
 	serialReadInt(slzr, &(header->fileDataSizeBytes));
-	serialReadInt(slzr, &(header->entriesTotal));
-	serialReadInt(slzr, &(header->entriesUsed));
-	bitmapSerialRead(slzr, &(header->bmp));
+	serialReadInt(slzr, &(header->nEntries));
+	// serialReadInt(slzr, &(header->entriesTotal));
+	// serialReadInt(slzr, &(header->entriesUsed));
+	// bitmapSerialRead(slzr, &(header->bmp));
 
 	serializerDestroy(slzr);
 
@@ -139,16 +138,18 @@ int sortedWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 	serialAddSerialSizeStr(slzr, header->name);
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
-	serialAddSerialSizeInt(slzr);
-	bitmapSerialAddSize(slzr, header->bmp);
+	// serialAddSerialSizeInt(slzr);
+	// serialAddSerialSizeInt(slzr);
+	// bitmapSerialAddSize(slzr, header->bmp);
 
 	serializerAllocSerial(slzr);
 
 	serialWriteStr(slzr, header->name);
 	serialWriteInt(slzr, header->fileDataSizeBytes);
-	serialWriteInt(slzr, header->entriesTotal);
-	serialWriteInt(slzr, header->entriesUsed);
-	bitmapSerialWrite(slzr, header->bmp);
+	serialWriteInt(slzr, header->nEntries);
+	// serialWriteInt(slzr, header->entriesTotal);
+	// serialWriteInt(slzr, header->entriesUsed);
+	// bitmapSerialWrite(slzr, header->bmp);
 
 	// Write serialized header to disk
 	if (fwrite(slzr->serial, slzr->serialSizeBytes, 1, headerFp) < 1) {
@@ -173,17 +174,119 @@ void sortedPrintHeader(void *_header) {
 	printf("Name: %s\n", header->name);
 	printf("File header size bytes: %d\n", header->fileHeaderSizeBytes);
 	printf("File data size bytes: %d\n", header->fileDataSizeBytes);
-	printf("Entries total: %d\n", header->entriesTotal);
-	printf("Entries used: %d\n", header->entriesUsed);
-	printf("Bitmap:\n");
-	bitmapPrint(header->bmp);
+	// printf("Entries total: %d\n", header->entriesTotal);
+	// printf("Entries used: %d\n", header->entriesUsed);
+	// printf("Bitmap:\n");
+	// bitmapPrint(header->bmp);
+}
+
+
+// Returns 1 on error, 0 on "success"
+static int binSrch(FILE *dataFp, int value, int idxLow, int idxHigh, int *idxRet, int *valRet, error *err) {
+	if (dataFp == NULL || idxRet == NULL || valRet == NULL ||
+		idxLow > idxHigh || idxHigh == 0) {
+		ERROR(err, E_INTERN);
+		return 1;
+	}
+
+
+	int idxMid = idxLow + ((idxHigh - idxLow) / 2);
+	int offset = idxMid * sizeof(int);
+
+	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		return 1;
+	}
+
+	int entry;
+	if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
+		ERROR(err, E_FRD);
+		return 1;
+	}
+
+	if (value == entry || idxHigh - idxLow <= 2) {
+		*idxRet = idxMid;
+		*valRet = entry;
+		return 0;
+	}
+
+	if (value < entry) {
+		return binSrch(dataFp, value, idxLow, idxMid, idxRet, valRet, err);
+	} else {
+		return binSrch(dataFp, value, idxMid, idxHigh, idxRet, valRet, err);
+	}
 }
 
 
 
-int sortedInsert(void *columnHeader, FILE *dataFp, int data, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+int sortedInsert(void *_header, FILE *dataFp, int data, error *err) {
+	columnHeaderSorted *header = (columnHeaderSorted *) _header;
+
+	// Get insertion index
+	int insertIdx;
+	if (header->nEntries == 0) {
+		insertIdx = 0;
+	} else {
+		int lastIdx = header->nEntries - 1;
+
+		int srchVal;
+		if (binSrch(dataFp, data, 0, lastIdx, &insertIdx, &srchVal, err)) {
+			return 1;
+		}
+
+		if (data > srchVal) {
+			insertIdx += 1;
+		}
+	}
+
+	printf("Need to insert at index %d\n", insertIdx);
+
+	// Seek to index's offset in file
+	int offset = insertIdx * sizeof(int);
+	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		return 1;
+	}
+
+	// Bytes remaining in the file after offset
+	int bytesToCopy = header->fileDataSizeBytes - offset;
+	assert(bytesToCopy >= 0);
+
+	if (bytesToCopy > BUFSIZE) {
+		ERROR(err, E_NOMEM);
+		return 1;
+	}
+	unsigned char temp[BUFSIZE];
+
+	// Read data after offset into temp
+	if (fread(temp, bytesToCopy, 1, dataFp) < 1) {
+		ERROR(err, E_FRD);
+		return 1;
+	}
+
+
+	// Write data to the correct index
+	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		return 1;
+	}
+	if (fwrite(&data, sizeof(int), 1, dataFp) < 1) {
+		ERROR(err, E_FWR);
+		return 1;
+	}
+
+	// Write temp back into file after data
+	if (fwrite(temp, bytesToCopy, 1, dataFp) < 1) {
+		ERROR(err, E_FWR);
+		return 1;
+	}
+
+
+	// Update the column header
+	header->fileDataSizeBytes += sizeof(int);
+	header->nEntries += 1;
+
+	return 0;
 }
 
 int sortedSelectAll(void *columnHeader, FILE *dataFp, struct bitmap **bmp, error *err) {

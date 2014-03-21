@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 	
 	// Detect whether we are in interactive mode
 	int inAtty = isatty(0);
-	int outAtty = isatty(1);
+	// int outAtty = isatty(1);
 
 	char *input = malloc(sizeof(char) * MAX_INPUT);
 	char *response = malloc(sizeof(char) * MAX_INPUT);

@@ -11,12 +11,14 @@ extern columnFunctions sortedColumnFunctions;
 typedef struct columnHeaderSorted {
 	char *name;
 	int fileHeaderSizeBytes;
+
 	int fileDataSizeBytes;
+	int nEntries;
 
-	int entriesTotal;
-	int entriesUsed;
+	// int entriesTotal;
+	// int entriesUsed;
 
-	struct bitmap *bmp;
+	// struct bitmap *bmp;
 } columnHeaderSorted;
 
 int sortedCreateHeader(void **_header, char *columnName, error *err);
