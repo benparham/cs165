@@ -162,7 +162,7 @@ static int seekIdx(FILE *fp, int idx) {
 }
 
 // Returns 1 on error, 0 on "success"
-static int binSrch(FILE *dataFp, int value, int idxLow, int idxHigh, int *idxRet, int *valRet, error *err) {
+static int binSrch(FILE *dataFp, int value, int idxLow, int idxHigh, int roundDown, int *idxRet, int *valRet, error *err) {
 	if (dataFp == NULL || idxRet == NULL || valRet == NULL || idxLow > idxHigh) {
 		ERROR(err, E_INTERN);
 		return 1;
@@ -170,9 +170,10 @@ static int binSrch(FILE *dataFp, int value, int idxLow, int idxHigh, int *idxRet
 
 
 	int idxMid = idxLow + ((idxHigh - idxLow) / 2);
-	// int offset = idxMid * sizeof(int);
+	if (!roundDown && idxMid != idxHigh && (idxHigh - idxLow) % 2 != 0) {
+		idxMid += 1;
+	}
 
-	// if (fseek(dataFp, offset, SEEK_SET) == -1) {
 	if (seekIdx(dataFp, idxMid) == -1) {
 		ERROR(err, E_FSK);
 		return 1;
@@ -184,16 +185,16 @@ static int binSrch(FILE *dataFp, int value, int idxLow, int idxHigh, int *idxRet
 		return 1;
 	}
 
-	if (value == entry || idxHigh - idxLow <= 2) {
+	if (value == entry || idxHigh - idxLow <= 1) {
 		*idxRet = idxMid;
 		*valRet = entry;
 		return 0;
 	}
 
 	if (value < entry) {
-		return binSrch(dataFp, value, idxLow, idxMid, idxRet, valRet, err);
+		return binSrch(dataFp, value, idxLow, idxMid, 1, idxRet, valRet, err);
 	} else {
-		return binSrch(dataFp, value, idxMid, idxHigh, idxRet, valRet, err);
+		return binSrch(dataFp, value, idxMid, idxHigh, 0, idxRet, valRet, err);
 	}
 }
 
@@ -210,7 +211,7 @@ int sortedInsert(void *_header, FILE *dataFp, int data, error *err) {
 		int lastIdx = header->nEntries - 1;
 
 		int srchVal;
-		if (binSrch(dataFp, data, 0, lastIdx, &insertIdx, &srchVal, err)) {
+		if (binSrch(dataFp, data, 0, lastIdx, 1, &insertIdx, &srchVal, err)) {
 			return 1;
 		}
 
@@ -289,6 +290,59 @@ int sortedSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err
 	return 0;
 }
 
+// Find leftmost instance of value
+static int findLeftmost(FILE *dataFp, int value, int startIdx, int *retIdx, error *err) {
+	*retIdx = startIdx;
+	while (*retIdx > 0) {
+
+		if (seekIdx(dataFp, *retIdx - 1) == -1) {
+			ERROR(err, E_FSK);
+			return 1;
+		}
+
+		int entry;
+		if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
+			ERROR(err, E_FRD);
+			return 1;
+		}
+
+		if (entry != value) {
+			break;
+		}
+
+		*retIdx -= 1;
+	}
+
+	return 0;
+}
+
+// Find rightmost instance of value
+static int findRightmost(FILE *dataFp, int value, int startIdx, int lastIdx, int *retIdx, error *err) {
+
+	if (seekIdx(dataFp, startIdx + 1) == -1) {
+		ERROR(err, E_FSK);
+		return 1;
+	}
+
+	*retIdx = startIdx;
+	while (*retIdx < lastIdx) {
+
+		int entry;
+		if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
+			ERROR(err, E_FRD);
+			return 1;
+		}
+
+		if (entry != value) {
+			break;
+		}
+
+		*retIdx += 1;
+	}
+
+	return 0;
+}
+
 int sortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp, error *err) {
 	columnHeaderSorted *header = (columnHeaderSorted *) _header;
 
@@ -306,7 +360,7 @@ int sortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bm
 
 	int srchIdx;
 	int srchVal;
-	if (binSrch(dataFp, value, 0, lastIdx, &srchIdx, &srchVal, err)) {
+	if (binSrch(dataFp, value, 0, lastIdx, 1, &srchIdx, &srchVal, err)) {
 		return 1;
 	}
 
@@ -316,48 +370,14 @@ int sortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bm
 	}
 
 
-	// Find leftmost instance of value
-	int leftIdx = srchIdx;
-	while (leftIdx > 0) {
+	int leftIdx, rightIdx;
 
-		if (seekIdx(dataFp, leftIdx - 1) == -1) {
-			ERROR(err, E_FSK);
-			return 1;
-		}
-
-		int entry;
-		if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
-			ERROR(err, E_FRD);
-			return 1;
-		}
-
-		if (entry != value) {
-			break;
-		}
-
-		leftIdx -= 1;
-	}
-
-	// Find rightmost instance of value
-	if (seekIdx(dataFp, srchIdx + 1) == -1) {
-		ERROR(err, E_FSK);
+	if (findLeftmost(dataFp, value, srchIdx, &leftIdx, err)) {
 		return 1;
 	}
 
-	int rightIdx = srchIdx;
-	while (rightIdx < lastIdx) {
-
-		int entry;
-		if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
-			ERROR(err, E_FRD);
-			return 1;
-		}
-
-		if (entry != value) {
-			break;
-		}
-
-		rightIdx += 1;
+	if (findRightmost(dataFp, value, srchIdx, lastIdx, &rightIdx, err)) {
+		return 1;
 	}
 
 	// Mark bitmap
@@ -385,6 +405,60 @@ int sortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct bit
 		return 1;
 	}
 
+	int finalLowIdx, finalHighIdx;
+
+	int lastIdx = header->nEntries - 1;
+
+	// Get low index
+	int lowSrchIdx, lowSrchVal;
+	if (binSrch(dataFp, low, 0, lastIdx, 1, &lowSrchIdx, &lowSrchVal, err)) {
+		return 1;
+	}
+
+	if (lowSrchVal < low) {
+		if (lowSrchIdx == lastIdx) {
+			// low is greater than all entries, return empty bitmap
+			return 0;
+		}
+
+		finalLowIdx = lowSrchIdx + 1;
+	} else if (lowSrchVal == low) {
+		if (findLeftmost(dataFp, low, lowSrchIdx, &finalLowIdx, err)) {
+			return 1;
+		}
+	}
+
+
+	// Get high index
+	int highSrchIdx, highSrchVal;
+	if (binSrch(dataFp, high, finalLowIdx, lastIdx, 1, &highSrchIdx, &highSrchVal, err)) {
+		return 1;
+	}
+
+	if (highSrchVal > high) {
+		if (highSrchIdx == 0) {
+			// high is less than all entries, return empty bitmap
+			return 0;
+		}
+
+		finalHighIdx = highSrchIdx - 1;
+	} else if (highSrchVal == high) {
+		if (findRightmost(dataFp, high, highSrchIdx, lastIdx, &finalHighIdx, err)) {
+			return 1;
+		}
+	}
+
+	assert(finalLowIdx <= finalHighIdx);
+
+	// Mark bitmap
+	int bitmapIdx = finalLowIdx;
+	while (bitmapIdx <= finalHighIdx) {
+		if (bitmapMark(*bmp, bitmapIdx, err)) {
+			return 1;
+		}
+
+		bitmapIdx += 1;
+	}
 
 	return 0;
 }
