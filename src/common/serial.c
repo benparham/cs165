@@ -78,7 +78,7 @@ int serializerSetSerialFromFile(serializer *slzr, FILE *fp) {
 
 	// Read in the size of the serial in bytes
 	int sizeBytes;
-	if (fread(&sizeBytes, sizeof(int), 1, fp)) {
+	if (fread(&sizeBytes, sizeof(int), 1, fp) < 1) {
 		goto exit;
 	}
 
@@ -94,7 +94,7 @@ int serializerSetSerialFromFile(serializer *slzr, FILE *fp) {
 	}
 
 	// Read in entire serial
-	if (fread(serial, sizeBytes, 1, fp)) {
+	if (fread(serial, sizeBytes, 1, fp) < 1) {
 		goto cleanupSerial;
 	}
 

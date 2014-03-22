@@ -372,6 +372,9 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 	// 	returnData[i] = i + 1;
 	// }
 
+	if (resultBytes == 0) {
+		results = NULL;
+	}
 	RESPONSE(res, "Fetch results:", resultBytes, results);
 	
 	return 0;

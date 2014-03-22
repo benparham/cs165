@@ -138,12 +138,7 @@ int unsortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **
 		return 1;
 	}
 
-	// if (seekHeader(fp, sizeof(columnHeaderUnsorted), err)) {
-	// 	return 1;
-	// }
-	// if (seekData(fp, sizeof(columnHeaderUnsorted), 0, err)) {
-	// 	return 1;
-	// }
+	
 	if (fseek(dataFp, 0, SEEK_SET) == -1) {
 		ERROR(err, E_FSK);
 		return 1;
@@ -181,12 +176,7 @@ int unsortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct b
 		return 1;
 	}
 
-	// if (seekHeader(fp, sizeof(columnHeaderUnsorted), err)) {
-	// 	return 1;
-	// }
-	// if (seekData(fp, sizeof(columnHeaderUnsorted), 0, err)) {
-	// 	return 1;
-	// }
+
 	if (fseek(dataFp, 0, SEEK_SET) == -1) {
 		ERROR(err, E_FSK);
 		return 1;

@@ -45,13 +45,6 @@ int sortedCreateHeader(void **_header, char *columnName, error *err) {
 	header->fileDataSizeBytes = 0;
 	header->nEntries = 0;
 
-	// header->entriesTotal = 1;
-	// header->entriesUsed = 0;
-
-	// if (bitmapCreate(1, &(header->bmp), err)) {
-	// 	return 1;
-	// }
-
 	return 0;
 }
 
@@ -87,10 +80,6 @@ int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
 		goto exit;
 	}
 
-	// Set up serial buffer
-	unsigned char serial[BUFSIZE];
-	memset(serial, 0, BUFSIZE);
-
 	// Read in serial from memory
 	if (serializerSetSerialFromFile(slzr, headerFp)) {
 		ERROR(err, E_SRL);
@@ -104,9 +93,6 @@ int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
 	serialReadStr(slzr, &(header->name));
 	serialReadInt(slzr, &(header->fileDataSizeBytes));
 	serialReadInt(slzr, &(header->nEntries));
-	// serialReadInt(slzr, &(header->entriesTotal));
-	// serialReadInt(slzr, &(header->entriesUsed));
-	// bitmapSerialRead(slzr, &(header->bmp));
 
 	serializerDestroy(slzr);
 
@@ -138,18 +124,12 @@ int sortedWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 	serialAddSerialSizeStr(slzr, header->name);
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
-	// serialAddSerialSizeInt(slzr);
-	// serialAddSerialSizeInt(slzr);
-	// bitmapSerialAddSize(slzr, header->bmp);
 
 	serializerAllocSerial(slzr);
 
 	serialWriteStr(slzr, header->name);
 	serialWriteInt(slzr, header->fileDataSizeBytes);
 	serialWriteInt(slzr, header->nEntries);
-	// serialWriteInt(slzr, header->entriesTotal);
-	// serialWriteInt(slzr, header->entriesUsed);
-	// bitmapSerialWrite(slzr, header->bmp);
 
 	// Write serialized header to disk
 	if (fwrite(slzr->serial, slzr->serialSizeBytes, 1, headerFp) < 1) {
@@ -174,26 +154,26 @@ void sortedPrintHeader(void *_header) {
 	printf("Name: %s\n", header->name);
 	printf("File header size bytes: %d\n", header->fileHeaderSizeBytes);
 	printf("File data size bytes: %d\n", header->fileDataSizeBytes);
-	// printf("Entries total: %d\n", header->entriesTotal);
-	// printf("Entries used: %d\n", header->entriesUsed);
-	// printf("Bitmap:\n");
-	// bitmapPrint(header->bmp);
 }
 
 
+static int seekIdx(FILE *fp, int idx) {
+	return fseek(fp, idx * sizeof(int), SEEK_SET);
+}
+
 // Returns 1 on error, 0 on "success"
 static int binSrch(FILE *dataFp, int value, int idxLow, int idxHigh, int *idxRet, int *valRet, error *err) {
-	if (dataFp == NULL || idxRet == NULL || valRet == NULL ||
-		idxLow > idxHigh || idxHigh == 0) {
+	if (dataFp == NULL || idxRet == NULL || valRet == NULL || idxLow > idxHigh) {
 		ERROR(err, E_INTERN);
 		return 1;
 	}
 
 
 	int idxMid = idxLow + ((idxHigh - idxLow) / 2);
-	int offset = idxMid * sizeof(int);
+	// int offset = idxMid * sizeof(int);
 
-	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+	// if (fseek(dataFp, offset, SEEK_SET) == -1) {
+	if (seekIdx(dataFp, idxMid) == -1) {
 		ERROR(err, E_FSK);
 		return 1;
 	}
@@ -258,12 +238,13 @@ int sortedInsert(void *_header, FILE *dataFp, int data, error *err) {
 	}
 	unsigned char temp[BUFSIZE];
 
-	// Read data after offset into temp
-	if (fread(temp, bytesToCopy, 1, dataFp) < 1) {
-		ERROR(err, E_FRD);
-		return 1;
+	if (bytesToCopy > 0) {
+		// Read data after offset into temp
+		if (fread(temp, bytesToCopy, 1, dataFp) < 1) {
+			ERROR(err, E_FRD);
+			return 1;
+		}
 	}
-
 
 	// Write data to the correct index
 	if (fseek(dataFp, offset, SEEK_SET) == -1) {
@@ -275,10 +256,12 @@ int sortedInsert(void *_header, FILE *dataFp, int data, error *err) {
 		return 1;
 	}
 
-	// Write temp back into file after data
-	if (fwrite(temp, bytesToCopy, 1, dataFp) < 1) {
-		ERROR(err, E_FWR);
-		return 1;
+	if (bytesToCopy > 0) {
+		// Write temp back into file after data
+		if (fwrite(temp, bytesToCopy, 1, dataFp) < 1) {
+			ERROR(err, E_FWR);
+			return 1;
+		}
 	}
 
 
@@ -289,22 +272,128 @@ int sortedInsert(void *_header, FILE *dataFp, int data, error *err) {
 	return 0;
 }
 
-int sortedSelectAll(void *columnHeader, FILE *dataFp, struct bitmap **bmp, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+int sortedSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err) {
+	columnHeaderSorted *header = (columnHeaderSorted *) _header;
+
+	if (header->nEntries < 1) {
+		ERROR(err, E_COLEMT);
+		return 1;
+	}
+
+	if (bitmapCreate(header->nEntries, bmp, err)) {
+		return 1;
+	}
+
+	bitmapMarkAll(*bmp);
+
+	return 0;
 }
 
-int sortedSelectValue(void *columnHeader, FILE *dataFp, int value, struct bitmap **bmp, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+int sortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp, error *err) {
+	columnHeaderSorted *header = (columnHeaderSorted *) _header;
+
+	if (header->nEntries < 1) {
+		ERROR(err, E_COLEMT);
+		return 1;
+	}
+
+	if (bitmapCreate(header->nEntries, bmp, err)) {
+		return 1;
+	}
+
+	// Find one index of value
+	int lastIdx = header->nEntries - 1;
+
+	int srchIdx;
+	int srchVal;
+	if (binSrch(dataFp, value, 0, lastIdx, &srchIdx, &srchVal, err)) {
+		return 1;
+	}
+
+	// Return empty bitmap if value is not found
+	if (srchVal != value) {
+		return 0;
+	}
+
+
+	// Find leftmost instance of value
+	int leftIdx = srchIdx;
+	while (leftIdx > 0) {
+
+		if (seekIdx(dataFp, leftIdx - 1) == -1) {
+			ERROR(err, E_FSK);
+			return 1;
+		}
+
+		int entry;
+		if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
+			ERROR(err, E_FRD);
+			return 1;
+		}
+
+		if (entry != value) {
+			break;
+		}
+
+		leftIdx -= 1;
+	}
+
+	// Find rightmost instance of value
+	if (seekIdx(dataFp, srchIdx + 1) == -1) {
+		ERROR(err, E_FSK);
+		return 1;
+	}
+
+	int rightIdx = srchIdx;
+	while (rightIdx < lastIdx) {
+
+		int entry;
+		if (fread(&entry, sizeof(int), 1, dataFp) < 1) {
+			ERROR(err, E_FRD);
+			return 1;
+		}
+
+		if (entry != value) {
+			break;
+		}
+
+		rightIdx += 1;
+	}
+
+	// Mark bitmap
+	int bitmapIdx = leftIdx;
+	while (bitmapIdx <= rightIdx) {
+		if (bitmapMark(*bmp, bitmapIdx, err)) {
+			return 1;
+		}
+
+		bitmapIdx += 1;
+	}
+
+	return 0;
 }
 
-int sortedSelectRange(void *columnHeader, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+int sortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err) {
+	columnHeaderSorted *header = (columnHeaderSorted *) _header;
+
+	if (header->nEntries < 1) {
+		ERROR(err, E_COLEMT);
+		return 1;
+	}
+
+	if (bitmapCreate(header->nEntries, bmp, err)) {
+		return 1;
+	}
+
+
+	return 0;
 }
 
-int sortedFetch(void *columnHeader, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+int sortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+	if (bitmapSize(bmp) != ((columnHeaderSorted *) _header)->nEntries) {
+		ERROR(err, E_BADFTC);
+		return 1;
+	}
+
+	return commonFetch(dataFp, bmp, resultBytes, results, err);
 }
