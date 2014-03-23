@@ -15,6 +15,156 @@
 #define DEFAULT_TARGET_ADDRESS "127.0.0.1"
 #define MAX_INPUT 1024
 
+
+static int loadFromCsv(char *fileName) {
+	printf("Loading from file '%s'\n", fileName);
+
+	// Open file
+	FILE *fp = fopen(fileName, "r");
+	if (fp == NULL) {
+		printf("Could not open '%s'\n", fileName);
+		goto exit;
+	}
+
+	// Line buffer (can be resized by getline)
+	size_t lineBytes = MAX_INPUT;
+	char *line = (char *) malloc(lineBytes);
+	if (line == NULL) {
+		printf("Out of memory\n");
+		goto cleanupFile;
+	}
+
+	// Read in column names
+	int charsRead = getline(&line, &lineBytes, fp);
+	if (charsRead < 1) {
+		printf("Malformed data in file '%s'\n", fileName);
+		goto cleanupLine;
+	}
+
+	// Store the comma separated list of columns and the number of columns
+	char *columnNames = (char *) malloc(charsRead * sizeof(char));
+	if (columnNames == NULL) {
+		printf("Out of memory\n");
+		goto cleanupLine;
+	}
+	strcpy(columnNames, line);
+
+	int numColumns = 1;
+	for (int i = 0; i < charsRead; i++) {
+		if (columnNames[i] == ',') {
+			numColumns += 1;
+		}
+	}
+
+	printf("Column names: %s", columnNames);
+	printf("Num columns: %d\n", numColumns);
+
+
+	
+
+
+	// Cleanup
+	free(columnNames);
+	free(line);
+	fclose(fp);
+
+	// TODO: Delete this
+	printf("Load not yet implemented\n");
+	return 1;
+
+	return 0;
+
+// cleanupColumnNames:
+// 	free(columnNames);
+cleanupLine:
+	free(line);
+cleanupFile:
+	fclose(fp);
+exit:
+	return 1;
+}
+
+static void getInput(int socketFD) {
+
+	// Detect whether we are in interactive mode
+	int inAtty = isatty(0);
+	// int outAtty = isatty(1);
+
+	char *input = malloc(sizeof(char) * MAX_INPUT);
+	char *response = malloc(sizeof(char) * MAX_INPUT);
+	
+	while(1) {
+		memset(input, 0, sizeof(input));
+		memset(response, 0, sizeof(response));
+		
+		// Prompt/get input
+		printf(">: ");
+		fgets(input, MAX_INPUT, stdin);
+
+		// Display input if not in interactive mode
+		if (!inAtty) {
+			printf("%s", input);
+		}
+
+		int skipReceive = 0;
+
+		char *loadCommand = "load(";
+		int loadCommandLen = strlen(loadCommand);
+		if (strncmp(input, loadCommand, loadCommandLen) == 0) {
+			skipReceive = loadFromCsv(strtok(&input[loadCommandLen], ")\n"));
+		} else {
+			if (messageSend(socketFD, input)) {
+				printf("->: Error sending message\n");
+				skipReceive = 1;
+			}
+
+			if (strcmp(input, "exit\n") == 0) {
+				break;
+			}
+		}
+
+		if (!skipReceive) {
+			int dataBytes;
+			void *data;
+			int term;
+			if (messageReceive(socketFD, response, &dataBytes, &data, &term)) {
+				if (term) {
+					printf("->: Server has exited\n");
+					break;
+				} else {
+					printf("->: Error receiving message\n");
+				}
+			}
+
+
+			printf("->: %s\n", response);
+
+			if (dataBytes > 0) {
+				
+				assert(dataBytes % sizeof(int) == 0);
+				int nEntries = dataBytes / sizeof(int);
+
+				printf("->: [");
+
+				for (int i = 0; i < nEntries; i++) {
+					printf("%d", ((int *) data)[i]);
+
+					if (i != nEntries - 1) {
+						printf(",");
+					}
+				}
+
+				printf("]\n");
+
+				free(data);
+			}
+		}
+	}
+
+	free(input);
+	free(response);
+}
+
 int main(int argc, char *argv[]) {
 	printf("Initiating Client...\n");
 	
@@ -65,82 +215,13 @@ int main(int argc, char *argv[]) {
 	}
 
 	printf("\n");
-	
-	// Detect whether we are in interactive mode
-	int inAtty = isatty(0);
-	// int outAtty = isatty(1);
-
-	char *input = malloc(sizeof(char) * MAX_INPUT);
-	char *response = malloc(sizeof(char) * MAX_INPUT);
-	
-	while(1) {
-		memset(input, 0, sizeof(input));
-		memset(response, 0, sizeof(response));
-		
-		// Prompt/get input
-		printf(">: ");
-		fgets(input, MAX_INPUT, stdin);
-
-		// Display input if not in interactive mode
-		if (!inAtty) {
-			printf("%s", input);
-		}
-
-		if (messageSend(socketFD, input)) {
-			printf("->: Error sending message\n");
-		}
-
-		if (strcmp(input, "exit\n") == 0) {
-			break;
-		}
-
-		int dataBytes;
-		void *data;
-		int term;
-		if (messageReceive(socketFD, response, &dataBytes, &data, &term)) {
-			if (term) {
-				printf("->: Server has exited\n");
-				break;
-			} else {
-				printf("->: Error receiving message\n");
-			}
-		}
 
 
-		printf("->: %s\n", response);
-
-		if (dataBytes > 0) {
-			
-			assert(dataBytes % sizeof(int) == 0);
-			int nEntries = dataBytes / sizeof(int);
-
-			printf("->: [");
-
-			for (int i = 0; i < nEntries; i++) {
-				
-				// char *entry;
-				// sprintf(entry, "%d", ((int *) data)[i]);
-
-				// printf("%s", entry);
-				printf("%d", ((int *) data)[i]);
-
-
-				if (i != nEntries - 1) {
-					printf(",");
-				}
-			}
-
-			printf("]\n");
-
-			free(data);
-		}
-	}
+	getInput(socketFD);
 	
 	// Cleanup socket
 	close(socketFD);
 	printf("Closed socket %d\n", socketFD);
 	
-	free(input);
-	free(response);
 	return 0;
 }
