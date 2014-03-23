@@ -16,7 +16,7 @@
 #define MAX_INPUT 1024
 
 
-static int loadFromCsv(char *fileName) {
+static int loadFromCsv(char *fileName, int socketFD) {
 	printf("Loading from file '%s'\n", fileName);
 
 	// Open file
@@ -49,6 +49,9 @@ static int loadFromCsv(char *fileName) {
 	}
 	strcpy(columnNames, line);
 
+	// Remove trailing newline
+	strtok(columnNames, "\n");
+
 	int numColumns = 1;
 	for (int i = 0; i < charsRead; i++) {
 		if (columnNames[i] == ',') {
@@ -60,22 +63,91 @@ static int loadFromCsv(char *fileName) {
 	printf("Num columns: %d\n", numColumns);
 
 
-	
+	int numRows = 0;
+
+
+	// Read csv entries into data buffer
+	int rowBytes = numColumns * sizeof(int);
+	int currentSizeBytes = 0;
+	void *data = NULL;
+	int dataOffset = 0;
+	while((charsRead = getline(&line, &lineBytes, fp)) > 0) {
+		currentSizeBytes += rowBytes;
+		void *temp = realloc(data, currentSizeBytes);
+		if (temp == NULL) {
+			printf("Out of memory");
+			goto cleanupData;
+		}
+
+		data = temp;
+
+		printf("Row: ");
+
+		char *entry = strtok(line, ",\n");
+		int numEntries = 0;
+		while (entry != NULL) {
+			printf("%s ", entry);
+			
+			int intEntry = atoi(entry);
+			memcpy(data + dataOffset, &intEntry, sizeof(int));
+			dataOffset += sizeof(int);
+
+			numEntries += 1;
+
+			entry = strtok(NULL, ",\n");
+		}
+
+		printf("\n");
+
+		if (numEntries != numColumns) {
+			printf("Malformed data: row %d\n", numRows);
+			goto cleanupData;
+		}
+
+		numRows += 1;
+	}
+
+
+	printf("Data size bytes: %d\n", currentSizeBytes);
+	printf("Num rows: %d\n", numRows);
+
+
+	// Send message and data to server
+	char *msgBeg = "load(";
+	char *message = (char *) malloc((strlen(msgBeg) + strlen(columnNames) + 2) * sizeof(char));
+	sprintf(message, "%s%s)", msgBeg, columnNames);
+
+	printf("Message: %s\n", message);
+
+	if (dataSend(socketFD, message, currentSizeBytes, data)) {
+		printf("->: Error sending message\n");
+		goto cleanupMessage;
+	}
 
 
 	// Cleanup
+	free(message);
+	if (data != NULL) {
+		free(data);
+	}
 	free(columnNames);
 	free(line);
 	fclose(fp);
 
-	// TODO: Delete this
-	printf("Load not yet implemented\n");
-	return 1;
+	// // TODO: Delete this
+	// printf("Load not yet implemented\n");
+	// return 1;
 
 	return 0;
 
+cleanupMessage:
+	free(message);
+cleanupData:
+	if (data != NULL) {
+		free(data);
+	}
 // cleanupColumnNames:
-// 	free(columnNames);
+	free(columnNames);
 cleanupLine:
 	free(line);
 cleanupFile:
@@ -111,7 +183,7 @@ static void getInput(int socketFD) {
 		char *loadCommand = "load(";
 		int loadCommandLen = strlen(loadCommand);
 		if (strncmp(input, loadCommand, loadCommandLen) == 0) {
-			skipReceive = loadFromCsv(strtok(&input[loadCommandLen], ")\n"));
+			skipReceive = loadFromCsv(strtok(&input[loadCommandLen], ")\n"), socketFD);
 		} else {
 			if (messageSend(socketFD, input)) {
 				printf("->: Error sending message\n");
