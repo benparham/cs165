@@ -54,10 +54,16 @@ exit:
 	return 1;
 }
 
-void columnDestroy(column *col) {
+void columnWipe(column *col) {
+	col->storageType = -1;
 	fclose(col->headerFp);
 	fclose(col->dataFp);
 	col->funcs->destroyHeader(col->columnHeader);
+	col->funcs = NULL;
+}
+
+void columnDestroy(column *col) {
+	columnWipe(col);
 	free(col);
 }
 
@@ -188,4 +194,20 @@ int columnSelectRange(column *col, int low, int high, struct bitmap **bmp, error
 }
 int columnFetch(column *col, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
 	return col->funcs->fetch(col->columnHeader, col->dataFp, bmp, resultBytes, results, err);
+}
+int columnLoad(column *col, int dataBytes, int *data, error *err) {
+	if (col->funcs->load(col->columnHeader, col->dataFp, dataBytes, data, err)) {
+		return 1;
+	}
+
+	if (col->funcs->writeOutHeader(col->columnHeader, col->headerFp, err)) {
+		return 1;
+	}
+
+	if (fflush(col->headerFp) || fflush(col->dataFp)) {
+		ERROR(err, E_FFL);
+		return 1;
+	}
+
+	return 0;
 }

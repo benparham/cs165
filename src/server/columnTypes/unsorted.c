@@ -19,7 +19,8 @@ columnFunctions unsortedColumnFunctions = {
 	&unsortedSelectAll,
 	&unsortedSelectValue,
 	&unsortedSelectRange,
-	&unsortedFetch
+	&unsortedFetch,
+	&unsortedLoad
 };
 
 int unsortedCreateHeader(void **_header, char *columnName, error *err) {
@@ -208,4 +209,17 @@ int unsortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBy
 	}
 
 	return commonFetch(dataFp, bmp, resultBytes, results, err);
+}
+
+int unsortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err) {
+	columnHeaderUnsorted *header = (columnHeaderUnsorted *) _header;
+
+	if (commonLoad(dataFp, dataBytes, data, err)) {
+		return 1;
+	}
+
+	header->sizeBytes += dataBytes;
+	header->nEntries += (dataBytes / sizeof(int));
+
+	return 0;
 }

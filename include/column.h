@@ -30,6 +30,7 @@ typedef struct column {
 } column;
 
 int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *headerFp, FILE *dataFp, column **col, error *err);
+void columnWipe(column *col);
 void columnDestroy(column *col);
 
 int columnReadFromDisk(tableInfo *tbl, char *columnName, column *col, error *err);
@@ -42,5 +43,6 @@ int columnSelectAll(column *col, struct bitmap **bmp, error *err);
 int columnSelectValue(column *col, int value, struct bitmap **bmp, error *err);
 int columnSelectRange(column *col, int low, int high, struct bitmap **bmp, error *err);
 int columnFetch(column *col, struct bitmap *bmp, int *nResults, int **results, error *err);
+int columnLoad(column *col, int dataBytes, int *data, error *err);
 
 #endif

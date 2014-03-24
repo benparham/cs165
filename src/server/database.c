@@ -386,6 +386,13 @@ exit:
 	return 1;
 }
 
+static int loadComp(const void *A, const void *B) {
+	int *a = *(int **) A;
+	int *b = *(int **) B;
+
+	return (a[0] - b[0]);
+}
+
 static int dbLoad(tableInfo *tbl, loadArgs *args, int dataBytes, void *data, response *res, error *err) {
 
 	int numColumns = args->numColumns;
@@ -426,27 +433,88 @@ static int dbLoad(tableInfo *tbl, loadArgs *args, int dataBytes, void *data, res
 		printf("\n");
 	}
 
+	// Retrieve first column from disk
+	column *curColumn = (column *) malloc(sizeof(column));
+	if (curColumn == NULL) {
+		ERROR(err, E_NOMEM);
+		goto cleanupRows;
+	}
 
-	// // Retrieve first column from disk
-	// column *col = (column *) malloc(sizeof(column));
-	// if (col == NULL) {
-	// 	ERROR(err, E_NOMEM);
-	// 	goto exit;
-	// }
+	if (columnReadFromDisk(tbl, columnNames[0], curColumn, err)) {
+		free(curColumn);
+		goto cleanupRows;
+	}
 
-	// if (columnReadFromDisk(tbl, columnName, col, err)) {
-	// 	free(col);
-	// 	goto exit;
-	// }
+	// Sort if necessary
+	switch(curColumn->storageType) {
+		case COL_UNSORTED:
+			break;
+		case COL_SORTED:
+			qsort(rows, numRows, sizeof(int *), loadComp);
+			break;
+		case COL_BTREE:
+			ERROR(err, E_UNIMP);
+			goto cleanupColumn;
+		default:
+			ERROR(err, E_COLST);
+			goto cleanupColumn;
+	}
+
+	printf("After sorting\n");
+	for (int i = 0; i < numRows; i++) {
+		printf("Row %d: ", i + 1);
+
+		for (int j = 0; j < numColumns; j++) {
+			printf("%d ", rows[i][j]);
+		}
+
+		printf("\n");
+	}
 
 
+	
+	// Setup buffer for column data
+	int columnBytes = numRows * sizeof(int);
+	int *columnData = (int *) malloc(columnBytes);
+	if (columnData == NULL) {
+		ERROR(err, E_NOMEM);
+		goto cleanupColumn;
+	}
+
+	// Load columns one at a time
+	for (int i = 0; i < numColumns; i++) {
+		if (i != 0) {
+			columnWipe(curColumn);
+
+			if (columnReadFromDisk(tbl, columnNames[i], curColumn, err)) {
+				goto cleanupColumnData;
+			}
+
+			assert(curColumn->storageType == COL_UNSORTED);
+		}
+
+		for (int j = 0; j < numRows; j++) {
+			columnData[j] = rows[j][i];
+		}
+
+		if (columnLoad(curColumn, columnBytes, columnData, err)) {
+			goto cleanupColumnData;
+		}
+	}
+
+	free(columnData);
+	columnDestroy(curColumn);
 	free(rows);
 
-	ERROR(err, E_UNIMP);
-	return 1;
+	RESPONSE_SUCCESS(res);
+	return 0;
 
-// cleanupRows:
-	// free(rows);
+cleanupColumnData:
+	free(columnData);
+cleanupColumn:
+	columnDestroy(curColumn);
+cleanupRows:
+	free(rows);
 exit:
 	return 1;
 }

@@ -29,19 +29,9 @@ int seekHeader(FILE *headerFp, error *err) {
 	return 0;
 }
 
-// int seekData(FILE *fp, int fileHeaderSizeBytes, int offset, error *err) {
-// 	return seekHeader(fp, fileHeaderSizeBytes + offset, err);
-// }
+
 
 int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
-
-	// Seek to data
-	// if (seekHeader(fp, headerSizeBytes, err)) {
-	// 	return 1;
-	// }
-	// if (seekData(fp, fileHeaderSizeBytes, 0, err)) {
-	// 	return 1;
-	// }
 
 	// Seek to beginning of file
 	if (fseek(dataFp, 0, SEEK_SET) == -1) {
@@ -86,5 +76,22 @@ int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **result
 	}
 	memcpy(*results, resultBuf, *resultBytes);
 	
+	return 0;
+}
+
+int commonLoad(FILE *dataFp, int dataBytes, int *data, error *err) {
+
+	// Seek to beginning of file
+	if (fseek(dataFp, 0, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		return 1;
+	}
+
+	// Write from data into the file
+	if (fwrite(data, dataBytes, 1, dataFp) < 1) {
+		ERROR(err, E_FWR);
+		return 1;
+	}
+
 	return 0;
 }

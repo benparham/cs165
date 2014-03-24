@@ -20,7 +20,8 @@ columnFunctions sortedColumnFunctions = {
 	&sortedSelectAll,
 	&sortedSelectValue,
 	&sortedSelectRange,
-	&sortedFetch
+	&sortedFetch,
+	&sortedLoad
 };
 
 int sortedCreateHeader(void **_header, char *columnName, error *err) {
@@ -470,4 +471,17 @@ int sortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultByte
 	}
 
 	return commonFetch(dataFp, bmp, resultBytes, results, err);
+}
+
+int sortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err) {
+	columnHeaderSorted *header = (columnHeaderSorted *) _header;
+
+	if (commonLoad(dataFp, dataBytes, data, err)) {
+		return 1;
+	}
+
+	header->fileDataSizeBytes += dataBytes;
+	header->nEntries += (dataBytes / sizeof(int));
+
+	return 0;
 }

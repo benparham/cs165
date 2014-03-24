@@ -20,5 +20,6 @@ int btreeSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err
 int btreeSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
 int btreeSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
 int btreeFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err);
 
 #endif
