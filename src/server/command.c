@@ -21,20 +21,6 @@ const char *CMD_NAMES[] = {
 	"exit"
 };
 
-command* createCommand() {
-	command* cmd = (command *) malloc(sizeof(command));
-	cmd->args = NULL;
-	return cmd;
-}
-
-void destroyCommand(command *cmd) {
-	if (cmd->args != NULL) {
-		free(cmd->args);
-	}
-
-	free(cmd);
-}
-
 
 /*
  * Parsing Commands
@@ -169,6 +155,98 @@ int setArgsFetchArgs(command *cmd, char *args, char *ignore) {
 	return 0;
 }
 
+int setArgsLoadArgs(command *cmd, char *args, char *ignore) {
+	(void) ignore;
+
+	loadArgs *ldArgs = (loadArgs *) malloc(sizeof(loadArgs));
+	if (ldArgs == NULL) {
+		return 1;
+	}
+	ldArgs->columnNames = NULL;
+
+	char *curColName = strtok(args, ",\n");
+
+	int idx = 0;
+	while(curColName != NULL) {
+		char **temp = (char **) realloc(ldArgs->columnNames, (idx + 1) * sizeof(char *));
+		if (temp == NULL) {
+			goto cleanupArgs;
+		}
+		ldArgs->columnNames = temp;
+
+		ldArgs->columnNames[idx] = (char *) malloc((strlen(curColName) + 1) * sizeof(char));
+		if (ldArgs->columnNames[idx] == NULL) {
+			goto cleanupArgs;
+		}
+		
+		strcpy(ldArgs->columnNames[idx], curColName);
+
+		curColName = strtok(NULL, ",\n");
+		idx += 1;
+	}
+
+	ldArgs->numColumns = idx;
+
+	cmd->args = ldArgs;
+
+	return 0;
+
+cleanupArgs:
+	for (int i = 0; i < idx; i++) {
+		free(ldArgs->columnNames[i]);
+	}
+
+	if (ldArgs->columnNames != NULL) {
+		free(ldArgs->columnNames);
+	}
+
+	free(ldArgs);
+
+	return 1;
+}
+
+void destroyLoadArgs(loadArgs *ldArgs) {
+	int length = sizeof(ldArgs->columnNames) / sizeof(ldArgs->columnNames[0]);
+
+	for (int i = 0; i < length; i++) {
+		free(ldArgs->columnNames[i]);
+	}
+
+	free(ldArgs->columnNames);
+	free(ldArgs);
+}
+
+command* createCommand() {
+	command* cmd = (command *) malloc(sizeof(command));
+	cmd->args = NULL;
+	return cmd;
+}
+
+void destroyCommandArgs(command *cmd) {
+	if (cmd->args == NULL) {
+		return;
+	}
+
+	switch(cmd->cmd) {
+		case CMD_LOAD:
+			destroyLoadArgs(cmd->args);
+			break;
+		default:
+			free(cmd->args);
+	}
+
+	cmd->args = NULL;
+}
+
+void destroyCommand(command *cmd) {
+	// if (cmd->args != NULL) {
+	// 	free(cmd->args);
+	// }
+	destroyCommandArgs(cmd);
+	free(cmd);
+}
+
+
 struct cmdParseItem {
 	char *cmdString;
 	char *cmdTerm;
@@ -184,7 +262,7 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"select(", ")", CMD_SELECT, &setArgsSelectArgs},
 	{"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
 	{"fetch(", ")", CMD_FETCH, &setArgsFetchArgs},
-	{"load(", ")", CMD_LOAD, &setArgsString},
+	{"load(", ")", CMD_LOAD, &setArgsLoadArgs},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
 	{NULL, NULL, 0, NULL}
 };

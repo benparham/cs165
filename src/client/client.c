@@ -17,7 +17,6 @@
 
 
 static int loadFromCsv(char *fileName, int socketFD) {
-	printf("Loading from file '%s'\n", fileName);
 
 	// Open file
 	FILE *fp = fopen(fileName, "r");
@@ -59,10 +58,7 @@ static int loadFromCsv(char *fileName, int socketFD) {
 		}
 	}
 
-	printf("Column names: %s", columnNames);
-	printf("Num columns: %d\n", numColumns);
-
-
+	
 	int numRows = 0;
 
 
@@ -81,13 +77,9 @@ static int loadFromCsv(char *fileName, int socketFD) {
 
 		data = temp;
 
-		printf("Row: ");
-
 		char *entry = strtok(line, ",\n");
 		int numEntries = 0;
 		while (entry != NULL) {
-			printf("%s ", entry);
-			
 			int intEntry = atoi(entry);
 			memcpy(data + dataOffset, &intEntry, sizeof(int));
 			dataOffset += sizeof(int);
@@ -97,8 +89,6 @@ static int loadFromCsv(char *fileName, int socketFD) {
 			entry = strtok(NULL, ",\n");
 		}
 
-		printf("\n");
-
 		if (numEntries != numColumns) {
 			printf("Malformed data: row %d\n", numRows);
 			goto cleanupData;
@@ -107,17 +97,10 @@ static int loadFromCsv(char *fileName, int socketFD) {
 		numRows += 1;
 	}
 
-
-	printf("Data size bytes: %d\n", currentSizeBytes);
-	printf("Num rows: %d\n", numRows);
-
-
 	// Send message and data to server
 	char *msgBeg = "load(";
 	char *message = (char *) malloc((strlen(msgBeg) + strlen(columnNames) + 2) * sizeof(char));
 	sprintf(message, "%s%s)", msgBeg, columnNames);
-
-	printf("Message: %s\n", message);
 
 	if (dataSend(socketFD, message, currentSizeBytes, data)) {
 		printf("->: Error sending message\n");
@@ -133,10 +116,6 @@ static int loadFromCsv(char *fileName, int socketFD) {
 	free(columnNames);
 	free(line);
 	fclose(fp);
-
-	// // TODO: Delete this
-	// printf("Load not yet implemented\n");
-	// return 1;
 
 	return 0;
 
@@ -207,7 +186,6 @@ static void getInput(int socketFD) {
 					printf("->: Error receiving message\n");
 				}
 			}
-
 
 			printf("->: %s\n", response);
 

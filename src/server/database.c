@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include <database.h>
 #include <error.h>
@@ -385,6 +386,71 @@ exit:
 	return 1;
 }
 
+static int dbLoad(tableInfo *tbl, loadArgs *args, int dataBytes, void *data, response *res, error *err) {
+
+	int numColumns = args->numColumns;
+	char **columnNames = args->columnNames;
+	if (columnNames == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	// Calculate number of rows based on size of data
+	int rowBytes = numColumns * sizeof(int);
+	assert(dataBytes % rowBytes == 0);
+	int numRows = dataBytes / rowBytes;
+
+	printf("Num columns: %d\n", numColumns);
+	for (int i = 0; i < numColumns; i++) {
+		printf("Column %d: %s\n", i, columnNames[i]);
+	}
+
+	printf("Data bytes: %d\n", dataBytes);
+	printf("Num rows: %d\n", numRows);
+
+	// Organize data into rows
+	int **rows = (int **) malloc(numRows * sizeof(int *));
+
+	for (int i = 0; i < numRows; i++) {
+		int offset = i * rowBytes;
+		rows[i] = data + offset;
+	}
+
+	for (int i = 0; i < numRows; i++) {
+		printf("Row %d: ", i + 1);
+
+		for (int j = 0; j < numColumns; j++) {
+			printf("%d ", rows[i][j]);
+		}
+
+		printf("\n");
+	}
+
+
+	// // Retrieve first column from disk
+	// column *col = (column *) malloc(sizeof(column));
+	// if (col == NULL) {
+	// 	ERROR(err, E_NOMEM);
+	// 	goto exit;
+	// }
+
+	// if (columnReadFromDisk(tbl, columnName, col, err)) {
+	// 	free(col);
+	// 	goto exit;
+	// }
+
+
+	free(rows);
+
+	ERROR(err, E_UNIMP);
+	return 1;
+
+// cleanupRows:
+	// free(rows);
+exit:
+	return 1;
+}
+
 static int cmdNeedsTable(command *cmd) {
 
 	return (cmd->cmd != CMD_USE &&
@@ -398,6 +464,9 @@ int executeCommand(connection *con) {
 	command *cmd = con->cmd;
 	response *res = con->res;
 	error *err = con->err;
+
+	int dataBytes = con->dataBytes;
+	void *data = con->data;
 
 	printf("Received command: '%s'\n", CMD_NAMES[cmd->cmd]);
 	int result = 0;
@@ -430,12 +499,15 @@ int executeCommand(connection *con) {
 		case CMD_FETCH:
 			result = dbFetch(tbl, (fetchArgs *) cmd->args, res, err);
 			break;
+		case CMD_LOAD:
+			result = dbLoad(tbl, (loadArgs *) cmd->args, dataBytes, data, res, err);
+			break;
 		case CMD_EXIT:
 			ERROR(err, E_EXIT);
 			result = 1;
 			break;
 		default:
-			ERROR(err, E_UNIMP);
+			ERROR(err, E_INTERN);
 			result = 1;
 			break;
 	}

@@ -53,10 +53,11 @@ int connectionReceiveCommand(connection *con) {
 	command *cmd = con->cmd;
 	error *err = con->err;
 
-	if (cmd->args != NULL) {
-		free(cmd->args);
-		cmd->args = NULL;
-	}
+	// if (cmd->args != NULL) {
+	// 	free(cmd->args);
+	// 	cmd->args = NULL;
+	// }
+	destroyCommandArgs(cmd);
 
 	printf("\n>====== Waiting to receive command from client...\n");
 

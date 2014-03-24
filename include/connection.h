@@ -25,7 +25,6 @@ int connectionCreate(connection **con, threadArgs *tArgs);
 void connectionDestroy(connection *con);
 
 int connectionReceiveCommand(connection *con);
-// int receiveData(int socketFD, void *data, error *err);
 
 int connectionSendError(connection *con);
 int connectionSendResponse(connection *con);

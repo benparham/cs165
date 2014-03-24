@@ -62,7 +62,13 @@ typedef struct fetchArgs {
 	char varName[BUFSIZE];
 } fetchArgs;
 
+typedef struct loadArgs {
+	int numColumns;
+	char **columnNames;
+} loadArgs;
+
 command* createCommand();
+void destroyCommandArgs(command *cmd);
 void destroyCommand(command *cmd);
 
 createColArgs* createCCA();
