@@ -24,8 +24,9 @@ columnFunctions sortedColumnFunctions = {
 	&sortedLoad
 };
 
-int sortedCreateHeader(void **_header, char *columnName, error *err) {
-	
+int sortedCreateHeader(void **_header, char *columnName, char *pathToDir, error *err) {
+	(void) pathToDir;
+
 	*_header = malloc(sizeof(columnHeaderSorted));
 	if (*_header == NULL) {
 		ERROR(err, E_NOMEM);

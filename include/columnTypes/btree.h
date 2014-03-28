@@ -6,20 +6,36 @@
 #include <bitmap.h>
 
 typedef struct columnHeaderBtree {
-	char name[NAME_SIZE];
-	int sizeBytes;
+	
+	// Header info
+	char *name;
+	int fileHeaderSizeBytes;
+	
+	// Index info
+	FILE *indexFp;
+	int fileIndexSizeBytes;
+	int keysPerNode;
+	int nNodes;
+
+	// Data info
+	int fileDataSizeBytes;
+	int entriesPerDataBlock;
+	int nDataBlocks;
+	int nEntries;
+
 } columnHeaderBtree;
 
-void btreePrintHeader(columnHeaderBtree *header);
+int btreeCreateHeader(void **_header, char *columnName, char *pathToDir, error *err);
+void btreeDestroyHeader(void *_header);
+int btreeReadInHeader(void **_header, FILE *headerFp, error *err);
+int btreeWriteOutHeader(void *_header, FILE *headerFp, error *err);
+void btreePrintHeader(void *_header);
 
-int btreeCreateHeader(columnHeaderBtree *header, char *columnName, error *err);
-void btreeDestroyHeader(columnHeaderBtree *header);
-
-int btreeInsert(void *columnHeader, FILE *fp, int data, error *err);
-int btreeSelectAll(void *columnHeader, FILE *fp, struct bitmap **bmp, error *err);
-int btreeSelectValue(void *columnHeader, FILE *fp, int value, struct bitmap **bmp, error *err);
-int btreeSelectRange(void *columnHeader, FILE *fp, int low, int high, struct bitmap **bmp, error *err);
-int btreeFetch(void *columnHeader, FILE *fp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int btreeInsert(void *_header, FILE *dataFp, int data, error *err);
+int btreeSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err);
+int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp, error *err);
+int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
+int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err);
 
 #endif

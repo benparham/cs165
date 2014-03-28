@@ -23,7 +23,9 @@ columnFunctions unsortedColumnFunctions = {
 	&unsortedLoad
 };
 
-int unsortedCreateHeader(void **_header, char *columnName, error *err) {
+int unsortedCreateHeader(void **_header, char *columnName, char *pathToDir, error *err) {
+	(void) pathToDir;
+
 	*_header = malloc(sizeof(columnHeaderUnsorted));
 	if (*_header == NULL) {
 		ERROR(err, E_NOMEM);

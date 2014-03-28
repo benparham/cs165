@@ -26,7 +26,7 @@ static int columnSetFunctions(column *col, error *err) {
 }
 
 // Allocates a new column struct and initializes it
-int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *headerFp, FILE *dataFp, column **col, error *err) {
+int columnCreate(char *columnName, char *pathToDir, COL_STORAGE_TYPE storageType, FILE *headerFp, FILE *dataFp, column **col, error *err) {
 
 	*col = (column *) malloc(sizeof(column));
 	if (*col == NULL) {
@@ -42,7 +42,7 @@ int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *headerFp,
 		goto cleanupColumn;
 	}
 
-	if ((*col)->funcs->createHeader(&((*col)->columnHeader), columnName, err)) {
+	if ((*col)->funcs->createHeader(&((*col)->columnHeader), columnName, pathToDir, err)) {
 		goto cleanupColumn;
 	}
 

@@ -29,7 +29,7 @@ typedef struct column {
 
 } column;
 
-int columnCreate(char *columnName, COL_STORAGE_TYPE storageType, FILE *headerFp, FILE *dataFp, column **col, error *err);
+int columnCreate(char *columnName, char *pathToDir, COL_STORAGE_TYPE storageType, FILE *headerFp, FILE *dataFp, column **col, error *err);
 void columnWipe(column *col);
 void columnDestroy(column *col);
 

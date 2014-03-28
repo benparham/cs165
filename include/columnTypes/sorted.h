@@ -21,7 +21,7 @@ typedef struct columnHeaderSorted {
 	// struct bitmap *bmp;
 } columnHeaderSorted;
 
-int sortedCreateHeader(void **_header, char *columnName, error *err);
+int sortedCreateHeader(void **_header, char *columnName, char *pathToDir, error *err);
 void sortedDestroyHeader(void *_header);
 int sortedReadInHeader(void **_header, FILE *headerFp, error *err);
 int sortedWriteOutHeader(void *_header, FILE *headerFp, error *err);

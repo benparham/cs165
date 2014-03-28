@@ -187,8 +187,10 @@ static int dbCreateColumn(tableInfo *tbl, createColArgs *args, response *res, er
 	}
 
 
+	columnPath(currentPath, tableName, columnName);
+
 	column *col;
-	if (columnCreate(columnName, storageType, headerFp, dataFp, &col, err)) {
+	if (columnCreate(columnName, currentPath, storageType, headerFp, dataFp, &col, err)) {
 		goto cleanupHeaderFile;
 	}
 
