@@ -238,7 +238,7 @@ static int dbInsert(tableInfo *tbl, insertArgs *args, response *res, error *err)
 		goto exit;
 	}
 
-	// columnPrint(col, "read column from disk in dbInsert");
+	columnPrint(col, "read column from disk in dbInsert");
 
 	if (columnInsert(col, args->value, err)) {
 		goto cleanupColumn;

@@ -2,13 +2,17 @@
 #define _BTREE_H_
 
 #include <global.h>
+#include <columnTypes/common.h>
 #include <error.h>
 #include <bitmap.h>
+
+extern columnFunctions btreeColumnFunctions;
 
 typedef struct columnHeaderBtree {
 	
 	// Header info
 	char *name;
+	char *pathToDir;
 	int fileHeaderSizeBytes;
 	
 	// Index info

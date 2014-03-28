@@ -4,6 +4,7 @@
 #include <columnTypes/common.h>
 #include <columnTypes/unsorted.h>
 #include <columnTypes/sorted.h>
+#include <columnTypes/btree.h>
 
 static int columnSetFunctions(column *col, error *err) {
 	switch (col->storageType) {
@@ -14,8 +15,7 @@ static int columnSetFunctions(column *col, error *err) {
 			col->funcs = &sortedColumnFunctions;
 			break;
 		case COL_BTREE:
-			ERROR(err, E_UNIMP);
-			return 1;
+			col->funcs = &btreeColumnFunctions;
 			break;
 		default:
 			ERROR(err, E_COLST);

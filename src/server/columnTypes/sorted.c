@@ -72,14 +72,14 @@ int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
 
 	// Seek to header location in file
 	if (seekHeader(headerFp, err)) {
-		goto exit;
+		goto cleanupHeader;
 	}
 
 	// Create serializer
 	serializer *slzr;
 	if (serializerCreate(&slzr)) {
 		ERROR(err, E_NOMEM);
-		goto exit;
+		goto cleanupHeader;
 	}
 
 	// Read in serial from memory
@@ -102,6 +102,8 @@ int sortedReadInHeader(void **_header, FILE *headerFp, error *err) {
 
 cleanupSerial:
 	serializerDestroy(slzr);
+cleanupHeader:
+	free(header);
 exit:
 	return 1;
 }

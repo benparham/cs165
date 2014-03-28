@@ -48,8 +48,15 @@ int btreeCreateHeader(void **_header, char *columnName, char *pathToDir, error *
 	}
 	strcpy(header->name, columnName);
 
-	header->fileHeaderSizeBytes = 0; // This will be set during readInHeader
+	int pathBytes = (strlen(pathToDir) + 1) * sizeof(char);
+	header->pathToDir = (char *) malloc(pathBytes);
+	if (header->pathToDir == NULL) {
+		ERROR(err, E_NOMEM);
+		goto cleanupName;
+	}
+	strcpy(header->pathToDir, pathToDir);
 
+	header->fileHeaderSizeBytes = 0; // This will be set during readInHeader
 
 //========== Index info
 	char indexFilePath[BUFSIZE];
@@ -59,7 +66,7 @@ int btreeCreateHeader(void **_header, char *columnName, char *pathToDir, error *
 	header->indexFp = fopen(indexFilePath, "wb");
 	if (header->indexFp == NULL) {
 		ERROR(err, E_FOP);
-		goto cleanupName;
+		goto cleanupPath;
 	}
 
 	header->fileIndexSizeBytes = 0;
@@ -77,6 +84,8 @@ int btreeCreateHeader(void **_header, char *columnName, char *pathToDir, error *
 // cleanupIndexFile:
 // 	fclose(header->indexFp);
 // 	remove(indexFilePath);
+cleanupPath:
+	free(header->pathToDir);
 cleanupName:
 	free(header->name);
 cleanupHeader:
@@ -89,6 +98,7 @@ void btreeDestroyHeader(void *_header) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
 	free(header->name);
+	free(header->pathToDir);
 
 	fclose(header->indexFp);
 
@@ -96,16 +106,148 @@ void btreeDestroyHeader(void *_header) {
 }
 
 int btreeReadInHeader(void **_header, FILE *headerFp, error *err) {
-	ERROR(err, E_UNIMP);
+	
+	// Allocate header
+	*_header = malloc(sizeof(columnHeaderBtree));
+	if (*_header == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	columnHeaderBtree *header = (columnHeaderBtree *) *_header;
+
+	// Seek to header location in file
+	if (seekHeader(headerFp, err)) {
+		goto cleanupHeader;
+	}
+
+	// Create serializer
+	serializer *slzr;
+	if (serializerCreate(&slzr)) {
+		ERROR(err, E_NOMEM);
+		goto cleanupHeader;
+	}
+
+	// Read in serial from memory
+	if (serializerSetSerialFromFile(slzr, headerFp)) {
+		ERROR(err, E_SRL);
+		goto cleanupSerial;
+	}
+
+	// Use the serial size to tell the header its own serial size
+	header->fileHeaderSizeBytes = slzr->serialSizeBytes;
+
+	serialReadStr(slzr, &(header->name));
+	serialReadStr(slzr, &(header->pathToDir));
+
+	char indexPath[BUFSIZE];
+	sprintf(indexPath, "%s/%s", header->pathToDir, INDEX_FL_NM);
+
+	header->indexFp = fopen(indexPath, "rb+");
+	if (header->indexFp == NULL) {
+		ERROR(err, E_FOP);
+		goto cleanupSerial;
+	}
+
+	serialReadInt(slzr, &(header->fileIndexSizeBytes));
+	serialReadInt(slzr, &(header->keysPerNode));
+	serialReadInt(slzr, &(header->nNodes));
+
+	serialReadInt(slzr, &(header->fileDataSizeBytes));
+	serialReadInt(slzr, &(header->entriesPerDataBlock));
+	serialReadInt(slzr, &(header->nDataBlocks));
+	serialReadInt(slzr, &(header->nEntries));
+
+	serializerDestroy(slzr);
+
+	return 0;
+
+// cleanupIndexFile:
+// 	fclose(header->indexFp);
+cleanupSerial:
+	serializerDestroy(slzr);
+cleanupHeader:
+	free(header);
+exit:
 	return 1;
 }
 
 int btreeWriteOutHeader(void *_header, FILE *headerFp, error *err) {
-	ERROR(err, E_UNIMP);
+
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	// Seek to header location in file
+	if (seekHeader(headerFp, err)) {
+		goto exit;
+	}
+
+	// Create serializer
+	serializer *slzr;
+	if (serializerCreate(&slzr)) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	// Serialize header
+	serialAddSerialSizeStr(slzr, header->name);
+	serialAddSerialSizeStr(slzr, header->pathToDir);
+
+	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeInt(slzr);
+
+	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeInt(slzr);
+
+	serializerAllocSerial(slzr);
+
+	serialWriteStr(slzr, header->name);
+	serialWriteStr(slzr, header->pathToDir);
+
+	serialWriteInt(slzr, header->fileIndexSizeBytes);
+	serialWriteInt(slzr, header->keysPerNode);
+	serialWriteInt(slzr, header->nNodes);
+
+	serialWriteInt(slzr, header->fileDataSizeBytes);
+	serialWriteInt(slzr, header->entriesPerDataBlock);
+	serialWriteInt(slzr, header->nDataBlocks);
+	serialWriteInt(slzr, header->nEntries);
+
+	// Write serialized header to disk
+	if (fwrite(slzr->serial, slzr->serialSizeBytes, 1, headerFp) < 1) {
+		ERROR(err, E_FWR);
+		goto cleanupSerial;
+	}
+
+	// Destroy serializer
+	serializerDestroy(slzr);
+
+	return 0;
+
+cleanupSerial:
+	serializerDestroy(slzr);
+exit:
 	return 1;
 }
 
-void btreePrintHeader(void *_header) {}
+void btreePrintHeader(void *_header) {
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	printf("Name: %s\n", header->name);
+	printf("Directory: %s\n", header->pathToDir);
+	printf("File header size bytes: %d\n", header->fileHeaderSizeBytes);
+
+	printf("File index size bytes: %d\n", header->fileIndexSizeBytes);
+	printf("Keys per node: %d\n", header->keysPerNode);
+	printf("Number of nodes: %d\n", header->nNodes);
+
+	printf("File data size bytes: %d\n", header->fileDataSizeBytes);
+	printf("Entries per data block: %d\n", header->entriesPerDataBlock);
+	printf("Number of data blocks: %d\n", header->nDataBlocks);
+	printf("Number of entries: %d\n", header->nEntries);
+}
 
 int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	ERROR(err, E_UNIMP);
