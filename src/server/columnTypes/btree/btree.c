@@ -8,9 +8,6 @@
 
 #define INDEX_FL_NM						"index.bin"
 
-#define DEFAULT_KEYS_PER_NODE			2
-#define DEFAULT_ENTRIES_PER_DATABLOCK	4
-
 columnFunctions btreeColumnFunctions = {
 	// Header Functions
 	&btreeCreateHeader,
@@ -70,12 +67,10 @@ int btreeCreateHeader(void **_header, char *columnName, char *pathToDir, error *
 	}
 
 	header->fileIndexSizeBytes = 0;
-	header->keysPerNode = DEFAULT_KEYS_PER_NODE;
 	header->nNodes = 0;
 
 //========== Data info
 	header->fileDataSizeBytes = 0;
-	header->entriesPerDataBlock = DEFAULT_ENTRIES_PER_DATABLOCK;
 	header->nDataBlocks = 0;
 	header->nEntries = 0;
 
@@ -150,11 +145,9 @@ int btreeReadInHeader(void **_header, FILE *headerFp, error *err) {
 	}
 
 	serialReadInt(slzr, &(header->fileIndexSizeBytes));
-	serialReadInt(slzr, &(header->keysPerNode));
 	serialReadInt(slzr, &(header->nNodes));
 
 	serialReadInt(slzr, &(header->fileDataSizeBytes));
-	serialReadInt(slzr, &(header->entriesPerDataBlock));
 	serialReadInt(slzr, &(header->nDataBlocks));
 	serialReadInt(slzr, &(header->nEntries));
 
@@ -194,9 +187,7 @@ int btreeWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
-	serialAddSerialSizeInt(slzr);
 
-	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
@@ -207,11 +198,9 @@ int btreeWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 	serialWriteStr(slzr, header->pathToDir);
 
 	serialWriteInt(slzr, header->fileIndexSizeBytes);
-	serialWriteInt(slzr, header->keysPerNode);
 	serialWriteInt(slzr, header->nNodes);
 
 	serialWriteInt(slzr, header->fileDataSizeBytes);
-	serialWriteInt(slzr, header->entriesPerDataBlock);
 	serialWriteInt(slzr, header->nDataBlocks);
 	serialWriteInt(slzr, header->nEntries);
 
@@ -240,11 +229,9 @@ void btreePrintHeader(void *_header) {
 	printf("File header size bytes: %d\n", header->fileHeaderSizeBytes);
 
 	printf("File index size bytes: %d\n", header->fileIndexSizeBytes);
-	printf("Keys per node: %d\n", header->keysPerNode);
 	printf("Number of nodes: %d\n", header->nNodes);
 
 	printf("File data size bytes: %d\n", header->fileDataSizeBytes);
-	printf("Entries per data block: %d\n", header->entriesPerDataBlock);
 	printf("Number of data blocks: %d\n", header->nDataBlocks);
 	printf("Number of entries: %d\n", header->nEntries);
 }

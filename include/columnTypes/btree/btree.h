@@ -18,12 +18,10 @@ typedef struct columnHeaderBtree {
 	// Index info
 	FILE *indexFp;
 	int fileIndexSizeBytes;
-	int keysPerNode;
 	int nNodes;
 
 	// Data info
 	int fileDataSizeBytes;
-	int entriesPerDataBlock;
 	int nDataBlocks;
 	int nEntries;
 
