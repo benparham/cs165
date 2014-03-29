@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <columnTypes/btree.h>
+#include <columnTypes/btree/btree.h>
 #include <columnTypes/common.h>
 #include <error.h>
 #include <bitmap.h>

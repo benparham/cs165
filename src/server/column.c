@@ -4,7 +4,7 @@
 #include <columnTypes/common.h>
 #include <columnTypes/unsorted.h>
 #include <columnTypes/sorted.h>
-#include <columnTypes/btree.h>
+#include <columnTypes/btree/btree.h>
 
 static int columnSetFunctions(column *col, error *err) {
 	switch (col->storageType) {
