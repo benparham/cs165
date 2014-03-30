@@ -1,28 +1,84 @@
+#include <string.h>
+#include <assert.h>
+
 #include <columnTypes/btree/datablock.h>
-#include <filesys.h>
+#include <mytypes.h>
 #include <error.h>
 
+// Constants for special offset "pointers" to other blocks
+#define ROOT_BLOCK				-1
+#define LAST_BLOCK				-2
+#define NO_BLOCK				-3
+
 int dataBlockCreate(dataBlock **dBlock, error *err) {
-	ERROR(err, E_UNIMP);
+	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
+	if (*dBlock == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	(*dBlock)->nUsedEntries = 0;
+	
+	(*dBlock)->leftBlock = NO_BLOCK;
+	(*dBlock)->rightBlock = NO_BLOCK;
+
+	memset((*dBlock)->data, 0, DATABLOCK_CAPACITY * sizeof(int));
+
+	return 0;
+	
+exit:
 	return 1;
 }
 
-void dataBlockDestroy(dataBlock *dBlock) {}
+void dataBlockDestroy(dataBlock *dBlock) {
+	free(dBlock);
+}
 
 
 
 int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+	
+	serialAddSerialSizeInt(slzr); // nUsedEntries
+	serialAddSerialSizeFileOffset(slzr, dBlock->leftBlock);
+	serialAddSerialSizeFileOffset(slzr, dBlock->rightBlock);
+
+	serialAddSerialSizeRaw(slzr, sizeof(dBlock->data)); // data
+	printf("Sizeof(dBlock->data) = %lu\n", sizeof(dBlock->data));
+
+	return 0;
 }
 
 int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+	
+	serialWriteInt(slzr, dBlock->nUsedEntries);
+	serialWriteFileOffset(slzr, dBlock->leftBlock);
+	serialWriteFileOffset(slzr, dBlock->rightBlock);
+
+	serialWriteRaw(slzr, dBlock->data, sizeof(dBlock->data));
+
+	return 0;
 }
 
 int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err) {
-	ERROR(err, E_UNIMP);
+	
+	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
+	if (*dBlock == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	serialReadInt(slzr, &((*dBlock)->nUsedEntries));
+	serialReadFileOffset(slzr, &((*dBlock)->leftBlock));
+	serialReadFileOffset(slzr, &((*dBlock)->rightBlock));
+
+	int bytesRead;
+	serialReadRaw(slzr, (void **) &((*dBlock)->data), &bytesRead);
+
+	assert(bytesRead == DATABLOCK_CAPACITY * sizeof(int));
+
+	return 0;
+
+exit:
 	return 1;
 }
 

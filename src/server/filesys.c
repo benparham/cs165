@@ -87,3 +87,4 @@ int removeDir(char *pathToDir, error *err) {
 
 	return 0;
 }
+

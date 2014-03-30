@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include <serial.h>
+#include <mytypes.h>
 
 int serializerCreate(serializer **slzr) {
 	if (slzr == NULL) {
@@ -202,4 +203,17 @@ void serialReadStr(serializer *slzr, char **strToRead) {
 	serialReadRaw(slzr, (void **) strToRead, &bytesRead);
 
 	assert(bytesRead = (strlen(*strToRead) + 1) * sizeof(char));
+}
+
+// ================ File offsets
+void serialAddSerialSizeFileOffset(serializer *slzr, fileOffset_t fOff) {
+	slzr->serialSizeBytes += sizeof(fileOffset_t);
+}
+
+void serialWriteFileOffset(serializer *slzr, fileOffset_t toWrite) {
+	serialWrite(slzr, &toWrite, sizeof(fileOffset_t));
+}
+
+void serialReadFileOffset(serializer *slzr, fileOffset_t *toRead) {
+	serialRead(slzr, toRead, sizeof(fileOffset_t));
 }

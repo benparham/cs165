@@ -15,8 +15,6 @@
 
 #define DB_PTH					"./db"
 
-typedef int fileOffset_t;
-
 void tablePath(char *strPtr, char *tableName);
 void tablePathHeader(char *strPtr, char *tableName);
 void tablePathColumns(char *strPtr, char *tableName);

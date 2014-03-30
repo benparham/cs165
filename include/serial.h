@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include <mytypes.h>
+
 typedef struct serializer {
 	int offset;
 
@@ -28,5 +30,9 @@ void serialReadRaw(serializer *slzr, void **toRead, int *bytesRead);
 void serialAddSerialSizeStr(serializer *slzr, char *str);
 void serialWriteStr(serializer *slzr, char *strToWrite);
 void serialReadStr(serializer *slzr, char **strToRead);
+
+void serialAddSerialSizeFileOffset(serializer *slzr, fileOffset_t fOff);
+void serialWriteFileOffset(serializer *slzr, fileOffset_t toWrite);
+void serialReadFileOffset(serializer *slzr, fileOffset_t *toRead);
 
 #endif
