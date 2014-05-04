@@ -35,52 +35,102 @@ void dataBlockDestroy(dataBlock *dBlock) {
 }
 
 
-
-int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err) {
+int dataBlockRead(FILE *dataFp, dataBlock **dBlock, fileOffset_t offset, error *err) {
 	
-	serialAddSerialSizeInt(slzr); // nUsedEntries
-	serialAddSerialSizeFileOffset(slzr, dBlock->leftBlock);
-	serialAddSerialSizeFileOffset(slzr, dBlock->rightBlock);
-
-	serialAddSerialSizeRaw(slzr, sizeof(dBlock->data)); // data
-	printf("Sizeof(dBlock->data) = %lu\n", sizeof(dBlock->data));
-
-	return 0;
-}
-
-int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err) {
-	
-	serialWriteInt(slzr, dBlock->nUsedEntries);
-	serialWriteFileOffset(slzr, dBlock->leftBlock);
-	serialWriteFileOffset(slzr, dBlock->rightBlock);
-
-	serialWriteRaw(slzr, dBlock->data, sizeof(dBlock->data));
-
-	return 0;
-}
-
-int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err) {
-	
+	// Allocate the data block
 	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
 	if (*dBlock == NULL) {
 		ERROR(err, E_NOMEM);
 		goto exit;
 	}
 
-	serialReadInt(slzr, &((*dBlock)->nUsedEntries));
-	serialReadFileOffset(slzr, &((*dBlock)->leftBlock));
-	serialReadFileOffset(slzr, &((*dBlock)->rightBlock));
+	// Seek to the correct position in the file
+	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		goto cleanupDataBlock;
+	}
 
-	int bytesRead;
-	serialReadRaw(slzr, (void **) &((*dBlock)->data), &bytesRead);
+	// Read in the data block
+	if (fread(*dBlock, sizeof(dataBlock), 1, dataFp) < 1) {
+		ERROR(err, E_FRD);
+		goto cleanupDataBlock;
+	}
 
-	assert(bytesRead == DATABLOCK_CAPACITY * sizeof(int));
+	return 0;
+
+cleanupDataBlock:
+	free(*dBlock);
+exit:
+	return 1;
+}
+
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err) {
+
+	assert(dBlock != NULL);
+
+	// Seek to the correct position in the file
+	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		goto exit;
+	}
+
+	// Write out data block
+	if (fwrite(dBlock, sizeof(dataBlock), 1, dataFp) <= 0) {
+		ERROR(err, E_FWR);
+		goto exit;
+	}
 
 	return 0;
 
 exit:
 	return 1;
 }
+
+// int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err) {
+	
+// 	serialAddSerialSizeInt(slzr); // nUsedEntries
+// 	serialAddSerialSizeFileOffset(slzr, dBlock->leftBlock);
+// 	serialAddSerialSizeFileOffset(slzr, dBlock->rightBlock);
+
+// 	serialAddSerialSizeRaw(slzr, sizeof(dBlock->data)); // data
+// 	printf("Sizeof(dBlock->data) = %lu\n", sizeof(dBlock->data));
+
+// 	return 0;
+// }
+
+// int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err) {
+	
+// 	serialWriteInt(slzr, dBlock->nUsedEntries);
+// 	serialWriteFileOffset(slzr, dBlock->leftBlock);
+// 	serialWriteFileOffset(slzr, dBlock->rightBlock);
+
+// 	serialWriteRaw(slzr, dBlock->data, sizeof(dBlock->data));
+
+// 	return 0;
+// }
+
+// int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err) {
+	
+// 	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
+// 	if (*dBlock == NULL) {
+// 		ERROR(err, E_NOMEM);
+// 		goto exit;
+// 	}
+
+// 	serialReadInt(slzr, &((*dBlock)->nUsedEntries));
+// 	serialReadFileOffset(slzr, &((*dBlock)->leftBlock));
+// 	serialReadFileOffset(slzr, &((*dBlock)->rightBlock));
+
+// 	int bytesRead;
+// 	serialReadRaw(slzr, (void **) &((*dBlock)->data), &bytesRead);
+
+// 	assert(bytesRead == DATABLOCK_CAPACITY * sizeof(int));
+
+// 	return 0;
+
+// exit:
+// 	return 1;
+// }
 
 
 

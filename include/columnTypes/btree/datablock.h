@@ -21,9 +21,12 @@ typedef struct dataBlock {
 int dataBlockCreate(dataBlock **dBlock, error *err);
 void dataBlockDestroy(dataBlock *dBlock);
 
-int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err);
-int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err);
-int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err);
+int dataBlockRead(FILE *dataFp, dataBlock **dBlock, fileOffset_t offset, error *err);
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err);
+
+// int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err);
+// int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err);
+// int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err);
 
 /* 
  * Inserts data into the desired block. Either of the block's two neighbors may
