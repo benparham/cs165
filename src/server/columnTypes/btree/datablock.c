@@ -36,31 +36,22 @@ void dataBlockDestroy(dataBlock *dBlock) {
 }
 
 
-int dataBlockRead(FILE *dataFp, dataBlock **dBlock, fileOffset_t offset, error *err) {
-	
-	// Allocate the data block
-	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
-	if (*dBlock == NULL) {
-		ERROR(err, E_NOMEM);
-		goto exit;
-	}
+int dataBlockRead(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err) {
 
 	// Seek to the correct position in the file
 	if (fseek(dataFp, offset, SEEK_SET) == -1) {
 		ERROR(err, E_FSK);
-		goto cleanupDataBlock;
+		goto exit;
 	}
 
 	// Read in the data block
-	if (fread(*dBlock, sizeof(dataBlock), 1, dataFp) < 1) {
+	if (fread(dBlock, sizeof(dataBlock), 1, dataFp) < 1) {
 		ERROR(err, E_FRD);
-		goto cleanupDataBlock;
+		goto exit;
 	}
 
 	return 0;
 
-cleanupDataBlock:
-	free(*dBlock);
 exit:
 	return 1;
 }

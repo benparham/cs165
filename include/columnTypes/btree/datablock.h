@@ -22,7 +22,7 @@ typedef struct dataBlock {
 int dataBlockCreate(dataBlock **dBlock, error *err);
 void dataBlockDestroy(dataBlock *dBlock);
 
-int dataBlockRead(FILE *dataFp, dataBlock **dBlock, fileOffset_t offset, error *err);
+int dataBlockRead(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err);
 int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err);
 int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err);
 

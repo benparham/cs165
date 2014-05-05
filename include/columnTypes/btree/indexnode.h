@@ -23,7 +23,7 @@ typedef struct indexNode {
 int indexNodeCreate(indexNode **iNode, error *err);
 void indexNodeDestroy(indexNode *iNode);
 
-int indexNodeRead(FILE *indexFp, indexNode **iNode, fileOffset_t offset, error *err);
+int indexNodeRead(FILE *indexFp, indexNode *iNode, fileOffset_t offset, error *err);
 int indexNodeWrite(FILE *indexFp, indexNode *iNode, fileOffset_t *offset, error *err);
 
 void indexNodePrint(indexNode *iNode, const char *message);

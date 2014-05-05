@@ -10,7 +10,7 @@ int indexNodeCreate(indexNode **iNode, error *err) {
 		goto exit;
 	}
 
-	(*iNode)->isTerminal = false;
+	(*iNode)->isTerminal = true;
 	(*iNode)->nUsedKeys = 0;
 
 	memset((*iNode)->keys, 0, NUM_KEYS * sizeof(int));
@@ -26,7 +26,7 @@ void indexNodeDestroy(indexNode *iNode) {
 	free(iNode);
 }
 
-int indexNodeRead(FILE *indexFp, indexNode **iNode, fileOffset_t offset, error *err) {
+int indexNodeRead(FILE *indexFp, indexNode *iNode, fileOffset_t offset, error *err) {
 	(void) indexFp;
 	(void) iNode;
 	(void) offset;

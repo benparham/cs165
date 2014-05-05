@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include <columnTypes/btree/btree.h>
 #include <columnTypes/btree/indexnode.h>
@@ -248,62 +249,152 @@ void btreePrintHeader(void *_header) {
 	printf("First data block: %d\n", header->firstDataBlock);
 }
 
-// Header info
-	char *name;
-	char *pathToDir;
-	int fileHeaderSizeBytes;
-	
-	// Index info
-	FILE *indexFp;
-	int fileIndexSizeBytes;
-	int nNodes;
-	fileOffset_t rootIndexNode;
+static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, error *err) {
+	assert(header->nNodes == 0);
+	assert(header->fileIndexSizeBytes == 0);
+	assert(header->nDataBlocks == 0);
+	assert(header->fileDataSizeBytes == 0);
 
-	// Data info
-	int fileDataSizeBytes;
-	int nDataBlocks;
-	int nEntries;
-	fileOffset_t firstDataBlock;
+	indexNode *iNode;
+	dataBlock *dBlock;
+
+	// Create a new index node and data block
+	if (indexNodeCreate(&iNode, err)) {
+		goto exit;
+	}
+
+	if (dataBlockCreate(&dBlock, err)) {
+		goto cleanupNode;
+	}
+
+	// Set index node data
+	iNode->children[0] = 0;
+
+	// Set data block data
+	dBlock->nUsedEntries = 1;
+	dBlock->leftBlock = 0;
+	dBlock->rightBlock = 0;
+	dBlock->data[0] = data;
+
+	// Write out data block and index node
+	if (indexNodeWrite(header->indexFp, iNode, 0, err)) {
+		goto cleanupBlock;
+	}
+	if (dataBlockWrite(dataFp, dBlock, 0, err)) {
+		goto cleanupNodeWrite;
+	}
+
+	// Update header information
+	header->rootIndexNode = 0;
+	header->firstDataBlock = 0;
+
+	header->nNodes += 1;
+	header->fileIndexSizeBytes += sizeof(indexNode);
+
+	header->nEntries += 1;
+	header->fileDataSizeBytes += sizeof(dataBlock);
+
+	indexNodePrint(iNode, "Created new index node");
+
+	// Cleanup
+	free(dBlock);
+	free(iNode);
+
+	return 0;
+
+cleanupNodeWrite:
+	memset(iNode, 0, sizeof(indexNode));
+	if (indexNodeWrite(header->indexFp, iNode, 0, err)) {
+		printf("WARNING: Could not undo index node write. Possible data corruption\n");
+	}
+cleanupBlock:
+	free(dBlock);
+cleanupNode:
+	free(iNode);
+exit:
+	return 1;
+}
+
+static fileOffset_t getChildOffset(indexNode *iNode, int data) {
+	// Only has one child
+	if (iNode->nUsedKeys == 0) {
+		return iNode->children[0];
+	} 
+
+	// Search keys for correct child
+	else {
+		int i;
+		for (i = 0; i < iNode->nUsedKeys; i++) {
+			if (data <= iNode->keys[i]) {
+				return iNode->children[i];
+			}
+		}
+
+		return iNode->children[i];
+	}
+}
+
+static int searchTerminalNode(FILE *indexFp, fileOffset_t nodeOffset, int data, indexNode *result, error *err) {
+
+	// Read in node from file
+	if (indexNodeRead(indexFp, result, nodeOffset, err)) {
+		goto exit;
+	}
+
+	indexNodePrint(result, "Searching for terminal node");
+
+	// Found a terminal node
+	if (result->isTerminal) {
+		return 0;
+	}
+
+	// Move on to correct child
+	return searchTerminalNode(indexFp, getChildOffset(result, data), data, result, err);
+
+exit:
+	return 1;
+}
 
 int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
 	printf("Inserting %d into btree column '%s'\n", data, header->name);
 
-	/*
-	 * Keep copies of the new header stats, only update the header struct once
-	 * the changes they describe are pushed to disk
-	 */
-	int _fileIndexSizeBytes = header->fileIndexSizeBytes;
-	int _nNodes = header->nNodes;
+	// /*
+	//  * Keep copies of the new header stats, only update the header struct once
+	//  * the changes they describe are pushed to disk
+	//  */
+	// int _fileIndexSizeBytes = header->fileIndexSizeBytes;
+	// int _nNodes = header->nNodes;
 
-	// Holder for current working index node
-	indexNode *curNode;
+	// int _fileDataSizeBytes = header->fileDataSizeBytes;
+	// int _nEntries = header->nEntries;
 
-	// Get the root index node
-	if (_nNodes == 0) {
-		if (indexNodeCreate(&curNode, err)) {
+
+	// If no index exists, special case of creating first node
+	if (header->nNodes == 0) {
+		if (createFirstNode(header, dataFp, data, err)) {
 			goto exit;
 		}
-
-		_fileIndexSizeBytes += sizeof(indexNode);
-		_nNodes += 1;
-
-		indexNodePrint(curNode, "Created new index node");
-	} else {
-		if (indexNodeRead(header->indexFp, &curNode, header->rootIndexNode, err)) {
-			goto exit;
-		}
-
-		indexNodePrint(curNode, "Read in root index node");
+		return 0;
 	}
 
-	
+	indexNode *iNode = (indexNode *) malloc(sizeof(indexNode));
+	if (iNode == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
 
-	indexNodeDestroy(curNode);
+	if (searchTerminalNode(header->indexFp, header->rootIndexNode, data, iNode, err)) {
+		goto cleanupNode;
+	}
+
+	free(iNode);
 
 	return 0;
 
+cleanupNode:
+	free(iNode);
 exit:
 	return 1;
 }
