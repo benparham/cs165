@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -64,7 +65,7 @@ exit:
 	return 1;
 }
 
-int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err) {
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err) {
 
 	assert(dBlock != NULL);
 
@@ -79,6 +80,31 @@ int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error 
 		ERROR(err, E_FWR);
 		goto exit;
 	}
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err) {
+	
+	// Seek to the end of the file
+	if (fseek(dataFp, 0, SEEK_END) == -1) {
+		ERROR(err, E_FSK);
+		goto exit;
+	}
+
+	// Get the current position (in bytes)
+	int pos = ftell(dataFp);
+
+	// Write to the end
+	if (dataBlockWrite(dataFp, dBlock, pos, err)) {
+		goto exit;
+	}
+
+	// Return the position written to
+	*offset = pos;
 
 	return 0;
 

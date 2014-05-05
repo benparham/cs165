@@ -2,6 +2,8 @@
 #include <string.h>
 
 #include <columnTypes/btree/btree.h>
+#include <columnTypes/btree/indexnode.h>
+#include <columnTypes/btree/datablock.h>
 #include <columnTypes/common.h>
 #include <error.h>
 #include <bitmap.h>
@@ -68,11 +70,13 @@ int btreeCreateHeader(void **_header, char *columnName, char *pathToDir, error *
 
 	header->fileIndexSizeBytes = 0;
 	header->nNodes = 0;
+	header->rootIndexNode = 0;
 
 //========== Data info
 	header->fileDataSizeBytes = 0;
 	header->nDataBlocks = 0;
 	header->nEntries = 0;
+	header->firstDataBlock = 0;
 
 	return 0;
 
@@ -146,10 +150,12 @@ int btreeReadInHeader(void **_header, FILE *headerFp, error *err) {
 
 	serialReadInt(slzr, &(header->fileIndexSizeBytes));
 	serialReadInt(slzr, &(header->nNodes));
+	serialReadFileOffset(slzr, &(header->rootIndexNode));
 
 	serialReadInt(slzr, &(header->fileDataSizeBytes));
 	serialReadInt(slzr, &(header->nDataBlocks));
 	serialReadInt(slzr, &(header->nEntries));
+	serialReadFileOffset(slzr, &(header->firstDataBlock));
 
 	serializerDestroy(slzr);
 
@@ -187,10 +193,12 @@ int btreeWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeFileOffset(slzr, header->rootIndexNode);
 
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
 	serialAddSerialSizeInt(slzr);
+	serialAddSerialSizeFileOffset(slzr, header->firstDataBlock);
 
 	serializerAllocSerial(slzr);
 
@@ -199,10 +207,12 @@ int btreeWriteOutHeader(void *_header, FILE *headerFp, error *err) {
 
 	serialWriteInt(slzr, header->fileIndexSizeBytes);
 	serialWriteInt(slzr, header->nNodes);
+	serialWriteFileOffset(slzr, header->rootIndexNode);
 
 	serialWriteInt(slzr, header->fileDataSizeBytes);
 	serialWriteInt(slzr, header->nDataBlocks);
 	serialWriteInt(slzr, header->nEntries);
+	serialWriteFileOffset(slzr, header->firstDataBlock);
 
 	// Write serialized header to disk
 	if (fwrite(slzr->serial, slzr->serialSizeBytes, 1, headerFp) < 1) {
@@ -230,14 +240,71 @@ void btreePrintHeader(void *_header) {
 
 	printf("File index size bytes: %d\n", header->fileIndexSizeBytes);
 	printf("Number of nodes: %d\n", header->nNodes);
+	printf("Root index node: %d\n", header->rootIndexNode);
 
 	printf("File data size bytes: %d\n", header->fileDataSizeBytes);
 	printf("Number of data blocks: %d\n", header->nDataBlocks);
 	printf("Number of entries: %d\n", header->nEntries);
+	printf("First data block: %d\n", header->firstDataBlock);
 }
 
+// Header info
+	char *name;
+	char *pathToDir;
+	int fileHeaderSizeBytes;
+	
+	// Index info
+	FILE *indexFp;
+	int fileIndexSizeBytes;
+	int nNodes;
+	fileOffset_t rootIndexNode;
+
+	// Data info
+	int fileDataSizeBytes;
+	int nDataBlocks;
+	int nEntries;
+	fileOffset_t firstDataBlock;
+
 int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
-	ERROR(err, E_UNIMP);
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	printf("Inserting %d into btree column '%s'\n", data, header->name);
+
+	/*
+	 * Keep copies of the new header stats, only update the header struct once
+	 * the changes they describe are pushed to disk
+	 */
+	int _fileIndexSizeBytes = header->fileIndexSizeBytes;
+	int _nNodes = header->nNodes;
+
+	// Holder for current working index node
+	indexNode *curNode;
+
+	// Get the root index node
+	if (_nNodes == 0) {
+		if (indexNodeCreate(&curNode, err)) {
+			goto exit;
+		}
+
+		_fileIndexSizeBytes += sizeof(indexNode);
+		_nNodes += 1;
+
+		indexNodePrint(curNode, "Created new index node");
+	} else {
+		if (indexNodeRead(header->indexFp, &curNode, header->rootIndexNode, err)) {
+			goto exit;
+		}
+
+		indexNodePrint(curNode, "Read in root index node");
+	}
+
+	
+
+	indexNodeDestroy(curNode);
+
+	return 0;
+
+exit:
 	return 1;
 }
 

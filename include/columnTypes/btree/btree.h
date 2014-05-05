@@ -2,6 +2,7 @@
 #define _BTREE_H_
 
 #include <global.h>
+#include <myTypes.h>
 #include <columnTypes/common.h>
 #include <error.h>
 #include <bitmap.h>
@@ -19,11 +20,13 @@ typedef struct columnHeaderBtree {
 	FILE *indexFp;
 	int fileIndexSizeBytes;
 	int nNodes;
+	fileOffset_t rootIndexNode;
 
 	// Data info
 	int fileDataSizeBytes;
 	int nDataBlocks;
 	int nEntries;
+	fileOffset_t firstDataBlock;
 
 } columnHeaderBtree;
 

@@ -1,9 +1,10 @@
 #ifndef _DATABLOCK_H_
 #define _DATABLOCK_H_
 
+#include <stdio.h>
+
 #include <mytypes.h>
 #include <error.h>
-#include <serial.h>
 
 #define DATABLOCK_CAPACITY		4
 
@@ -22,7 +23,8 @@ int dataBlockCreate(dataBlock **dBlock, error *err);
 void dataBlockDestroy(dataBlock *dBlock);
 
 int dataBlockRead(FILE *dataFp, dataBlock **dBlock, fileOffset_t offset, error *err);
-int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err);
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err);
+int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err);
 
 // int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err);
 // int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err);
