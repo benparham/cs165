@@ -11,6 +11,8 @@
 
 typedef struct indexNode {
 
+	fileOffset_t offset;
+
 	bool isTerminal;	// True -> children are data blocks, False -> children are index blocks
 
 	int nUsedKeys;
@@ -24,7 +26,7 @@ int indexNodeCreate(indexNode **iNode, error *err);
 void indexNodeDestroy(indexNode *iNode);
 
 int indexNodeRead(FILE *indexFp, indexNode *iNode, fileOffset_t offset, error *err);
-int indexNodeWrite(FILE *indexFp, indexNode *iNode, fileOffset_t *offset, error *err);
+int indexNodeWrite(FILE *indexFp, indexNode *iNode/*, fileOffset_t *offset*/, error *err);
 
 void indexNodePrint(indexNode *iNode, const char *message);
 

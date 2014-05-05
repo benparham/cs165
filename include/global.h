@@ -1,7 +1,16 @@
 #ifndef _GLOBAL_H_
 #define _GLOBAL_H_
 
+#include <assert.h>
+
 #define DEBUG
+#define ASSERTS
+
+#ifdef ASSERTS
+	#define MY_ASSERT(x)	assert(x)
+#else
+	#define MY_ASSERT(x)
+#endif
 
 #define BUFSIZE				1024			// Size of buffer used for string manipulation
 

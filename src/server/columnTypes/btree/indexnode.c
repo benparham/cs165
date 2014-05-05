@@ -10,6 +10,7 @@ int indexNodeCreate(indexNode **iNode, error *err) {
 		goto exit;
 	}
 
+	(*iNode)->offset = 0; 			// Must be set properly before writing
 	(*iNode)->isTerminal = true;
 	(*iNode)->nUsedKeys = 0;
 
@@ -27,20 +28,45 @@ void indexNodeDestroy(indexNode *iNode) {
 }
 
 int indexNodeRead(FILE *indexFp, indexNode *iNode, fileOffset_t offset, error *err) {
-	(void) indexFp;
-	(void) iNode;
-	(void) offset;
+	
+	// Seek to the correct position in the file
+	if (fseek(indexFp, offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		goto exit;
+	}
 
-	ERROR(err, E_UNIMP);
+	// Read in the data block
+	if (fread(iNode, sizeof(indexNode), 1, indexFp) < 1) {
+		ERROR(err, E_FRD);
+		goto exit;
+	}
+
+	// Recored the offset we read from
+	iNode->offset = offset;
+
+	return 0;
+
+exit:
 	return 1;
 }
 
-int indexNodeWrite(FILE *indexFp, indexNode *iNode, fileOffset_t *offset, error *err) {
-	(void) indexFp;
-	(void) iNode;
-	(void) offset;
+int indexNodeWrite(FILE *indexFp, indexNode *iNode/*, fileOffset_t *offset*/, error *err) {
 
-	ERROR(err, E_UNIMP);
+	// Seek to the correct position in the file
+	if (fseek(indexFp, iNode->offset, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		goto exit;
+	}
+
+	// Write out data block
+	if (fwrite(iNode, sizeof(indexNode), 1, indexFp) <= 0) {
+		ERROR(err, E_FWR);
+		goto exit;
+	}
+
+	return 0;
+
+exit:
 	return 1;
 }
 
@@ -51,13 +77,13 @@ void indexNodePrint(indexNode *iNode, const char *message) {
 	printf("Num used keys: %d\n", iNode->nUsedKeys);
 	
 	printf("Keys: ");
-	for (int i = 0; i < NUM_KEYS; i++) {
+	for (int i = 0; i < iNode->nUsedKeys; i++) {
 		printf("%d ", iNode->keys[i]);
 	}
 	printf("\n");
 
 	printf("Children (file offsets): ");
-	for (int i = 0; i < NUM_CHILDREN; i++) {
+	for (int i = 0; i < iNode->nUsedKeys + 1; i++) {
 		printf("%d ", iNode->children[i]);
 	}
 	printf("\n");

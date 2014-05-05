@@ -18,6 +18,8 @@ int dataBlockCreate(dataBlock **dBlock, error *err) {
 		goto exit;
 	}
 
+	(*dBlock)->offset = 0;			// Must be set properly before writing
+
 	(*dBlock)->nUsedEntries = 0;
 	
 	(*dBlock)->leftBlock = NO_BLOCK;
@@ -50,18 +52,21 @@ int dataBlockRead(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *e
 		goto exit;
 	}
 
+	// Record the offset we read from
+	dBlock->offset = offset;
+
 	return 0;
 
 exit:
 	return 1;
 }
 
-int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err) {
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock/*, fileOffset_t offset*/, error *err) {
 
 	assert(dBlock != NULL);
 
 	// Seek to the correct position in the file
-	if (fseek(dataFp, offset, SEEK_SET) == -1) {
+	if (fseek(dataFp, dBlock->offset, SEEK_SET) == -1) {
 		ERROR(err, E_FSK);
 		goto exit;
 	}
@@ -87,15 +92,15 @@ int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error
 	}
 
 	// Get the current position (in bytes)
-	int pos = ftell(dataFp);
+	dBlock->offset = ftell(dataFp);
 
 	// Write to the end
-	if (dataBlockWrite(dataFp, dBlock, pos, err)) {
+	if (dataBlockWrite(dataFp, dBlock, err)) {
 		goto exit;
 	}
 
 	// Return the position written to
-	*offset = pos;
+	*offset = dBlock->offset;
 
 	return 0;
 
@@ -103,55 +108,48 @@ exit:
 	return 1;
 }
 
-// int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err) {
+
+int dataBlockAdd(dataBlock *dBlock, int data) {
+	MY_ASSERT(!(dBlock->nUsedEntries > DATABLOCK_CAPACITY));
+
+	// Check for room
+	if (dBlock->nUsedEntries == DATABLOCK_CAPACITY) {
+		return 1;
+	}
+
+	// Find slot for data
+	int idx;
+	for (idx = 0; idx < dBlock->nUsedEntries; idx++) {
+		if (data < dBlock->data[idx]) {
+			break;
+		}
+	}
+
+	// Shift data above slot up by one
+	for (int j = dBlock->nUsedEntries; j > idx; j--) {
+		dBlock->data[j] = dBlock->data[j - 1];
+	}
+
+	// Add data
+	dBlock->data[idx] = data;
+
+	// Update metadata
+	dBlock->nUsedEntries += 1;
+
+	return 0;
+}
+
+
+void dataBlockPrint(dataBlock *dBlock, const char *message) {
+	printf("Data block: %s\n", message);
+
+	printf("Num used entries: %d\n", dBlock->nUsedEntries);
+	printf("Left block: %d\n", dBlock->leftBlock);
+	printf("Right block: %d\n", dBlock->rightBlock);
 	
-// 	serialAddSerialSizeInt(slzr); // nUsedEntries
-// 	serialAddSerialSizeFileOffset(slzr, dBlock->leftBlock);
-// 	serialAddSerialSizeFileOffset(slzr, dBlock->rightBlock);
-
-// 	serialAddSerialSizeRaw(slzr, sizeof(dBlock->data)); // data
-// 	printf("Sizeof(dBlock->data) = %lu\n", sizeof(dBlock->data));
-
-// 	return 0;
-// }
-
-// int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err) {
-	
-// 	serialWriteInt(slzr, dBlock->nUsedEntries);
-// 	serialWriteFileOffset(slzr, dBlock->leftBlock);
-// 	serialWriteFileOffset(slzr, dBlock->rightBlock);
-
-// 	serialWriteRaw(slzr, dBlock->data, sizeof(dBlock->data));
-
-// 	return 0;
-// }
-
-// int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err) {
-	
-// 	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
-// 	if (*dBlock == NULL) {
-// 		ERROR(err, E_NOMEM);
-// 		goto exit;
-// 	}
-
-// 	serialReadInt(slzr, &((*dBlock)->nUsedEntries));
-// 	serialReadFileOffset(slzr, &((*dBlock)->leftBlock));
-// 	serialReadFileOffset(slzr, &((*dBlock)->rightBlock));
-
-// 	int bytesRead;
-// 	serialReadRaw(slzr, (void **) &((*dBlock)->data), &bytesRead);
-
-// 	assert(bytesRead == DATABLOCK_CAPACITY * sizeof(int));
-
-// 	return 0;
-
-// exit:
-// 	return 1;
-// }
-
-
-
-int dataBlockAdd(fileOffset_t blockOffset, int data, int *full, int *low, int *high, error *err) {
-	ERROR(err, E_UNIMP);
-	return 1;
+	printf("Entries: \n");
+	for (int i = 0; i < dBlock->nUsedEntries; i++) {
+		printf("%d", dBlock->data[i]);
+	}
+	printf("\n");
 }

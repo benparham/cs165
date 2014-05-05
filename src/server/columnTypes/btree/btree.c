@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
+// #include <assert.h>
 
 #include <columnTypes/btree/btree.h>
 #include <columnTypes/btree/indexnode.h>
@@ -8,6 +8,7 @@
 #include <columnTypes/common.h>
 #include <error.h>
 #include <bitmap.h>
+#include <global.h>
 
 #define INDEX_FL_NM						"index.bin"
 
@@ -250,10 +251,10 @@ void btreePrintHeader(void *_header) {
 }
 
 static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, error *err) {
-	assert(header->nNodes == 0);
-	assert(header->fileIndexSizeBytes == 0);
-	assert(header->nDataBlocks == 0);
-	assert(header->fileDataSizeBytes == 0);
+	MY_ASSERT(header->nNodes == 0);
+	MY_ASSERT(header->fileIndexSizeBytes == 0);
+	MY_ASSERT(header->nDataBlocks == 0);
+	MY_ASSERT(header->fileDataSizeBytes == 0);
 
 	indexNode *iNode;
 	dataBlock *dBlock;
@@ -268,19 +269,21 @@ static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, er
 	}
 
 	// Set index node data
+	iNode->offset = 0;
 	iNode->children[0] = 0;
 
 	// Set data block data
+	dBlock->offset = 0;
 	dBlock->nUsedEntries = 1;
 	dBlock->leftBlock = 0;
 	dBlock->rightBlock = 0;
 	dBlock->data[0] = data;
 
 	// Write out data block and index node
-	if (indexNodeWrite(header->indexFp, iNode, 0, err)) {
+	if (indexNodeWrite(header->indexFp, iNode, err)) {
 		goto cleanupBlock;
 	}
-	if (dataBlockWrite(dataFp, dBlock, 0, err)) {
+	if (dataBlockWrite(dataFp, dBlock, err)) {
 		goto cleanupNodeWrite;
 	}
 
@@ -291,6 +294,7 @@ static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, er
 	header->nNodes += 1;
 	header->fileIndexSizeBytes += sizeof(indexNode);
 
+	header->nDataBlocks += 1;
 	header->nEntries += 1;
 	header->fileDataSizeBytes += sizeof(dataBlock);
 
@@ -304,7 +308,8 @@ static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, er
 
 cleanupNodeWrite:
 	memset(iNode, 0, sizeof(indexNode));
-	if (indexNodeWrite(header->indexFp, iNode, 0, err)) {
+	iNode->offset = 0;
+	if (indexNodeWrite(header->indexFp, iNode, err)) {
 		printf("WARNING: Could not undo index node write. Possible data corruption\n");
 	}
 cleanupBlock:
@@ -379,20 +384,65 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 		return 0;
 	}
 
+
+	// Allocate space for working index node
 	indexNode *iNode = (indexNode *) malloc(sizeof(indexNode));
 	if (iNode == NULL) {
 		ERROR(err, E_NOMEM);
 		goto exit;
 	}
 
+	// Get correct terminal node for data
 	if (searchTerminalNode(header->indexFp, header->rootIndexNode, data, iNode, err)) {
 		goto cleanupNode;
 	}
+	MY_ASSERT(iNode != NULL && iNode->isTerminal);
 
+
+	// Allocate space for working data block
+	dataBlock *dBlock = (dataBlock *) malloc(sizeof(dataBlock));
+	if (dBlock == NULL) {
+		ERROR(err, E_NOMEM);
+		goto cleanupNode;
+	}
+
+	// Get correct data block for data
+	if (dataBlockRead(dataFp, dBlock, getChildOffset(iNode, data), err)) {
+		goto cleanupBlock;
+	}
+
+	dataBlockPrint(dBlock, "Data block for insert");
+
+	// Try to add data to data block
+	if (!dataBlockAdd(dBlock, data)) {
+		// Success
+
+		// Write out data block and index node
+		if (indexNodeWrite(header->indexFp, iNode, err) ||
+			dataBlockWrite(dataFp, dBlock, err)) {
+			goto cleanupBlock;
+		}
+
+		// Update header metadata
+		header->nEntries += 1;
+
+		goto done;
+	}
+
+	// No room in data block for data
+	ERROR(err, E_UNIMP);
+	goto cleanupBlock;
+
+
+done:
+	// Cleanup
+	free(dBlock);
 	free(iNode);
 
 	return 0;
 
+cleanupBlock:
+	free(dBlock);
 cleanupNode:
 	free(iNode);
 exit:

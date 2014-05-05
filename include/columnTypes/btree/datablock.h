@@ -10,6 +10,8 @@
 
 typedef struct dataBlock {
 
+	fileOffset_t offset;
+
 	int nUsedEntries;
 
 	fileOffset_t leftBlock;
@@ -23,21 +25,29 @@ int dataBlockCreate(dataBlock **dBlock, error *err);
 void dataBlockDestroy(dataBlock *dBlock);
 
 int dataBlockRead(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err);
-int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err);
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock/*, fileOffset_t offset*/, error *err);
 int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err);
 
-// int dataBlockSerialAddSize(serializer *slzr, dataBlock *dBlock, error *err);
-// int dataBlockSerialWrite(serializer *slzr, dataBlock *dBlock, error *err);
-// int dataBlockSerialRead(serializer *slzr, dataBlock **dBlock, error *err);
-
+ 
 /* 
- * Inserts data into the desired block. Either of the block's two neighbors may
- * also be modified. Returns the updated lowest and highest entries in the block
- * via *low and *high. If block and both neighbors are all full, returns *full == 1
- * and does nothing.
+ * Add data to data block
+ * Fails if data block is full
  */
-int dataBlockAdd(fileOffset_t blockOffset, int data, int *full, int *low, int *high, error *err);
+int dataBlockAdd(dataBlock *dBlock, int data);
 
+/*
+ * For use on a full data block
+ * Spilt data block into two, each containing half the (still sorted) data
+ */
 int dataBlockSplit();
+
+/*
+ * For use on a full data block
+ * Add data to data block pushing extra data to neighbor
+ * Fails if both neighbors are full
+ */
+int dataBlockShift();
+
+void dataBlockPrint(dataBlock *dBlock, const char *message);
 
 #endif
