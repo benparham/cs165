@@ -26,7 +26,8 @@ columnFunctions btreeColumnFunctions = {
 	&btreeSelectValue,
 	&btreeSelectRange,
 	&btreeFetch,
-	&btreeLoad
+	&btreeLoad,
+	&btreePrintData
 };
 
 
@@ -298,7 +299,7 @@ static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, er
 	header->nEntries += 1;
 	header->fileDataSizeBytes += sizeof(dataBlock);
 
-	indexNodePrint(iNode, "Created new index node");
+	indexNodePrint("Created new index node", iNode);
 
 	// Cleanup
 	free(dBlock);
@@ -320,10 +321,10 @@ exit:
 	return 1;
 }
 
-static fileOffset_t getChildOffset(indexNode *iNode, int data) {
+static int getChildIdx(indexNode *iNode, int data) {
 	// Only has one child
 	if (iNode->nUsedKeys == 0) {
-		return iNode->children[0];
+		return 0;
 	} 
 
 	// Search keys for correct child
@@ -331,12 +332,33 @@ static fileOffset_t getChildOffset(indexNode *iNode, int data) {
 		int i;
 		for (i = 0; i < iNode->nUsedKeys; i++) {
 			if (data <= iNode->keys[i]) {
-				return iNode->children[i];
+				return i;
 			}
 		}
 
-		return iNode->children[i];
+		return i;
 	}
+}
+
+static fileOffset_t getChildOffset(indexNode *iNode, int data) {
+	return iNode->children[getChildIdx(iNode, data)];
+
+	// // Only has one child
+	// if (iNode->nUsedKeys == 0) {
+	// 	return iNode->children[0];
+	// } 
+
+	// // Search keys for correct child
+	// else {
+	// 	int i;
+	// 	for (i = 0; i < iNode->nUsedKeys; i++) {
+	// 		if (data <= iNode->keys[i]) {
+	// 			return iNode->children[i];
+	// 		}
+	// 	}
+
+	// 	return iNode->children[i];
+	// }
 }
 
 static int searchTerminalNode(FILE *indexFp, fileOffset_t nodeOffset, int data, indexNode *result, error *err) {
@@ -346,7 +368,7 @@ static int searchTerminalNode(FILE *indexFp, fileOffset_t nodeOffset, int data, 
 		goto exit;
 	}
 
-	indexNodePrint(result, "Searching for terminal node");
+	indexNodePrint("Searching for terminal node", result);
 
 	// Found a terminal node
 	if (result->isTerminal) {
@@ -364,17 +386,6 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
 	printf("Inserting %d into btree column '%s'\n", data, header->name);
-
-	// /*
-	//  * Keep copies of the new header stats, only update the header struct once
-	//  * the changes they describe are pushed to disk
-	//  */
-	// int _fileIndexSizeBytes = header->fileIndexSizeBytes;
-	// int _nNodes = header->nNodes;
-
-	// int _fileDataSizeBytes = header->fileDataSizeBytes;
-	// int _nEntries = header->nEntries;
-
 
 	// If no index exists, special case of creating first node
 	if (header->nNodes == 0) {
@@ -398,7 +409,6 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	}
 	MY_ASSERT(iNode != NULL && iNode->isTerminal);
 
-
 	// Allocate space for working data block
 	dataBlock *dBlock = (dataBlock *) malloc(sizeof(dataBlock));
 	if (dBlock == NULL) {
@@ -406,12 +416,15 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 		goto cleanupNode;
 	}
 
+	int childIdx = getChildIdx(iNode, data);
+	int childOffset = getChildOffset(iNode, data);
+
 	// Get correct data block for data
-	if (dataBlockRead(dataFp, dBlock, getChildOffset(iNode, data), err)) {
+	if (dataBlockRead(dataFp, dBlock, childOffset, err)) {
 		goto cleanupBlock;
 	}
 
-	dataBlockPrint(dBlock, "Data block for insert");
+	dataBlockPrint("Data block for insert", dBlock);
 
 	// If there's space in the data block...
 	if (!dataBlockIsFull(dBlock)) {
@@ -467,7 +480,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 
 			// Add new data block as one of parent index's children
 			int key = dBlock->data[dBlock->nUsedEntries - 1];
-			if (indexNodeAdd(iNode, newBlock, key, , err)) {
+			if (indexNodeAdd(iNode, newBlock, key, childIdx, err)) {
 				free(newBlock);
 				ERROR(err, E_CORRUPT);
 				goto cleanupBlock;
@@ -491,7 +504,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	free(dBlock);
 	free(iNode);
 
-	indexPrint("Done with insert", header->indexFp, err);
+	indexNodePrintAll("Done with insert", header->indexFp);
 
 	return 0;
 
@@ -526,4 +539,14 @@ int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes
 int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err) {
 	ERROR(err, E_UNIMP);
 	return 1;
+}
+
+void btreePrintData(void *_header, FILE *dataFp) {
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	// Print index node
+	indexNodePrintAll("", header->indexFp);
+
+	// Print data blocks
+	dataBlockPrintAll("", dataFp, header->firstDataBlock);
 }

@@ -16,8 +16,10 @@ const char *CMD_NAMES[] = {
 	"select",
 	"fetch",
 	"create",
+	"remove",
 	"load",
 	"insert",
+	"print",
 	"exit"
 };
 
@@ -259,10 +261,12 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"create table ", "\n", CMD_CREATE_TABLE, &setArgsString},
 	{"remove table ", "\n", CMD_REMOVE_TABLE, &setArgsString},
 	{"create(", ")", CMD_CREATE, &setArgsColArgs},
+	{"remove(", ")", CMD_REMOVE, &setArgsString},
 	{"select(", ")", CMD_SELECT, &setArgsSelectArgs},
 	{"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
 	{"fetch(", ")", CMD_FETCH, &setArgsFetchArgs},
 	{"load(", ")", CMD_LOAD, &setArgsLoadArgs},
+	{"print(",")", CMD_PRINT, &setArgsString},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
 	{NULL, NULL, 0, NULL}
 };

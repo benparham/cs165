@@ -33,5 +33,6 @@ int sortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bm
 int sortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
 int sortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 int sortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err);
+void sortedPrintData(void *_header, FILE *dataFp);
 
 #endif

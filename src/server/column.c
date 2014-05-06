@@ -159,7 +159,10 @@ int columnWriteHeaderToDisk(column *col, error *err) {
 void columnPrint(column * col, char *message) {
 	printf(">============ Print Column: %s\n", message);
 	printf("Storage type: %d\n", col->storageType);
+	printf(">------ Header:\n");
 	col->funcs->printHeader(col->columnHeader);
+	printf(">------ Data:\n");
+	col->funcs->printData(col->columnHeader, col->dataFp);
 	printf("=============\n");
 }
 

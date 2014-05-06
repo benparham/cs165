@@ -198,16 +198,63 @@ exit:
 	return 1;
 }
 
-void dataBlockPrint(dataBlock *dBlock, const char *message) {
+void dataBlockPrint(const char *message, dataBlock *dBlock) {
 	printf("Data block: %s\n", message);
 
 	printf("Num used entries: %d\n", dBlock->nUsedEntries);
 	printf("Left block: %d\n", dBlock->leftBlock);
 	printf("Right block: %d\n", dBlock->rightBlock);
 	
-	printf("Entries: \n");
+	printf("Entries: ");
 	for (int i = 0; i < dBlock->nUsedEntries; i++) {
 		printf("%d", dBlock->data[i]);
 	}
 	printf("\n");
+}
+
+static int recPrintAll(FILE *dataFp, fileOffset_t blockOffset, int count, error *err) {
+	
+	// Allocate space for block
+	dataBlock *dBlock = (dataBlock *) malloc(sizeof(dataBlock));
+	if (dBlock == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	// Read in block
+	if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+		goto cleanupBlock;
+	}
+
+	// Print
+	printf("_____________\n");
+	printf("Data block %d\n", count);
+	dataBlockPrint("", dBlock);
+
+	// If it's not the end block, restart on the next
+	if (dBlock->rightBlock != dBlock->offset) {
+		
+		free(dBlock);
+
+		return recPrintAll(dataFp, dBlock->rightBlock, count + 1, err);
+	}
+
+	free(dBlock);
+
+	return 0;
+
+cleanupBlock:
+	free(dBlock);
+exit:
+	return 1;
+}
+
+void dataBlockPrintAll(const char *message, FILE *dataFp, fileOffset_t firstDataBlockOffset) {
+	printf("All data blocks: %s\n", message);
+
+	error *err = (error *) malloc(sizeof(error));
+	if (recPrintAll(dataFp, firstDataBlockOffset, 0, err)) {
+		printf("Error (%d) printing btree data blocks\n", err->errno);
+	}
+	free(err);
 }

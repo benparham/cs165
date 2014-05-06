@@ -21,7 +21,8 @@ columnFunctions sortedColumnFunctions = {
 	&sortedSelectValue,
 	&sortedSelectRange,
 	&sortedFetch,
-	&sortedLoad
+	&sortedLoad,
+	&sortedPrintData
 };
 
 int sortedCreateHeader(void **_header, char *columnName, char *pathToDir, error *err) {
@@ -487,4 +488,8 @@ int sortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err
 	header->nEntries += (dataBytes / sizeof(int));
 
 	return 0;
+}
+
+void sortedPrintData(void *_header, FILE *dataFp) {
+	
 }

@@ -29,5 +29,6 @@ int unsortedSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **
 int unsortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
 int unsortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 int unsortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err);
+void unsortedPrintData(void *_header, FILE *dataFp);
 
 #endif

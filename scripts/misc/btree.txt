@@ -1,0 +1,9 @@
+create table test
+use test
+create(testCol3,btree)
+insert(testCol3,3)
+insert(testCol3,10)
+insert(testCol3,5)
+insert(testCol3,6)
+insert(testCol3,7)
+exit

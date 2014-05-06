@@ -43,6 +43,7 @@ int dataBlockAdd(dataBlock *dBlock, int data);
 int dataBlockSplitAdd(dataBlock *oldBlock, dataBlock **newBlock, int data, error *err);
 
 
-void dataBlockPrint(dataBlock *dBlock, const char *message);
+void dataBlockPrint(const char *message, dataBlock *dBlock);
+void dataBlockPrintAll(const char *message, FILE *dataFp, fileOffset_t firstDataBlockOffset);
 
 #endif

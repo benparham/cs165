@@ -84,12 +84,14 @@ int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, int keyIdx, error
 	}
 
 	int childIdx = keyIdx + 1;
+
 	int lastChildIdx = iNode->nUsedKeys;
 	int lastKeyIdx = lastChildIdx - 1;
 
 	int i = lastKeyIdx;
 	int j = lastChildIdx;
 
+	// Shift existing keys and children offsets over
 	while(i >= keyIdx) {
 		iNode->keys[i + 1] = iNode->keys[i];
 		iNode->children[j + 1] = iNode->children[j];
@@ -98,13 +100,17 @@ int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, int keyIdx, error
 		j -= 1;
 	}
 
+	// Add new key and child offset
+	iNode->keys[keyIdx] = key;
+	iNode->children[childIdx] = dBlock->offset;
+
 	return 0;
 
 exit:
 	return 1;
 }
 
-void indexNodePrint(indexNode *iNode, const char *message) {
+void indexNodePrint(const char *message, indexNode *iNode) {
 	printf("Index node: %s\n", message);
 
 	printf("Is terminal: %s\n", (iNode->isTerminal) ? "true" : "false");
@@ -123,26 +129,28 @@ void indexNodePrint(indexNode *iNode, const char *message) {
 	printf("\n");
 }
 
-int indexPrint(const char *message, FILE *indexFp, error *err) {
+void indexNodePrintAll(const char *message, FILE *indexFp) {
 	
 	indexNode *iNode = (indexNode *) malloc(sizeof(indexNode));
 	if (iNode == NULL) {
-		ERROR(err, E_NOMEM);
-		return 1;
+		goto exit;
 	}
 
 	printf("Entire Index: %s\n", message);
 
 	// Seek to the correct position in the file
 	if (fseek(indexFp, 0, SEEK_SET) == -1) {
-		ERROR(err, E_FSK);
-		return 1;;
+		goto exit;
 	}
 
 	while (fread(iNode, sizeof(indexNode), 1, indexFp) == 1) {
 		printf("_____________\n");
-		indexNodePrint(iNode, "");		
+		indexNodePrint("", iNode);		
 	}
 
-	return 0;
+	return;
+
+exit:
+	printf("Error printing btree index nodes\n");
+	return;
 }

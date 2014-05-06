@@ -20,7 +20,8 @@ columnFunctions unsortedColumnFunctions = {
 	&unsortedSelectValue,
 	&unsortedSelectRange,
 	&unsortedFetch,
-	&unsortedLoad
+	&unsortedLoad,
+	&unsortedPrintData
 };
 
 int unsortedCreateHeader(void **_header, char *columnName, char *pathToDir, error *err) {
@@ -224,4 +225,8 @@ int unsortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *e
 	header->nEntries += (dataBytes / sizeof(int));
 
 	return 0;
+}
+
+void unsortedPrintData(void *_header, FILE *dataFp) {
+	
 }

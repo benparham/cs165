@@ -222,6 +222,32 @@ exit:
 	return 1;
 }
 
+static int dbRemoveColumn(tableInfo *tbl, char *columnName, response *res, error *err) {
+
+	char *tableName = tbl->name;
+	
+	char currentPath[BUFSIZE];
+
+	columnPath(currentPath, tableName, columnName);
+
+	if (!dirExists(currentPath)) {
+		ERROR(err, E_NOCOL);
+		goto exit;
+	}
+
+	if (removeDir(currentPath, err)) {
+		goto exit;
+	}
+
+	printf("Removed column %s\n", columnName);
+	RESPONSE_SUCCESS(res);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
 static int dbInsert(tableInfo *tbl, insertArgs *args, response *res, error *err) {
 	
 	char *columnName = args->columnName;
@@ -521,6 +547,39 @@ exit:
 	return 1;
 }
 
+static int dbPrint(tableInfo *tbl, char *columnName, response *res, error *err) {
+
+	if (columnName == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+	
+	printf("Printing column '%s'...\n", columnName);
+
+	// Retrieve the column from disk
+	column *col = (column *) malloc(sizeof(column));
+	if (col == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	if (columnReadFromDisk(tbl, columnName, col, err)) {
+		free(col);
+		goto exit;
+	}
+
+	// Print column
+	columnPrint(col, "");
+
+	columnDestroy(col);
+	RESPONSE_SUCCESS(res);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
 static int cmdNeedsTable(command *cmd) {
 
 	return (cmd->cmd != CMD_USE &&
@@ -560,6 +619,9 @@ int executeCommand(connection *con) {
 		case CMD_CREATE:
 			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, res, err);
 			break;
+		case CMD_REMOVE:
+			result = dbRemoveColumn(tbl, (char *) cmd->args, res, err);
+			break;
 		case CMD_INSERT:
 			result = dbInsert(tbl, (insertArgs *) cmd->args, res, err);
 			break;
@@ -571,6 +633,9 @@ int executeCommand(connection *con) {
 			break;
 		case CMD_LOAD:
 			result = dbLoad(tbl, (loadArgs *) cmd->args, dataBytes, data, res, err);
+			break;
+		case CMD_PRINT:
+			result = dbPrint(tbl, (char *) cmd->args, res, err);
 			break;
 		case CMD_EXIT:
 			ERROR(err, E_EXIT);

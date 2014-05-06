@@ -24,8 +24,10 @@ typedef enum {
 	CMD_FETCH,
 	
 	CMD_CREATE,					// Create a column
+	CMD_REMOVE,					// Remove a column
 	CMD_LOAD,
 	CMD_INSERT,
+	CMD_PRINT,					// Print a column
 	
 	CMD_EXIT					// End session
 } CMD;

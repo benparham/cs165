@@ -42,5 +42,6 @@ int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp
 int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
 int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
 int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err);
+void btreePrintData(void *_header, FILE *dataFp);
 
 #endif
