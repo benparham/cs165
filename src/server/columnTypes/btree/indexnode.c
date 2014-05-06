@@ -76,17 +76,27 @@ bool indexNodeIsFull(indexNode *iNode) {
 	return (iNode->nUsedKeys == NUM_KEYS);
 }
 
-int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, error *err) {
+int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, int keyIdx, error *err) {
 
 	if (indexNodeIsFull(iNode)) {
 		ERROR(err, E_INTERN);
 		goto exit;
 	}
 
-	iNode->keys[iNode->nUsedKeys] = key;
-	iNode->nUsedKeys += 1;
+	int childIdx = keyIdx + 1;
+	int lastChildIdx = iNode->nUsedKeys;
+	int lastKeyIdx = lastChildIdx - 1;
 
-	iNode->children[iNode->nUsedKeys] = dBlock->offset;	
+	int i = lastKeyIdx;
+	int j = lastChildIdx;
+
+	while(i >= keyIdx) {
+		iNode->keys[i + 1] = iNode->keys[i];
+		iNode->children[j + 1] = iNode->children[j];
+
+		i -= 1;
+		j -= 1;
+	}
 
 	return 0;
 

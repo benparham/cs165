@@ -467,7 +467,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 
 			// Add new data block as one of parent index's children
 			int key = dBlock->data[dBlock->nUsedEntries - 1];
-			if (indexNodeAdd(iNode, newBlock, key, err)) {
+			if (indexNodeAdd(iNode, newBlock, key, , err)) {
 				free(newBlock);
 				ERROR(err, E_CORRUPT);
 				goto cleanupBlock;

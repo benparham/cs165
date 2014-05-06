@@ -32,7 +32,7 @@ int indexNodeWrite(FILE *indexFp, indexNode *iNode, error *err);
 bool indexNodeIsFull(indexNode *iNode);
 
 // Add data block to the index node's list of children, updating keys as necessary
-int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, error *err);
+int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, int idx, error *err);
 
 void indexNodePrint(indexNode *iNode, const char *message);
 int indexPrint(const char *message, FILE *indexFp, error *err);
