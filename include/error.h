@@ -49,6 +49,8 @@
 
 #define E_SRL				28		// Serialization error
 
+#define E_CORRUPT			29		// Error that could possibly cause data corruption
+
 
 
 /*

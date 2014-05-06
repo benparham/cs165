@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include <columnTypes/btree/indexNode.h>
 #include <mytypes.h>
@@ -35,7 +36,7 @@ int indexNodeRead(FILE *indexFp, indexNode *iNode, fileOffset_t offset, error *e
 		goto exit;
 	}
 
-	// Read in the data block
+	// Read in the index node
 	if (fread(iNode, sizeof(indexNode), 1, indexFp) < 1) {
 		ERROR(err, E_FRD);
 		goto exit;
@@ -50,7 +51,7 @@ exit:
 	return 1;
 }
 
-int indexNodeWrite(FILE *indexFp, indexNode *iNode/*, fileOffset_t *offset*/, error *err) {
+int indexNodeWrite(FILE *indexFp, indexNode *iNode, error *err) {
 
 	// Seek to the correct position in the file
 	if (fseek(indexFp, iNode->offset, SEEK_SET) == -1) {
@@ -63,6 +64,29 @@ int indexNodeWrite(FILE *indexFp, indexNode *iNode/*, fileOffset_t *offset*/, er
 		ERROR(err, E_FWR);
 		goto exit;
 	}
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+bool indexNodeIsFull(indexNode *iNode) {
+	MY_ASSERT(!(iNode->nUsedKeys > NUM_KEYS));
+	return (iNode->nUsedKeys == NUM_KEYS);
+}
+
+int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, error *err) {
+
+	if (indexNodeIsFull(iNode)) {
+		ERROR(err, E_INTERN);
+		goto exit;
+	}
+
+	iNode->keys[iNode->nUsedKeys] = key;
+	iNode->nUsedKeys += 1;
+
+	iNode->children[iNode->nUsedKeys] = dBlock->offset;	
 
 	return 0;
 
@@ -87,4 +111,28 @@ void indexNodePrint(indexNode *iNode, const char *message) {
 		printf("%d ", iNode->children[i]);
 	}
 	printf("\n");
+}
+
+int indexPrint(const char *message, FILE *indexFp, error *err) {
+	
+	indexNode *iNode = (indexNode *) malloc(sizeof(indexNode));
+	if (iNode == NULL) {
+		ERROR(err, E_NOMEM);
+		return 1;
+	}
+
+	printf("Entire Index: %s\n", message);
+
+	// Seek to the correct position in the file
+	if (fseek(indexFp, 0, SEEK_SET) == -1) {
+		ERROR(err, E_FSK);
+		return 1;;
+	}
+
+	while (fread(iNode, sizeof(indexNode), 1, indexFp) == 1) {
+		printf("_____________\n");
+		indexNodePrint(iNode, "");		
+	}
+
+	return 0;
 }

@@ -310,7 +310,7 @@ cleanupNodeWrite:
 	memset(iNode, 0, sizeof(indexNode));
 	iNode->offset = 0;
 	if (indexNodeWrite(header->indexFp, iNode, err)) {
-		printf("WARNING: Could not undo index node write. Possible data corruption\n");
+		ERROR(err, E_CORRUPT);
 	}
 cleanupBlock:
 	free(dBlock);
@@ -392,7 +392,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 		goto exit;
 	}
 
-	// Get correct terminal node for data
+	// Get correct terminal index node for data
 	if (searchTerminalNode(header->indexFp, header->rootIndexNode, data, iNode, err)) {
 		goto cleanupNode;
 	}
@@ -413,31 +413,85 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 
 	dataBlockPrint(dBlock, "Data block for insert");
 
-	// Try to add data to data block
-	if (!dataBlockAdd(dBlock, data)) {
-		// Success
+	// If there's space in the data block...
+	if (!dataBlockIsFull(dBlock)) {
+		
+		// Add data to data block
+		if (dataBlockAdd(dBlock, data)) {
+			ERROR(err, E_INTERN);
+			goto cleanupBlock;
+		}
 
 		// Write out data block and index node
 		if (indexNodeWrite(header->indexFp, iNode, err) ||
 			dataBlockWrite(dataFp, dBlock, err)) {
 			goto cleanupBlock;
 		}
-
-		// Update header metadata
-		header->nEntries += 1;
-
-		goto done;
 	}
 
-	// No room in data block for data
-	ERROR(err, E_UNIMP);
-	goto cleanupBlock;
+	// If there's no space in the data block...
+	else {
+		// If the parent index node is full...
+		if (indexNodeIsFull(iNode)) {
+			ERROR(err, E_UNIMP);
+			goto cleanupBlock;
+		}
 
+		// If the parent index node has free space...
+		else {
 
-done:
+			// Split the data block, adding the new data
+			dataBlock *newBlock;
+			if (dataBlockSplitAdd(dBlock, &newBlock, data, err)) {
+				goto cleanupBlock;
+			}
+
+			// Make new block point to correct places
+			newBlock->rightBlock = dBlock->rightBlock;
+			newBlock->leftBlock = dBlock->offset;
+
+			// Write out new block to data file
+			if (dataBlockAppend(dataFp, newBlock, err)) {
+				free(newBlock);
+				goto cleanupBlock;
+			}
+
+			// Make old block point to new block
+			dBlock->rightBlock = newBlock->offset;
+
+			// Write out old block to data file
+			if (dataBlockWrite(dataFp, dBlock, err)) {
+				free(newBlock);
+				goto cleanupBlock;
+			}
+
+			// Add new data block as one of parent index's children
+			int key = dBlock->data[dBlock->nUsedEntries - 1];
+			if (indexNodeAdd(iNode, newBlock, key, err)) {
+				free(newBlock);
+				ERROR(err, E_CORRUPT);
+				goto cleanupBlock;
+			}
+
+			// Write index node to index file
+			if (indexNodeWrite(header->indexFp, iNode, err)) {
+				goto cleanupBlock;
+			}
+
+			// Update relevent header metadata
+			header->nDataBlocks += 1;
+			header->fileDataSizeBytes += sizeof(dataBlock);
+		}
+	}
+
+	// Update header metadata
+	header->nEntries += 1;
+
 	// Cleanup
 	free(dBlock);
 	free(iNode);
+
+	indexPrint("Done with insert", header->indexFp, err);
 
 	return 0;
 

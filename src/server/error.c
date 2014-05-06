@@ -34,6 +34,7 @@ char *errorMessages[] = {
 	"Internal error",
 	"Variable does not exist",
 	"Serialization error",
+	"Error that could possibly cause data corruption"
 };
 
 void recordError(error *err, int errno) {

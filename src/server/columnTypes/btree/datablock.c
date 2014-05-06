@@ -61,7 +61,7 @@ exit:
 	return 1;
 }
 
-int dataBlockWrite(FILE *dataFp, dataBlock *dBlock/*, fileOffset_t offset*/, error *err) {
+int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, error *err) {
 
 	assert(dBlock != NULL);
 
@@ -83,7 +83,7 @@ exit:
 	return 1;
 }
 
-int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error *err) {
+int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, error *err) {
 	
 	// Seek to the end of the file
 	if (fseek(dataFp, 0, SEEK_END) == -1) {
@@ -99,21 +99,20 @@ int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, fileOffset_t *offset, error
 		goto exit;
 	}
 
-	// Return the position written to
-	*offset = dBlock->offset;
-
 	return 0;
 
 exit:
 	return 1;
 }
 
+bool dataBlockIsFull(dataBlock *dBlock) {
+	MY_ASSERT(!(dBlock->nUsedEntries > DATABLOCK_CAPACITY));
+	return (dBlock->nUsedEntries == DATABLOCK_CAPACITY);
+}
+
 
 int dataBlockAdd(dataBlock *dBlock, int data) {
-	MY_ASSERT(!(dBlock->nUsedEntries > DATABLOCK_CAPACITY));
-
-	// Check for room
-	if (dBlock->nUsedEntries == DATABLOCK_CAPACITY) {
+	if (dataBlockIsFull(dBlock)) {
 		return 1;
 	}
 
@@ -139,6 +138,65 @@ int dataBlockAdd(dataBlock *dBlock, int data) {
 	return 0;
 }
 
+int dataBlockSplitAdd(dataBlock *oldBlock, dataBlock **newBlock, int data, error *err) {
+
+	MY_ASSERT(oldBlock->nUsedEntries == DATABLOCK_CAPACITY);
+	
+	if (dataBlockCreate(newBlock, err)) {
+		goto exit;
+	}
+
+	// Store all data in a temporary array
+	int temp[DATABLOCK_CAPACITY + 1];
+	int i;
+	for (i = 0; i < DATABLOCK_CAPACITY; i++) {
+		if (data < oldBlock->data[i]) {
+			temp[i] = data;
+			break;
+		} else {
+			temp[i] = oldBlock->data[i];
+		}
+	}
+
+	if (i == DATABLOCK_CAPACITY) {
+		temp[i] = data;
+	} else {
+		while (i < DATABLOCK_CAPACITY) {
+			temp[i + 1] = oldBlock->data[i];
+			i += 1;
+		}
+	}
+
+	// Zeroing garbage helps for debugging
+	#ifdef DEBUG
+		memset(oldBlock->data, 0, DATABLOCK_CAPACITY * sizeof(int));
+	#endif
+
+	// Copy first half of temp to old block, second half to new block
+	int half = (DATABLOCK_CAPACITY + 1) / 2;
+
+	oldBlock->nUsedEntries = 0;
+	(*newBlock)->nUsedEntries = 0;
+
+	int oldIdx = 0;
+	int newIdx = 0;
+	for (i = 0; i < DATABLOCK_CAPACITY + 1; i++) {
+		if (i < half) {
+			oldBlock->data[oldIdx] = temp[i];
+			oldBlock->nUsedEntries += 1;
+			oldIdx += 1;
+		} else {
+			(*newBlock)->data[newIdx] = temp[i];
+			(*newBlock)->nUsedEntries += 1;
+			newIdx += 1;
+		}
+	}
+
+	return 0;
+
+exit:
+	return 1;
+}
 
 void dataBlockPrint(dataBlock *dBlock, const char *message) {
 	printf("Data block: %s\n", message);

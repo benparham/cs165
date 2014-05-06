@@ -5,6 +5,7 @@
 
 #include <mytypes.h>
 #include <error.h>
+#include <columnTypes/btree/datablock.h>
 
 #define NUM_KEYS		2
 #define NUM_CHILDREN	NUM_KEYS + 1
@@ -26,8 +27,14 @@ int indexNodeCreate(indexNode **iNode, error *err);
 void indexNodeDestroy(indexNode *iNode);
 
 int indexNodeRead(FILE *indexFp, indexNode *iNode, fileOffset_t offset, error *err);
-int indexNodeWrite(FILE *indexFp, indexNode *iNode/*, fileOffset_t *offset*/, error *err);
+int indexNodeWrite(FILE *indexFp, indexNode *iNode, error *err);
+
+bool indexNodeIsFull(indexNode *iNode);
+
+// Add data block to the index node's list of children, updating keys as necessary
+int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, error *err);
 
 void indexNodePrint(indexNode *iNode, const char *message);
+int indexPrint(const char *message, FILE *indexFp, error *err);
 
 #endif
