@@ -381,6 +381,70 @@ exit:
 	return 1;
 }
 
+static int addIndexLevel(FILE *indexFp, indexNode *iNode, error *err) {
+	MY_ASSERT(indexNodeIsFull(iNode));
+	MY_ASSERT(iNode->isTerminal);
+
+	// Seek to the end of the file
+	if (fseek(indexFp, 0, SEEK_END) == -1) {
+		ERROR(err, E_FSK);
+		goto exit;
+	}
+
+	// Location new nodes will be written to
+	fileOffset_t appendOffset = ftell(indexFp);
+
+	// Create a new node for each child
+	indexNode* newNodes[NUM_CHILDREN];
+
+
+	int i;
+	for (i = 0; i < NUM_CHILDREN; i++) {
+		if (indexNodeCreate(&(newNodes[i]), err)) {
+			goto cleanupNewNodes;
+		}
+
+		fileOffset_t newOffset = appendOffset + (i * sizeof(indexNode));
+
+		// Set data blocks as lone children of new nodes
+		newNodes[i]->offset = newOffset;
+		newNodes[i]->isTerminal = true;
+		newNodes[i]->children[0] = iNode->children[i];
+
+		// Set new nodes as children of old node
+		iNode->children[i] = newOffset;
+	}
+
+	// Old node is no longer terminal
+	iNode->isTerminal = false;
+
+	// Write out old node
+	if (indexNodeWrite(indexFp, iNode, err)) {
+		goto cleanupNewNodes;
+	}
+
+	// Write out and clean up new nodes
+	bool failed = false;
+	for (i = 0; i < NUM_CHILDREN; i++) {
+		if (indexNodeWrite(indexFp, newNodes[i], err)) {
+			failed = true;
+		}
+		indexNodeDestroy(newNodes[i]);
+	}
+
+	if (failed) {goto exit;}
+
+	return 0;
+
+cleanupNewNodes:
+	while (i > 0) {
+		i -= 1;
+		indexNodeDestroy(newNodes[i]);
+	}
+exit:
+	return 1;
+}
+
 int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
