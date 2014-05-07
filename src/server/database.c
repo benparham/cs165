@@ -642,7 +642,8 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 		}
 	} else if (type == VAR_RESULTS) {
 		resultBytes = ((fetchResults *) payload)->sizeBytes;
-		results = ((fetchResults *) payload)->results;
+		results = (int *) malloc(resultBytes);
+		memcpy(results, ((fetchResults *) payload)->results, resultBytes);
 
 		if (resultBytes == 0) {
 			free(results);
@@ -661,7 +662,7 @@ exit:
 	return 1;
 }
 
-static int aggObtainResults(char *varName, fetchResults *fResults, error *err) {
+static int aggObtainResults(char *varName, fetchResults **fResults, error *err) {
 
 	if (varName == NULL) {
 		ERROR(err, E_BADARG);
@@ -679,7 +680,7 @@ static int aggObtainResults(char *varName, fetchResults *fResults, error *err) {
 		goto exit;
 	}
 
-	fResults = (fetchResults *) payload;
+	*fResults = (fetchResults *) payload;
 
 	return 0;
 
@@ -690,7 +691,7 @@ exit:
 static int dbMinimum(char *varName, response *res, error *err) {
 	
 	fetchResults *fResults;
-	if (aggObtainResults(varName, fResults, err)) {
+	if (aggObtainResults(varName, &fResults, err)) {
 		goto exit;
 	}
 
@@ -725,11 +726,38 @@ exit:
 }
 
 static int dbMaximum(char * varName, response *res, error *err) {
-	(void) varName;
-	(void) res;
-	(void) err;
+	fetchResults *fResults;
+	if (aggObtainResults(varName, &fResults, err)) {
+		goto exit;
+	}
 
-	ERROR(err, E_UNIMP);
+	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
+	int nResults = fResults->sizeBytes / sizeof(int);
+
+	if (nResults == 0) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = sizeof(int);
+	int *maximum = (int *) malloc(resultBytes);
+	if (maximum == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	*maximum = fResults->results[0];
+	for (int i = 1; i < nResults; i++) {
+		if (fResults->results[i] > *maximum) {
+			*maximum = fResults->results[i];
+		}
+	}
+
+	RESPONSE(res, "Maximum result:", sizeof(int), maximum);
+
+	return 0;
+
+exit:
 	return 1;
 }
 
