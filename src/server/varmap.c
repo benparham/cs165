@@ -112,17 +112,17 @@ static void varMapNodePrint(varMapNode *node) {
 	bitmapPrint(node->bmp);
 }
 
-static void _varMapPrint(varMapNode *node) {
+static void recVarMapPrint(varMapNode *node) {
 	if (node != NULL) {
 		varMapNodePrint(node);
-		_varMapPrint(node->next);
+		recVarMapPrint(node->next);
 	}
 }
 
 void varMapPrint(char *message) {
 	printf(">============ Print Var Map: %s\n", message);
 	printf("Node count: %d\n", nodeCount);
-	_varMapPrint(gVarMapHead);
+	recVarMapPrint(gVarMapHead);
 	printf("=============\n");
 }
 
@@ -130,7 +130,7 @@ int varMapAddVar(char *varName, struct bitmap *bmp, error *err) {
 	return varMapPush(&gVarMapHead, varName, bmp, err);
 }
 
-int varMapGetVar(char *varName, struct bitmap **bmp) {
+int varMapGetVar(char *varName, struct bitmap **bmp, error *err) {
 
 	varMapNode *node = varMapFind(gVarMapHead, varName);
 	if (node == NULL) {

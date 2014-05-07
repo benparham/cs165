@@ -47,7 +47,7 @@ void responseDestroy(response *res) {
 }
 
 // Should only be called after handle response, never twice in a row, thus the asserts
-void recordResponse(response *res, char *message, unsigned int dataBytes, int *data) {
+void recordResponse(response *res, char *message, unsigned int dataBytes, void *data) {
 	assert(res->dataBytes == -1);
 	assert(res->message == NULL);
 	assert(res->data == NULL);

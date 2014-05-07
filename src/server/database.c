@@ -360,8 +360,7 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 
 	// Get bitmap from var name
 	struct bitmap *bmp;
-	if (varMapGetVar(varName, &bmp)) {
-		ERROR(err, E_NOVAR);
+	if (varMapGetVar(varName, &bmp, err)) {
 		goto exit;
 	}
 
@@ -580,6 +579,40 @@ exit:
 	return 1;
 }
 
+static int dbPrintVar(char *varName, response *res, error *err) {
+
+	if (varName == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	struct bitmap *bmp;
+	if (varMapGetVar(varName, &bmp, err)) {
+		goto exit;
+	}
+
+	int bmpSize = bitmapSize(bmp);
+
+	int resultBytes = bmpSize * sizeof(int);
+	int *results = (int *) malloc(resultBytes);
+
+	if (resultBytes == 0) {
+		free(results);
+		results = NULL;
+	} else {
+		for (int i = 0; i < bmpSize; i++) {
+			results[i] = bitmapIsSet(bmp, i) ? 1 : 0;
+		}
+	}
+
+	RESPONSE(res, "Print var results:", resultBytes, results);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
 static int cmdNeedsTable(command *cmd) {
 
 	return (cmd->cmd != CMD_USE &&
@@ -615,6 +648,9 @@ int executeCommand(connection *con) {
 			break;
 		case CMD_REMOVE_TABLE:
 			result = dbRemoveTable((char *) cmd->args, res, err);
+			break;
+		case CMD_PRINT_VAR:
+			result = dbPrintVar((char *) cmd->args, res, err);
 			break;
 		case CMD_CREATE:
 			result = dbCreateColumn(tbl, (createColArgs *) cmd->args, res, err);

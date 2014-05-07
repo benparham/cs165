@@ -8,14 +8,14 @@
 typedef struct response {
 	char *message;
 	int dataBytes;
-	int *data;
+	void *data;
 } response;
 
 int responseCreate(response **res);
 void responseWipe(response *res);
 void responseDestroy(response *res);
 
-void recordResponse(response *res, char *message, unsigned int dataBytes, int *data);
+void recordResponse(response *res, char *message, unsigned int dataBytes, void *data);
 // int handleResponse(response *res, char **message, int *dataBytes, void **data);
 
 #endif

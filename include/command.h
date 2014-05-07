@@ -19,6 +19,7 @@ typedef enum {
 	CMD_USE,					// Use a table
 	CMD_CREATE_TABLE,			// Create a table
 	CMD_REMOVE_TABLE,			// Remove a table
+	CMD_PRINT_VAR,				// Print an intermediate variable in varmap
 
 	CMD_SELECT,					
 	CMD_FETCH,

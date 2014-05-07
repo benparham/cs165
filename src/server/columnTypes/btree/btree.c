@@ -602,7 +602,24 @@ exit:
 }
 
 int btreeSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err) {
-	ERROR(err, E_UNIMP);
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	printf("Selecting all from btree column '%s'\n", header->name);
+
+	if (header->nEntries < 1) {
+		ERROR(err, E_COLEMT);
+		goto exit;
+	}
+
+	if (bitmapCreate(header->nEntries, bmp, err)) {
+		goto exit;
+	}
+
+	bitmapMarkAll(*bmp);
+
+	return 0;
+
+exit:
 	return 1;
 }
 

@@ -14,7 +14,7 @@ int bitmapCreate(unsigned int nbits, struct bitmap **bmp, error *err);
 void bitmapDestroy(struct bitmap *bmp);
 
 int bitmapSize(struct bitmap *bmp);
-
+int bitmapToString(struct bitmap *bmp, char **str, int *strBytes);
 void bitmapPrint(struct bitmap *bmp);
 
 int bitmapAddBits(struct bitmap *bmp, int addBits);

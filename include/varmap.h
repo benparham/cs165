@@ -18,6 +18,6 @@ void varMapCleanup();
 void varMapPrint(char *message);
 
 int varMapAddVar(char *varName, struct bitmap *bmp, error *err);
-int varMapGetVar(char *varName, struct bitmap **bmp);
+int varMapGetVar(char *varName, struct bitmap **bmp, error *err);
 
 #endif

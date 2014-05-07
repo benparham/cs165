@@ -68,19 +68,56 @@ int bitmapSize(struct bitmap *bmp) {
 	return bmp->nbits;
 }
 
+int bitmapToString(struct bitmap *bmp, char **str, int *strBytes) {
+	int bmpSize = bitmapSize(bmp);
+	*strBytes = (bmpSize * 2) + 2;
+
+	*str = (char *) malloc(*strBytes);
+	if (*str == NULL) {
+		return 1;
+	}
+
+	(*str)[0] = '[';
+	int strCnt = 1;
+
+	for (int i = 0; i < bmpSize; i++) {
+		(*str)[strCnt] = bitmapIsSet(bmp, i) ? '1' : '0';
+		(*str)[strCnt + 1] = ',';
+
+		strCnt += 2;
+	}
+
+	(*str)[strCnt - 1] = ']';
+	(*str)[strCnt] = '\0';
+
+	return 0;
+
+}
+
 void bitmapPrint(struct bitmap *bmp) {
+
+	char *bmpStr;
+	int ignore;
+	if (bitmapToString(bmp, &bmpStr, &ignore)) {
+		printf("Error: not enough memory to print bitmap\n");
+		goto exit;
+	}
 
 	int size = bitmapSize(bmp);
 	printf("Size: %d\n", size);
 	printf("Words: %d\n", bmp->nWords);
 	printf("Map:\n[");
-	for (int i = 0; i < size; i++) {
-		printf("%d", bitmapIsSet(bmp, i) ? 1 : 0);
-		if (i != size - 1) {
-			printf(",");
-		}
-	}
-	printf("]\n");
+	printf("%s\n", bmpStr);
+	// for (int i = 0; i < size; i++) {
+	// 	printf("%d", bitmapIsSet(bmp, i) ? 1 : 0);
+	// 	if (i != size - 1) {
+	// 		printf(",");
+	// 	}
+	// }
+	// printf("]\n");
+
+exit:
+	return;
 }
 
 static void bitmapTranslate(unsigned int bitNum, unsigned int *wordIdx, WORD_TYPE *mask) {
