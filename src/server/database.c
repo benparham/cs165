@@ -327,7 +327,7 @@ static int dbSelect(tableInfo *tbl, selectArgs *args, response *res, error *err)
 	}
 
 	// Add variable-bitmap pair to varmap
-	if (varMapAddVar(varName, resultBmp, err)) {
+	if (varMapAddVar(varName, VAR_BMP, resultBmp, err)) {
 		goto cleanupBitmap;
 	}
 
@@ -350,7 +350,7 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 	
 	char *columnName = args->columnName;
 	char *oldVarName = args->oldVarName;
-	// char *newVarName = args->newVarName;
+	char *newVarName = args->newVarName;
 
 	if (columnName == NULL || oldVarName == NULL) {
 		ERROR(err, E_BADARG);
@@ -361,7 +361,13 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 
 	// Get bitmap from var name
 	struct bitmap *bmp;
-	if (varMapGetVar(oldVarName, (void **) (&bmp), err)) {
+	VAR_TYPE type;
+	if (varMapGetVar(oldVarName, &type, (void **) (&bmp), err)) {
+		goto exit;
+	}
+
+	if (type != VAR_BMP) {
+		ERROR(err, E_VARTYPE);
 		goto exit;
 	}
 
@@ -388,23 +394,45 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 		goto cleanupColumn;
 	}
 
-	int nResults = resultBytes / sizeof(int);
-	printf("Got %d results from fetch\n", nResults);
-	printf("[");
-	for (int i = 0; i < nResults; i++) {
-		printf("%d,", results[i]);
-	}
-	printf("]\n");
-	
-	// int *returnData = (int *) malloc(5 * sizeof(int));
-	// for (int i = 0; i < 5; i++) {
-	// 	returnData[i] = i + 1;
-	// }
+	// Return data to user if the haven't given a variable to store it in
+	if (newVarName[0] == '\0') {
 
-	if (resultBytes == 0) {
-		results = NULL;
+		int nResults = resultBytes / sizeof(int);
+		printf("Got %d results from fetch\n", nResults);
+		printf("[");
+		for (int i = 0; i < nResults; i++) {
+			printf("%d,", results[i]);
+		}
+		printf("]\n");
+
+
+		if (resultBytes == 0) {
+			results = NULL;
+		}
+		RESPONSE(res, "Fetch results:", resultBytes, results);
 	}
-	RESPONSE(res, "Fetch results:", resultBytes, results);
+
+	// Otherwise, store data in variable
+	else {
+
+		// Add variable-results pair to varmap
+		fetchResults *fResults = (fetchResults *) malloc(sizeof(fetchResults));
+		if (fResults == NULL) {
+			ERROR(err, E_NOMEM);
+			goto cleanupColumn;
+		}
+
+		fResults->sizeBytes = resultBytes;
+		fResults->results = results;
+
+		if (varMapAddVar(newVarName, VAR_RESULTS, fResults, err)) {
+			free(fResults);
+			goto cleanupColumn;
+		}
+
+		printf("Added variable '%s'\n", newVarName);
+		RESPONSE_SUCCESS(res);
+	}
 	
 	return 0;
 
@@ -587,25 +615,43 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 		goto exit;
 	}
 
-	struct bitmap *bmp;
-	if (varMapGetVar(varName, (void **) (&bmp), err)) {
+	// struct bitmap *bmp;
+	void *payload;
+	VAR_TYPE type;
+	if (varMapGetVar(varName, &type, &payload, err)) {
 		goto exit;
 	}
 
-	int bmpSize = bitmapSize(bmp);
+	int resultBytes;
+	int *results;
 
-	// bitmapPrint(bmp);
+	if (type == VAR_BMP) {
+		struct bitmap *bmp = (struct bitmap *) payload;
 
-	int resultBytes = bmpSize * sizeof(int);
-	int *results = (int *) malloc(resultBytes);
+		int bmpSize = bitmapSize(bmp);
 
-	if (resultBytes == 0) {
-		free(results);
-		results = NULL;
-	} else {
-		for (int i = 0; i < bmpSize; i++) {
-			results[i] = bitmapIsSet(bmp, i) ? 1 : 0;
+		resultBytes = bmpSize * sizeof(int);
+		results = (int *) malloc(resultBytes);
+
+		if (resultBytes == 0) {
+			free(results);
+			results = NULL;
+		} else {
+			for (int i = 0; i < bmpSize; i++) {
+				results[i] = bitmapIsSet(bmp, i) ? 1 : 0;
+			}
 		}
+	} else if (type == VAR_RESULTS) {
+		resultBytes = ((fetchResults *) payload)->sizeBytes;
+		results = ((fetchResults *) payload)->results;
+
+		if (resultBytes == 0) {
+			free(results);
+			results = NULL;
+		}
+	} else {
+		ERROR(err, E_VARTYPE);
+		goto exit;
 	}
 
 	RESPONSE(res, "Print var results:", resultBytes, results);

@@ -51,6 +51,8 @@
 
 #define E_CORRUPT			29		// Error that could possibly cause data corruption
 
+#define E_VARTYPE			30		// Varname has incorrect type
+
 
 
 /*

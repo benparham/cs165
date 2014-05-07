@@ -89,7 +89,6 @@ int setArgsInsertArgs(command *cmd, char *args, char *ignore) {
 	insertArgs *insArgs = (insertArgs *) malloc(sizeof(insertArgs));
 	strcpy(insArgs->columnName, columnName);
 	insArgs->value = atoi(value);
-	// strcpy(insArgs->value, value);
 
 	cmd->args = insArgs;
 
