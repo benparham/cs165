@@ -11,11 +11,9 @@
 typedef struct dataBlock {
 
 	fileOffset_t offset;
+	fileOffset_t nextBlock;
 
 	int nUsedEntries;
-
-	fileOffset_t leftBlock;
-	fileOffset_t rightBlock;
 
 	int data[DATABLOCK_CAPACITY];
 
@@ -30,7 +28,6 @@ int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, error *err);
 int dataBlockSetAppendOffset(FILE *dataFp, dataBlock *dBlock, error *err);
 
 bool dataBlockIsFull(dataBlock *dBlock);
-bool dataBlockIsStart(dataBlock *dBlock);
 bool dataBlockIsEnd(dataBlock *dBlock);
 
 /* 

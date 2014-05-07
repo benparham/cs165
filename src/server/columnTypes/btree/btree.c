@@ -276,8 +276,7 @@ static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, er
 	// Set data block data
 	dBlock->offset = 0;
 	dBlock->nUsedEntries = 1;
-	dBlock->leftBlock = 0;
-	dBlock->rightBlock = 0;
+	dBlock->nextBlock = 0;
 	dBlock->data[0] = data;
 
 	// Write out data block and index node
@@ -466,10 +465,8 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 			}
 
 			// Make blocks point to correct neighbors
-			newBlock->rightBlock = (dataBlockIsEnd(dBlock)) ? newBlock->offset : dBlock->rightBlock;
-
-			newBlock->leftBlock = dBlock->offset;
-			dBlock->rightBlock = newBlock->offset;
+			newBlock->nextBlock = (dataBlockIsEnd(dBlock)) ? newBlock->offset : dBlock->nextBlock;
+			dBlock->nextBlock = newBlock->offset;
 
 			// Write out updated blocks to data file
 			if (dataBlockWrite(dataFp, dBlock, err) || dataBlockWrite(dataFp, newBlock, err)) {

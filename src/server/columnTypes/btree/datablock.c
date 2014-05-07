@@ -6,11 +6,6 @@
 #include <mytypes.h>
 #include <error.h>
 
-// Constants for special offset "pointers" to other blocks
-#define ROOT_BLOCK				-1
-#define LAST_BLOCK				-2
-#define NO_BLOCK				-3
-
 int dataBlockCreate(dataBlock **dBlock, error *err) {
 	*dBlock = (dataBlock *) malloc(sizeof(dataBlock));
 	if (*dBlock == NULL) {
@@ -19,11 +14,9 @@ int dataBlockCreate(dataBlock **dBlock, error *err) {
 	}
 
 	(*dBlock)->offset = 0;			// Must be set properly before writing
+	(*dBlock)->nextBlock = 0;		// Must be set properly before writing
 
 	(*dBlock)->nUsedEntries = 0;
-	
-	(*dBlock)->leftBlock = NO_BLOCK;
-	(*dBlock)->rightBlock = NO_BLOCK;
 
 	memset((*dBlock)->data, 0, DATABLOCK_CAPACITY * sizeof(int));
 
@@ -126,12 +119,8 @@ bool dataBlockIsFull(dataBlock *dBlock) {
 	return (dBlock->nUsedEntries == DATABLOCK_CAPACITY);
 }
 
-bool dataBlockIsStart(dataBlock *dBlock) {
-	return (dBlock->leftBlock == dBlock->offset);
-}
-
 bool dataBlockIsEnd(dataBlock *dBlock) {
-	return (dBlock->rightBlock == dBlock->offset);
+	return (dBlock->nextBlock == dBlock->offset);
 }
 
 
@@ -227,8 +216,7 @@ void dataBlockPrint(const char *message, dataBlock *dBlock) {
 
 	printf("Offset: %d\n", dBlock->offset);
 	printf("Num used entries: %d\n", dBlock->nUsedEntries);
-	printf("Left block: %d\n", dBlock->leftBlock);
-	printf("Right block: %d\n", dBlock->rightBlock);
+	printf("Next block: %d\n", dBlock->nextBlock);
 	
 	printf("Entries: ");
 	for (int i = 0; i < dBlock->nUsedEntries; i++) {
@@ -257,11 +245,11 @@ static int recPrintAll(FILE *dataFp, fileOffset_t blockOffset, int count, error 
 	dataBlockPrint("", dBlock);
 
 	// If it's not the end block, restart on the next
-	if (!dataBlockIsEnd(dBlock)) {//dBlock->rightBlock != dBlock->offset) {
+	if (!dataBlockIsEnd(dBlock)) {
 		
 		free(dBlock);
 
-		return recPrintAll(dataFp, dBlock->rightBlock, count + 1, err);
+		return recPrintAll(dataFp, dBlock->nextBlock, count + 1, err);
 	}
 
 	free(dBlock);
