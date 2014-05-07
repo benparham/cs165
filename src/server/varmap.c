@@ -17,7 +17,7 @@ varMapNode *gVarMapHead;
 // varMapNode *gVarMapTail;
 int nodeCount;
 
-static varMapNode* varMapNodeCreate(char *varName, struct bitmap *bmp) {
+static varMapNode* varMapNodeCreate(char *varName, void *payload /*struct bitmap *bmp*/) {
 	if (strlen(varName) >= NAME_SIZE) {
 		return NULL;
 	}
@@ -28,14 +28,16 @@ static varMapNode* varMapNodeCreate(char *varName, struct bitmap *bmp) {
 	}
 
 	strcpy(node->varName, varName);
-	node->bmp = bmp;
+	// node->bmp = bmp;
+	node->payload = payload;
 	node->next = NULL;
 
 	return node;
 }
 
 static void varMapNodeDestroy(varMapNode *node) {
-	free(node->bmp);
+	// free(node->bmp);
+	free(node->payload);
 	free(node);
 }
 
@@ -47,10 +49,10 @@ static void varMapPop() {
 	nodeCount -= 1;
 }
 
-static int varMapPush(varMapNode **slot, char *varName, struct bitmap *bmp, error *err) {
+static int varMapPush(varMapNode **slot, char *varName, void *payload /*struct bitmap *bmp*/, error *err) {
 	// If slot is empty
 	if (*slot == NULL) {
-		varMapNode *newNode = varMapNodeCreate(varName, bmp);
+		varMapNode *newNode = varMapNodeCreate(varName, payload /*bmp*/);
 		if (newNode == NULL) {
 			ERROR(err, E_VARND);
 			return 1;
@@ -70,14 +72,14 @@ static int varMapPush(varMapNode **slot, char *varName, struct bitmap *bmp, erro
 
 	// If slot already contains varName
 	if (strcmp((*slot)->varName, varName) == 0) {
-		(*slot)->bmp = bmp;
+		// (*slot)->bmp = bmp;
+		(*slot)->payload = payload;
 
 		return 0;
 	}
 
 	// If slot is full
-	return varMapPush(&((*slot)->next), varName, bmp, err);
-
+	return varMapPush(&((*slot)->next), varName, payload /*bmp*/, err);
 }
 
 static varMapNode* varMapFind(varMapNode *node, char *varName) {
@@ -108,8 +110,8 @@ void varMapCleanup() {
 
 static void varMapNodePrint(varMapNode *node) {
 	printf("Variable: %s\n", node->varName);
-	printf("Bitmap:\n");
-	bitmapPrint(node->bmp);
+	// printf("Bitmap:\n");
+	// bitmapPrint(node->bmp);
 }
 
 static void recVarMapPrint(varMapNode *node) {
@@ -126,18 +128,19 @@ void varMapPrint(char *message) {
 	printf("=============\n");
 }
 
-int varMapAddVar(char *varName, struct bitmap *bmp, error *err) {
-	return varMapPush(&gVarMapHead, varName, bmp, err);
+int varMapAddVar(char *varName, void *payload /*struct bitmap *bmp*/, error *err) {
+	return varMapPush(&gVarMapHead, varName, payload /*bmp*/, err);
 }
 
-int varMapGetVar(char *varName, struct bitmap **bmp, error *err) {
+int varMapGetVar(char *varName, void **payload /*struct bitmap **bmp*/, error *err) {
 
 	varMapNode *node = varMapFind(gVarMapHead, varName);
 	if (node == NULL) {
 		return 1;
 	}
 
-	*bmp = node->bmp;
+	// *bmp = node->bmp;
+	*payload = node->payload;
 
 	return 0;
 }

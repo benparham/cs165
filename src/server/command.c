@@ -33,8 +33,8 @@ const char *CMD_NAMES[] = {
 //		 pointer. We switch on cmd->cmd in the new function and do the appropriate thing
 
 // TODO: check that we are freeing these args eventually!!!! MEMORY LEAK ahhhhh!!!!!
-int setArgsString(command *cmd, char *args, char *varName) {
-	(void) varName;
+int setArgsString(command *cmd, char *args, char *ignore) {
+	(void) ignore;
 
 	cmd->args = (char *) malloc(sizeof(char) * strlen(args));
 	strcpy(cmd->args, args);
@@ -42,17 +42,17 @@ int setArgsString(command *cmd, char *args, char *varName) {
 	return 0;
 }
 
-int setArgsNull(command *cmd, char *args, char *varName) {
+int setArgsNull(command *cmd, char *args, char *ignore) {
 	(void) args;
-	(void) varName;
+	(void) ignore;
 
 	cmd->args = NULL;
 
 	return 0;
 }
 
-int setArgsColArgs(command *cmd, char *args, char *varName) {
-	(void) varName;
+int setArgsColArgs(command *cmd, char *args, char *ignore) {
+	(void) ignore;
 
 	char *columnName = strtok(args, ",");
 	char *columnStorageType = strtok(NULL, "\n");
@@ -76,8 +76,8 @@ int setArgsColArgs(command *cmd, char *args, char *varName) {
 	return 0;
 }
 
-int setArgsInsertArgs(command *cmd, char *args, char *varName) {
-	(void) varName;
+int setArgsInsertArgs(command *cmd, char *args, char *ignore) {
+	(void) ignore;
 
 	char *columnName = strtok(args, ",");
 	char *value = strtok(NULL, "\n");
@@ -135,13 +135,13 @@ int setArgsSelectArgs(command *cmd, char *args, char *varName) {
 	return 0;
 }
 
-int setArgsFetchArgs(command *cmd, char *args, char *ignore) {
-	(void) ignore;
+int setArgsFetchArgs(command *cmd, char *args, char *newVarName) {
+	(void) newVarName;
 
 	char *columnName = strtok(args, ",");
-	char *varName = strtok(NULL, "\n");
+	char *oldVarName = strtok(NULL, "\n");
 
-	if (columnName == NULL || varName == NULL) {
+	if (columnName == NULL || oldVarName == NULL) {
 		return 1;
 	}
 
@@ -150,8 +150,14 @@ int setArgsFetchArgs(command *cmd, char *args, char *ignore) {
 		return 1;
 	}
 
-	strcpy(fetArgs->columnName, columnName); 
-	strcpy(fetArgs->varName, varName);
+	strcpy(fetArgs->columnName, columnName);
+	strcpy(fetArgs->oldVarName, oldVarName);
+
+	if (newVarName != NULL) {
+		strcpy(fetArgs->newVarName, newVarName);
+	} else {
+		fetArgs->newVarName[0] = '\0';
+	}
 
 	cmd->args = fetArgs;
 

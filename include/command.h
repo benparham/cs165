@@ -62,7 +62,8 @@ typedef struct selectArgs {
 
 typedef struct fetchArgs {
 	char columnName[BUFSIZE];
-	char varName[BUFSIZE];
+	char oldVarName[BUFSIZE];
+	char newVarName[BUFSIZE];
 } fetchArgs;
 
 typedef struct loadArgs {

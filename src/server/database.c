@@ -349,9 +349,10 @@ exit:
 static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 	
 	char *columnName = args->columnName;
-	char *varName = args->varName;
+	char *oldVarName = args->oldVarName;
+	// char *newVarName = args->newVarName;
 
-	if (columnName == NULL || varName == NULL) {
+	if (columnName == NULL || oldVarName == NULL) {
 		ERROR(err, E_BADARG);
 		goto exit;
 	}
@@ -360,11 +361,11 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 
 	// Get bitmap from var name
 	struct bitmap *bmp;
-	if (varMapGetVar(varName, &bmp, err)) {
+	if (varMapGetVar(oldVarName, (void **) (&bmp), err)) {
 		goto exit;
 	}
 
-	printf("Got bitmap for variable '%s'\n", varName);
+	printf("Got bitmap for variable '%s'\n", oldVarName);
 	bitmapPrint(bmp);
 
 
@@ -587,7 +588,7 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 	}
 
 	struct bitmap *bmp;
-	if (varMapGetVar(varName, &bmp, err)) {
+	if (varMapGetVar(varName, (void **) (&bmp), err)) {
 		goto exit;
 	}
 
