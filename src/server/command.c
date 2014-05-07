@@ -21,6 +21,11 @@ const char *CMD_NAMES[] = {
 	"load",
 	"insert",
 	"print",
+	"minimum",
+	"maximum",
+	"sum",
+	"average",
+	"count",
 	"exit"
 };
 
@@ -273,7 +278,12 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"insert(", ")", CMD_INSERT, &setArgsInsertArgs},
 	{"fetch(", ")", CMD_FETCH, &setArgsFetchArgs},
 	{"load(", ")", CMD_LOAD, &setArgsLoadArgs},
-	{"print(",")", CMD_PRINT, &setArgsString},
+	{"print(", ")", CMD_PRINT, &setArgsString},
+	{"min(", ")", CMD_MIN, &setArgsString},
+	{"max(", ")", CMD_MAX, &setArgsString},
+	{"sum(", ")", CMD_SUM, &setArgsString},
+	{"avg(", ")", CMD_AVG, &setArgsString},
+	{"count(", ")", CMD_CNT, &setArgsString},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
 	{NULL, NULL, 0, NULL}
 };

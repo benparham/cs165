@@ -615,7 +615,6 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 		goto exit;
 	}
 
-	// struct bitmap *bmp;
 	void *payload;
 	VAR_TYPE type;
 	if (varMapGetVar(varName, &type, &payload, err)) {
@@ -659,6 +658,105 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 	return 0;
 
 exit:
+	return 1;
+}
+
+static int aggObtainResults(char *varName, fetchResults *fResults, error *err) {
+
+	if (varName == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	void *payload;
+	VAR_TYPE type;
+	if (varMapGetVar(varName, &type, &payload, err)) {
+		goto exit;
+	}
+
+	if (type != VAR_RESULTS) {
+		ERROR(err, E_VARTYPE);
+		goto exit;
+	}
+
+	fResults = (fetchResults *) payload;
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+static int dbMinimum(char *varName, response *res, error *err) {
+	
+	fetchResults *fResults;
+	if (aggObtainResults(varName, fResults, err)) {
+		goto exit;
+	}
+
+	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
+	int nResults = fResults->sizeBytes / sizeof(int);
+
+	if (nResults == 0) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = sizeof(int);
+	int *minimum = (int *) malloc(resultBytes);
+	if (minimum == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	*minimum = fResults->results[0];
+	for (int i = 1; i < nResults; i++) {
+		if (fResults->results[i] < *minimum) {
+			*minimum = fResults->results[i];
+		}
+	}
+
+	RESPONSE(res, "Minimum result:", sizeof(int), minimum);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+static int dbMaximum(char * varName, response *res, error *err) {
+	(void) varName;
+	(void) res;
+	(void) err;
+
+	ERROR(err, E_UNIMP);
+	return 1;
+}
+
+static int dbSum(char * varName, response *res, error *err) {
+	(void) varName;
+	(void) res;
+	(void) err;
+
+	ERROR(err, E_UNIMP);
+	return 1;
+}
+
+static int dbAverage(char * varName, response *res, error *err) {
+	(void) varName;
+	(void) res;
+	(void) err;
+
+	ERROR(err, E_UNIMP);
+	return 1;
+}
+
+static int dbCount(char * varName, response *res, error *err) {
+	(void) varName;
+	(void) res;
+	(void) err;
+
+	ERROR(err, E_UNIMP);
 	return 1;
 }
 
@@ -722,6 +820,21 @@ int executeCommand(connection *con) {
 		case CMD_PRINT:
 			result = dbPrint(tbl, (char *) cmd->args, res, err);
 			break;
+		case CMD_MIN:
+			result = dbMinimum((char *) cmd->args, res, err);
+			break;
+		case CMD_MAX:
+			result = dbMaximum((char *) cmd->args, res, err);
+			break;
+		case CMD_SUM:
+			result = dbSum((char *) cmd->args, res, err);
+			break;
+		case CMD_AVG:
+			result = dbAverage((char *) cmd->args, res, err);
+			break;
+		case CMD_CNT:
+			result = dbCount((char *) cmd->args, res, err);
+			break;	
 		case CMD_EXIT:
 			ERROR(err, E_EXIT);
 			result = 1;

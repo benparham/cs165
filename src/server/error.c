@@ -35,7 +35,8 @@ char *errorMessages[] = {
 	"Variable does not exist",
 	"Serialization error",
 	"Error that could possibly cause data corruption",
-	"Varname has incorrect type"
+	"Varname has incorrect type",
+	"Varname is empty"
 };
 
 void recordError(error *err, int errno) {

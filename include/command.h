@@ -29,6 +29,13 @@ typedef enum {
 	CMD_LOAD,
 	CMD_INSERT,
 	CMD_PRINT,					// Print a column
+
+	// Aggregation
+	CMD_MIN,
+	CMD_MAX,
+	CMD_SUM,
+	CMD_AVG,
+	CMD_CNT,
 	
 	CMD_EXIT					// End session
 } CMD;
