@@ -116,6 +116,7 @@ exit:
 void indexNodePrint(const char *message, indexNode *iNode) {
 	printf("Index node: %s\n", message);
 
+	printf("Offset: %d\n", iNode->offset);
 	printf("Is terminal: %s\n", (iNode->isTerminal) ? "true" : "false");
 	printf("Num used keys: %d\n", iNode->nUsedKeys);
 	

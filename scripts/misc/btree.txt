@@ -10,5 +10,7 @@ insert(testCol3,7)
 insert(testCol3,1)
 insert(testCol3,2)
 insert(testCol3,4)
+insert(testCol3,12)
+insert(testCol3,8)
 print(testCol3)
 exit

@@ -381,7 +381,10 @@ exit:
 	return 1;
 }
 
-static int addIndexLevel(FILE *indexFp, indexNode *iNode, error *err) {
+static int addIndexLevel(FILE *indexFp, indexNode **_iNode, int keepIdx, error *err) {
+	indexNode *iNode = *_iNode;
+
+	MY_ASSERT(keepIdx >= 0 && keepIdx < NUM_CHILDREN);
 	MY_ASSERT(indexNodeIsFull(iNode));
 	MY_ASSERT(iNode->isTerminal);
 
@@ -409,6 +412,7 @@ static int addIndexLevel(FILE *indexFp, indexNode *iNode, error *err) {
 		// Set data blocks as lone children of new nodes
 		newNodes[i]->offset = newOffset;
 		newNodes[i]->isTerminal = true;
+		newNodes[i]->nUsedKeys = 0;
 		newNodes[i]->children[0] = iNode->children[i];
 
 		// Set new nodes as children of old node
@@ -429,7 +433,13 @@ static int addIndexLevel(FILE *indexFp, indexNode *iNode, error *err) {
 		if (indexNodeWrite(indexFp, newNodes[i], err)) {
 			failed = true;
 		}
-		indexNodeDestroy(newNodes[i]);
+
+		if (i == keepIdx) {
+			indexNodeDestroy(iNode);
+			*_iNode = newNodes[i];
+		} else {
+			indexNodeDestroy(newNodes[i]);
+		}
 	}
 
 	if (failed) {goto exit;}
@@ -458,7 +468,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 		return 0;
 	}
 
-
+	// TODO: change this to create function
 	// Allocate space for working index node
 	indexNode *iNode = (indexNode *) malloc(sizeof(indexNode));
 	if (iNode == NULL) {
@@ -472,6 +482,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	}
 	MY_ASSERT(iNode != NULL && iNode->isTerminal);
 
+	// TODO: change this to create function
 	// Allocate space for working data block
 	dataBlock *dBlock = (dataBlock *) malloc(sizeof(dataBlock));
 	if (dBlock == NULL) {
@@ -509,12 +520,24 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	else {
 		// If the parent index node is full...
 		if (indexNodeIsFull(iNode)) {
-			ERROR(err, E_UNIMP);
-			goto cleanupBlock;
+			// ERROR(err, E_UNIMP);
+			// goto cleanupBlock;
+
+			// Add another level of index nodes
+			if (addIndexLevel(header->indexFp, &iNode, childIdx, err)) {
+				goto cleanupBlock;
+			}
+
+			// Update the current child index (addIndexLevel updates iNode)
+			childIdx = 0;
+
+			// Update header info
+			header->fileIndexSizeBytes += NUM_CHILDREN * sizeof(indexNode);
+			header->nNodes += NUM_CHILDREN;
 		}
 
 		// If the parent index node has free space...
-		else {
+		// else {
 
 			// Split the data block, adding the new data
 			dataBlock *newBlock;
@@ -554,12 +577,13 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 			// Update relevent header metadata
 			header->nDataBlocks += 1;
 			header->fileDataSizeBytes += sizeof(dataBlock);
-		}
+		// }
 	}
 
 	// Update header metadata
 	header->nEntries += 1;
 
+	// TODO: change this to destroy functions
 	// Cleanup
 	free(dBlock);
 	free(iNode);
@@ -568,6 +592,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 
 	return 0;
 
+// TODO: change to destroy functions
 cleanupBlock:
 	free(dBlock);
 cleanupNode:
