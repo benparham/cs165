@@ -598,10 +598,33 @@ int btreeSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err)
 		goto exit;
 	}
 
-	bitmapMarkAll(*bmp);
+	dataBlock *dBlock;
+	if (dataBlockCreate(&dBlock, err)) {
+		goto exit;
+	}
+
+	for (int blockIdx = 0; blockIdx < header->nDataBlocks; blockIdx++) {
+		int blockOffset = dataBlockIdxToOffset(blockIdx);
+
+		if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+			goto cleanupBlock;
+		}
+
+		int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+		for (int i = 0; i < dBlock->nUsedEntries; i++) {
+			if (bitmapMark(*bmp, startBmpIdx + i, err)) {
+				goto cleanupBlock;
+			}
+		}
+	}
+
+	// Cleanup
+	dataBlockDestroy(dBlock);
 
 	return 0;
 
+cleanupBlock:
+	dataBlockDestroy(dBlock);
 exit:
 	return 1;
 }
@@ -693,12 +716,140 @@ int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitm
 
 	printf("Selecting range %d - %d from btree column '%s'\n", low, high, header->name);
 
-	ERROR(err, E_UNIMP);
+	// Check that column isn't empty
+	if (header->nEntries < 1) {
+		ERROR(err, E_COLEMT);
+		goto exit;
+	}
+
+	// Allocate the bitmap
+	if (bitmapCreate(header->nDataBlocks * DATABLOCK_CAPACITY, bmp, err)) {
+		goto exit;
+	}
+
+	// Allocate index node
+	indexNode *iNode;
+	if (indexNodeCreate(&iNode, err)) {
+		goto cleanupBitmap;
+	}
+
+	// Allocate data block
+	dataBlock *dBlock;
+	if (dataBlockCreate(&dBlock, err)) {
+		goto cleanupNode;
+	}
+
+	// Get the correct terminal iNode for low
+	if (searchTerminalNode(header->indexFp, header->rootIndexNode, low, iNode, err)) {
+		goto cleanupBlock;
+	}
+
+	// Get the correct data block for low
+	fileOffset_t blockOffset = getChildOffset(iNode, low);
+	if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+		goto cleanupBlock;
+	}
+
+	dataBlockPrint("Found data block where low value would be", dBlock);
+
+	bool done = false;
+	while (!done) {
+		// Calculate the bmp index from block offset
+		int blockIdx = dataBlockOffsetToIdx(dBlock);
+		int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+
+		// Check block for value
+		for (int i = 0; i < dBlock->nUsedEntries; i++) {
+			int data = dBlock->data[i];
+			if (data >= low && data <= high) {
+				if (bitmapMark(*bmp, startBmpIdx + i, err)) {
+					goto cleanupBlock;
+				}
+			} else if (data > high) {
+				done = true;
+				break;
+			}
+		}
+
+		// Move to next block if necessary
+		if (dataBlockRead(dataFp, dBlock, dBlock->nextBlock, err)) {
+			goto cleanupBlock;
+		}
+	}
+
+	// Cleanup
+	dataBlockDestroy(dBlock);
+	indexNodeDestroy(iNode);
+
+	return 0;
+
+cleanupBlock:
+	dataBlockDestroy(dBlock);
+cleanupNode:
+	indexNodeDestroy(iNode);
+cleanupBitmap:
+	bitmapDestroy(*bmp);
+exit:
 	return 1;
 }
 
 int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
-	ERROR(err, E_UNIMP);
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	// Check that bitmap is correct size
+	if (bitmapSize(bmp) != header->nDataBlocks * DATABLOCK_CAPACITY) {
+		ERROR(err, E_BADFTC);
+		goto exit;
+	}
+
+
+	dataBlock *dBlock;
+	if (dataBlockCreate(&dBlock, err)) {
+		goto exit;
+	}
+
+
+	int resultBuf[BUFSIZE];
+	int resultOffset = 0;
+
+	int length = bitmapSize(bmp);
+	for (int i = 0; i < length; i++) {
+		if (resultOffset >= BUFSIZE) {
+			ERROR(err, E_NOMEM);
+			goto cleanupBlock;
+		}
+
+		if (bitmapIsSet(bmp, i)) {
+			int blockIdx = i / DATABLOCK_CAPACITY;
+			int blockOffset = dataBlockIdxToOffset(blockIdx);
+			int innerIdx = i % 4;
+
+			if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+				goto cleanupBlock;
+			}
+
+			resultBuf[resultOffset] = dBlock->data[innerIdx];
+			resultOffset += 1;
+		}
+	}
+
+	*resultBytes = resultOffset * sizeof(int);
+
+	*results = (int *) malloc(*resultBytes);
+	if (*results == NULL) {
+		ERROR(err, E_NOMEM);
+		goto cleanupBlock;
+	}
+	memcpy(*results, resultBuf, *resultBytes);
+
+	// Cleanup
+	dataBlockDestroy(dBlock);
+
+	return 0;
+
+cleanupBlock:
+	dataBlockDestroy(dBlock);
+exit:
 	return 1;
 }
 

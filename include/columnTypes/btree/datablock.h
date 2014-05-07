@@ -31,6 +31,7 @@ bool dataBlockIsFull(dataBlock *dBlock);
 bool dataBlockIsEnd(dataBlock *dBlock);
 
 int dataBlockOffsetToIdx(dataBlock *dBlock);
+int dataBlockIdxToOffset(int idx);
 
 /* 
  * Add data to data block

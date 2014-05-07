@@ -128,6 +128,10 @@ int dataBlockOffsetToIdx(dataBlock *dBlock) {
 	return (dBlock->offset / sizeof(dataBlock));
 }
 
+int dataBlockIdxToOffset(int idx) {
+	return (idx * sizeof(dataBlock));
+}
+
 int dataBlockAdd(dataBlock *dBlock, int data) {
 	if (dataBlockIsFull(dBlock)) {
 		return 1;

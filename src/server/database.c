@@ -593,6 +593,8 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 
 	int bmpSize = bitmapSize(bmp);
 
+	// bitmapPrint(bmp);
+
 	int resultBytes = bmpSize * sizeof(int);
 	int *results = (int *) malloc(resultBytes);
 
