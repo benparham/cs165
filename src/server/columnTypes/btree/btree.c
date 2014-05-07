@@ -341,23 +341,6 @@ static int getChildIdx(indexNode *iNode, int data) {
 
 static fileOffset_t getChildOffset(indexNode *iNode, int data) {
 	return iNode->children[getChildIdx(iNode, data)];
-
-	// // Only has one child
-	// if (iNode->nUsedKeys == 0) {
-	// 	return iNode->children[0];
-	// } 
-
-	// // Search keys for correct child
-	// else {
-	// 	int i;
-	// 	for (i = 0; i < iNode->nUsedKeys; i++) {
-	// 		if (data <= iNode->keys[i]) {
-	// 			return iNode->children[i];
-	// 		}
-	// 	}
-
-	// 	return iNode->children[i];
-	// }
 }
 
 static int searchTerminalNode(FILE *indexFp, fileOffset_t nodeOffset, int data, indexNode *result, error *err) {
@@ -611,7 +594,7 @@ int btreeSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err)
 		goto exit;
 	}
 
-	if (bitmapCreate(header->nEntries, bmp, err)) {
+	if (bitmapCreate(header->nDataBlocks * DATABLOCK_CAPACITY, bmp, err)) {
 		goto exit;
 	}
 
@@ -624,11 +607,92 @@ exit:
 }
 
 int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp, error *err) {
-	ERROR(err, E_UNIMP);
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	printf("Selecting %d from btree column '%s'\n", value, header->name);
+
+	// Check that column isn't empty
+	if (header->nEntries < 1) {
+		ERROR(err, E_COLEMT);
+		goto exit;
+	}
+
+	// Allocate the bitmap
+	if (bitmapCreate(header->nDataBlocks * DATABLOCK_CAPACITY, bmp, err)) {
+		goto exit;
+	}
+
+	// Allocate index node
+	indexNode *iNode;
+	if (indexNodeCreate(&iNode, err)) {
+		goto cleanupBitmap;
+	}
+
+	// Allocate data block
+	dataBlock *dBlock;
+	if (dataBlockCreate(&dBlock, err)) {
+		goto cleanupNode;
+	}
+
+	// Get the correct terminal iNode
+	if (searchTerminalNode(header->indexFp, header->rootIndexNode, value, iNode, err)) {
+		goto cleanupBlock;
+	}
+
+	// Get the correct data block
+	fileOffset_t blockOffset = getChildOffset(iNode, value);
+	if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+		goto cleanupBlock;
+	}
+
+	dataBlockPrint("Found data block where value would be", dBlock);
+
+	bool done = false;
+	while (!done) {
+		// Calculate the bmp index from block offset
+		int blockIdx = dataBlockOffsetToIdx(dBlock);
+		int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+
+		// Check block for value
+		for (int i = 0; i < dBlock->nUsedEntries; i++) {
+			int data = dBlock->data[i];
+			if (data == value) {
+				if (bitmapMark(*bmp, startBmpIdx + i, err)) {
+					goto cleanupBlock;
+				}
+			} else if (data > value) {
+				done = true;
+				break;
+			}
+		}
+
+		// Move to next block if necessary
+		if (dataBlockRead(dataFp, dBlock, dBlock->nextBlock, err)) {
+			goto cleanupBlock;
+		}
+	}
+
+	// Cleanup
+	dataBlockDestroy(dBlock);
+	indexNodeDestroy(iNode);
+
+	return 0;
+
+cleanupBlock:
+	dataBlockDestroy(dBlock);
+cleanupNode:
+	indexNodeDestroy(iNode);
+cleanupBitmap:
+	bitmapDestroy(*bmp);
+exit:
 	return 1;
 }
 
 int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err) {
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
+	printf("Selecting range %d - %d from btree column '%s'\n", low, high, header->name);
+
 	ERROR(err, E_UNIMP);
 	return 1;
 }

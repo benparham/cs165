@@ -30,6 +30,8 @@ int dataBlockSetAppendOffset(FILE *dataFp, dataBlock *dBlock, error *err);
 bool dataBlockIsFull(dataBlock *dBlock);
 bool dataBlockIsEnd(dataBlock *dBlock);
 
+int dataBlockOffsetToIdx(dataBlock *dBlock);
+
 /* 
  * Add data to data block
  * Fails if data block is full

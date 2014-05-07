@@ -123,6 +123,10 @@ bool dataBlockIsEnd(dataBlock *dBlock) {
 	return (dBlock->nextBlock == dBlock->offset);
 }
 
+int dataBlockOffsetToIdx(dataBlock *dBlock) {
+	MY_ASSERT(dBlock->offset % sizeof(dataBlock) == 0);
+	return (dBlock->offset / sizeof(dataBlock));
+}
 
 int dataBlockAdd(dataBlock *dBlock, int data) {
 	if (dataBlockIsFull(dBlock)) {
