@@ -299,7 +299,7 @@ static int createFirstNode(columnHeaderBtree *header, FILE *dataFp, int data, er
 	header->nEntries += 1;
 	header->fileDataSizeBytes += sizeof(dataBlock);
 
-	indexNodePrint("Created new index node", iNode);
+	// indexNodePrint("Created new index node", iNode);
 
 	// Cleanup
 	free(dBlock);
@@ -368,7 +368,7 @@ static int searchTerminalNode(FILE *indexFp, fileOffset_t nodeOffset, int data, 
 		goto exit;
 	}
 
-	indexNodePrint("Searching for terminal node", result);
+	// indexNodePrint("Searching for terminal node", result);
 
 	// Found a terminal node
 	if (result->isTerminal) {
@@ -459,26 +459,25 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 				goto cleanupBlock;
 			}
 
-			// Make new block point to correct places
-			newBlock->rightBlock = dBlock->rightBlock;
-			newBlock->leftBlock = dBlock->offset;
-
-			// Write out new block to data file
-			if (dataBlockAppend(dataFp, newBlock, err)) {
+			// Get offset for new block
+			if (dataBlockSetAppendOffset(dataFp, newBlock, err)) {
 				free(newBlock);
 				goto cleanupBlock;
 			}
 
-			// Make old block point to new block
+			// Make blocks point to correct neighbors
+			newBlock->rightBlock = (dataBlockIsEnd(dBlock)) ? newBlock->offset : dBlock->rightBlock;
+
+			newBlock->leftBlock = dBlock->offset;
 			dBlock->rightBlock = newBlock->offset;
 
-			// Write out old block to data file
-			if (dataBlockWrite(dataFp, dBlock, err)) {
+			// Write out updated blocks to data file
+			if (dataBlockWrite(dataFp, dBlock, err) || dataBlockWrite(dataFp, newBlock, err)) {
 				free(newBlock);
 				goto cleanupBlock;
 			}
 
-			// Add new data block as one of parent index's children
+			// Add new data block as one of index node's children
 			int key = dBlock->data[dBlock->nUsedEntries - 1];
 			if (indexNodeAdd(iNode, newBlock, key, childIdx, err)) {
 				free(newBlock);
@@ -504,7 +503,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err) {
 	free(dBlock);
 	free(iNode);
 
-	indexNodePrintAll("Done with insert", header->indexFp);
+	// indexNodePrintAll("Done with insert", header->indexFp);
 
 	return 0;
 
@@ -544,8 +543,17 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 void btreePrintData(void *_header, FILE *dataFp) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
+	if (header->nNodes == 0 || header->nDataBlocks == 0) {
+		printf("Column data is empty\n");
+		return;
+	}
+
+	printf("\n");
+
 	// Print index node
 	indexNodePrintAll("", header->indexFp);
+
+	printf("\n");
 
 	// Print data blocks
 	dataBlockPrintAll("", dataFp, header->firstDataBlock);

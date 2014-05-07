@@ -104,6 +104,9 @@ int indexNodeAdd(indexNode *iNode, dataBlock *dBlock, int key, int keyIdx, error
 	iNode->keys[keyIdx] = key;
 	iNode->children[childIdx] = dBlock->offset;
 
+	// Update the number of used keys
+	iNode->nUsedKeys += 1;
+
 	return 0;
 
 exit:

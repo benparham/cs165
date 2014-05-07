@@ -1,5 +1,6 @@
 create table test
 use test
+remove(testCol3)
 create(testCol3,btree)
 insert(testCol3,3)
 insert(testCol3,10)

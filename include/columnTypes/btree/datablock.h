@@ -26,9 +26,12 @@ void dataBlockDestroy(dataBlock *dBlock);
 
 int dataBlockRead(FILE *dataFp, dataBlock *dBlock, fileOffset_t offset, error *err);
 int dataBlockWrite(FILE *dataFp, dataBlock *dBlock, error *err);
-int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, error *err);
+
+int dataBlockSetAppendOffset(FILE *dataFp, dataBlock *dBlock, error *err);
 
 bool dataBlockIsFull(dataBlock *dBlock);
+bool dataBlockIsStart(dataBlock *dBlock);
+bool dataBlockIsEnd(dataBlock *dBlock);
 
 /* 
  * Add data to data block

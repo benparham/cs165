@@ -83,7 +83,7 @@ exit:
 	return 1;
 }
 
-int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, error *err) {
+int dataBlockSetAppendOffset(FILE *dataFp, dataBlock *dBlock, error *err) {
 	
 	// Seek to the end of the file
 	if (fseek(dataFp, 0, SEEK_END) == -1) {
@@ -91,13 +91,7 @@ int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, error *err) {
 		goto exit;
 	}
 
-	// Get the current position (in bytes)
 	dBlock->offset = ftell(dataFp);
-
-	// Write to the end
-	if (dataBlockWrite(dataFp, dBlock, err)) {
-		goto exit;
-	}
 
 	return 0;
 
@@ -105,9 +99,39 @@ exit:
 	return 1;
 }
 
+// int dataBlockAppend(FILE *dataFp, dataBlock *dBlock, error *err) {
+	
+// 	// Seek to the end of the file
+// 	if (fseek(dataFp, 0, SEEK_END) == -1) {
+// 		ERROR(err, E_FSK);
+// 		goto exit;
+// 	}
+
+// 	// Get the current position (in bytes)
+// 	dBlock->offset = ftell(dataFp);
+
+// 	// Write to the end
+// 	if (dataBlockWrite(dataFp, dBlock, err)) {
+// 		goto exit;
+// 	}
+
+// 	return 0;
+
+// exit:
+// 	return 1;
+// }
+
 bool dataBlockIsFull(dataBlock *dBlock) {
 	MY_ASSERT(!(dBlock->nUsedEntries > DATABLOCK_CAPACITY));
 	return (dBlock->nUsedEntries == DATABLOCK_CAPACITY);
+}
+
+bool dataBlockIsStart(dataBlock *dBlock) {
+	return (dBlock->leftBlock == dBlock->offset);
+}
+
+bool dataBlockIsEnd(dataBlock *dBlock) {
+	return (dBlock->rightBlock == dBlock->offset);
 }
 
 
@@ -201,13 +225,14 @@ exit:
 void dataBlockPrint(const char *message, dataBlock *dBlock) {
 	printf("Data block: %s\n", message);
 
+	printf("Offset: %d\n", dBlock->offset);
 	printf("Num used entries: %d\n", dBlock->nUsedEntries);
 	printf("Left block: %d\n", dBlock->leftBlock);
 	printf("Right block: %d\n", dBlock->rightBlock);
 	
 	printf("Entries: ");
 	for (int i = 0; i < dBlock->nUsedEntries; i++) {
-		printf("%d", dBlock->data[i]);
+		printf("%d ", dBlock->data[i]);
 	}
 	printf("\n");
 }
@@ -232,7 +257,7 @@ static int recPrintAll(FILE *dataFp, fileOffset_t blockOffset, int count, error 
 	dataBlockPrint("", dBlock);
 
 	// If it's not the end block, restart on the next
-	if (dBlock->rightBlock != dBlock->offset) {
+	if (!dataBlockIsEnd(dBlock)) {//dBlock->rightBlock != dBlock->offset) {
 		
 		free(dBlock);
 
