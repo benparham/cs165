@@ -593,37 +593,70 @@ int btreeSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err)
 		goto exit;
 	}
 
-	if (bitmapCreate(header->nDataBlocks * DATABLOCK_CAPACITY, bmp, err)) {
+	if (bitmapCreate(header->nEntries, bmp, err)) {
 		goto exit;
 	}
 
-	dataBlock *dBlock;
-	if (dataBlockCreate(&dBlock, err)) {
+	// dataBlock *dBlock;
+	// if (dataBlockCreate(&dBlock, err)) {
+	// 	goto exit;
+	// }
+
+	// for (int blockIdx = 0; blockIdx < header->nDataBlocks; blockIdx++) {
+	// 	int blockOffset = dataBlockIdxToOffset(blockIdx);
+
+	// 	if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+	// 		goto cleanupBlock;
+	// 	}
+
+	// 	int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+	// 	for (int i = 0; i < dBlock->nUsedEntries; i++) {
+	// 		if (bitmapMark(*bmp, startBmpIdx + i, err)) {
+	// 			goto cleanupBlock;
+	// 		}
+	// 	}
+	// }
+
+	// // Cleanup
+	// dataBlockDestroy(dBlock);
+
+	bitmapMarkAll(*bmp);
+
+	return 0;
+
+// cleanupBlock:
+// 	dataBlockDestroy(dBlock);
+exit:
+	return 1;
+}
+
+static int getStartBmpIdx(FILE *dataFp, fileOffset_t firstDataBlock, dataBlock *dBlock, int *bmpIdx, error *err) {
+	
+	// Allocate space for a data block in memory
+	dataBlock *tempBlock;
+	if (dataBlockCreate(&tempBlock, err)) {
 		goto exit;
 	}
 
-	for (int blockIdx = 0; blockIdx < header->nDataBlocks; blockIdx++) {
-		int blockOffset = dataBlockIdxToOffset(blockIdx);
-
-		if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+	// Sum up total number of entries before dBlock
+	fileOffset_t curOffset = firstDataBlock;
+	*bmpIdx = 0;
+	while (curOffset != dBlock->offset) {
+		// Read in next block
+		if (dataBlockRead(dataFp, tempBlock, curOffset, err)) {
 			goto cleanupBlock;
 		}
 
-		int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
-		for (int i = 0; i < dBlock->nUsedEntries; i++) {
-			if (bitmapMark(*bmp, startBmpIdx + i, err)) {
-				goto cleanupBlock;
-			}
-		}
+		*bmpIdx += tempBlock->nUsedEntries;
+		curOffset = tempBlock->nextBlock;
 	}
 
-	// Cleanup
-	dataBlockDestroy(dBlock);
+	dataBlockDestroy(tempBlock);
 
 	return 0;
 
 cleanupBlock:
-	dataBlockDestroy(dBlock);
+	dataBlockDestroy(tempBlock);
 exit:
 	return 1;
 }
@@ -640,7 +673,7 @@ int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp
 	}
 
 	// Allocate the bitmap
-	if (bitmapCreate(header->nDataBlocks * DATABLOCK_CAPACITY, bmp, err)) {
+	if (bitmapCreate(header->nEntries, bmp, err)) {
 		goto exit;
 	}
 
@@ -669,11 +702,17 @@ int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp
 
 	dataBlockPrint("Found data block where value would be", dBlock);
 
-	bool done = false;
-	while (!done) {
-		// Calculate the bmp index from block offset
-		int blockIdx = dataBlockOffsetToIdx(dBlock);
-		int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+	int startBmpIdx;
+	if (getStartBmpIdx(dataFp, header->firstDataBlock, dBlock, &startBmpIdx, err)) {
+		goto cleanupBlock;
+	}
+
+	while (1) {
+		// // Calculate the bmp index from block offset
+		// int blockIdx = dataBlockOffsetToIdx(dBlock);
+		// int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+
+		bool done = false;
 
 		// Check block for value
 		for (int i = 0; i < dBlock->nUsedEntries; i++) {
@@ -688,10 +727,15 @@ int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp
 			}
 		}
 
+		if (done || dataBlockIsEnd(dBlock)) {
+			break;
+		}
+
 		// Move to next block if necessary
 		if (dataBlockRead(dataFp, dBlock, dBlock->nextBlock, err)) {
 			goto cleanupBlock;
 		}
+		startBmpIdx += dBlock->nUsedEntries;
 	}
 
 	// Cleanup
@@ -722,7 +766,7 @@ int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitm
 	}
 
 	// Allocate the bitmap
-	if (bitmapCreate(header->nDataBlocks * DATABLOCK_CAPACITY, bmp, err)) {
+	if (bitmapCreate(header->nEntries, bmp, err)) {
 		goto exit;
 	}
 
@@ -751,11 +795,17 @@ int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitm
 
 	dataBlockPrint("Found data block where low value would be", dBlock);
 
-	bool done = false;
-	while (!done) {
-		// Calculate the bmp index from block offset
-		int blockIdx = dataBlockOffsetToIdx(dBlock);
-		int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+	int startBmpIdx;
+	if (getStartBmpIdx(dataFp, header->firstDataBlock, dBlock, &startBmpIdx, err)) {
+		goto cleanupBlock;
+	}
+
+	while (1) {
+		// // Calculate the bmp index from block offset
+		// int blockIdx = dataBlockOffsetToIdx(dBlock);
+		// int startBmpIdx = blockIdx * DATABLOCK_CAPACITY;
+
+		bool done = false;
 
 		// Check block for value
 		for (int i = 0; i < dBlock->nUsedEntries; i++) {
@@ -770,10 +820,15 @@ int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitm
 			}
 		}
 
+		if (done || dataBlockIsEnd(dBlock)) {
+			break;
+		}
+
 		// Move to next block if necessary
 		if (dataBlockRead(dataFp, dBlock, dBlock->nextBlock, err)) {
 			goto cleanupBlock;
 		}
+		startBmpIdx += dBlock->nUsedEntries;
 	}
 
 	// Cleanup
@@ -796,7 +851,7 @@ int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
 	// Check that bitmap is correct size
-	if (bitmapSize(bmp) != header->nDataBlocks * DATABLOCK_CAPACITY) {
+	if (bitmapSize(bmp) != header->nEntries) {
 		ERROR(err, E_BADFTC);
 		goto exit;
 	}
@@ -809,30 +864,58 @@ int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes
 
 
 	int resultBuf[BUFSIZE];
-	int resultOffset = 0;
+	int resultIdx = 0;
 
-	int length = bitmapSize(bmp);
-	for (int i = 0; i < length; i++) {
-		if (resultOffset >= BUFSIZE) {
-			ERROR(err, E_NOMEM);
+	int bmpSize = bitmapSize(bmp);
+	int bmpIdx = 0;
+	int blockOffset = header->firstDataBlock;
+
+	while(1) {
+		if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
 			goto cleanupBlock;
 		}
 
-		if (bitmapIsSet(bmp, i)) {
-			int blockIdx = i / DATABLOCK_CAPACITY;
-			int blockOffset = dataBlockIdxToOffset(blockIdx);
-			int innerIdx = i % 4;
+		dataBlockPrint("Checking data block during fetch", dBlock);
 
-			if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
-				goto cleanupBlock;
+		for (int i = 0; i < dBlock->nUsedEntries; i++) {
+			MY_ASSERT(bmpIdx < bmpSize);
+			if (bitmapIsSet(bmp, bmpIdx)) {
+				resultBuf[resultIdx] = dBlock->data[i];
+				resultIdx += 1;
 			}
 
-			resultBuf[resultOffset] = dBlock->data[innerIdx];
-			resultOffset += 1;
+			bmpIdx += 1;
+		}
+
+		if (dataBlockIsEnd(dBlock)) {
+			break;
+		} else {
+			blockOffset = dBlock->nextBlock;
 		}
 	}
 
-	*resultBytes = resultOffset * sizeof(int);
+	// int length = bitmapSize(bmp);
+	// for (int i = 0; i < length; i++) {
+	// 	if (resultOffset >= BUFSIZE) {
+	// 		ERROR(err, E_NOMEM);
+	// 		goto cleanupBlock;
+	// 	}
+
+	// 	if (bitmapIsSet(bmp, i)) {
+	// 		int blockIdx = i / DATABLOCK_CAPACITY;
+	// 		int blockOffset = dataBlockIdxToOffset(blockIdx);
+	// 		int innerIdx = i % 4;
+
+	// 		if (dataBlockRead(dataFp, dBlock, blockOffset, err)) {
+	// 			goto cleanupBlock;
+	// 		}
+
+	// 		resultBuf[resultOffset] = dBlock->data[innerIdx];
+	// 		resultOffset += 1;
+	// 	}
+	// }
+
+	*resultBytes = resultIdx * sizeof(int);
 
 	*results = (int *) malloc(*resultBytes);
 	if (*results == NULL) {
@@ -868,10 +951,13 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 		goto exit;
 	}
 
-
 	// Calculate number of data values
 	MY_ASSERT(dataBytes % sizeof(int) == 0);
 	int nValues = dataBytes / (sizeof(int));
+
+
+
+// ============= Write out the data blocks
 
 	// Write out data into data blocks on disk
 	bool firstBlock = true;
@@ -946,7 +1032,7 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 	dataBlockDestroy(workingBlock);
 	dataBlockDestroy(waitingBlock);
 
-	// Update header information
+	// Update header data information
 	header->nEntries = nValues;
 	header->nDataBlocks = nValues / DATABLOCK_CAPACITY;
 	if (nValues % DATABLOCK_CAPACITY != 0) {
@@ -955,8 +1041,67 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 	header->fileDataSizeBytes = header->nDataBlocks * sizeof(dataBlock);
 	header->firstDataBlock = 0;
 
+// ============== Write out the index nodes
+
+	// Allocate space for index node in memory
+	indexNode *iNode;
+	if (indexNodeCreate(&iNode, err)) {
+		ERROR(err, E_CORRUPT);
+		goto exit;
+	}
+
+	// Write out first level of index nodes
+	int nIndexNodes = 0;
+	blockIdx = 0;
+	while(blockIdx < header->nDataBlocks) {
+		
+		// Set offset to write to in index file
+		iNode->offset = nIndexNodes * sizeof(indexNode);
+		iNode->isTerminal = true;
+		iNode->nUsedKeys = 0;
+		memset(iNode->keys, 0, NUM_KEYS * sizeof(int));
+		memset(iNode->children, 0, NUM_CHILDREN * sizeof(fileOffset_t));
+
+		// Fill index node with children, updating keys
+		for (int i = 0; i < NUM_CHILDREN; i++) {
+
+			if (blockIdx >= header->nDataBlocks) {
+				break;
+			}
+
+			// Add child data block to index node
+			iNode->children[i] = blockIdx * sizeof(dataBlock);
+
+			// Add key to index node
+			if (i > 0) {
+				iNode->nUsedKeys += 1;
+				int dataIdx = (blockIdx * DATABLOCK_CAPACITY) - 1;
+				iNode->keys[i - 1] = data[dataIdx];
+			}
+
+			blockIdx += 1;
+		}
+
+		// Write out filled index node
+		if (indexNodeWrite(header->indexFp, iNode, err)) {
+			ERROR(err, E_CORRUPT);
+			goto cleanupNode;
+		}
+
+		nIndexNodes += 1;
+	}
+
+
+	// Update header index information
+	header->nNodes = nIndexNodes;
+	header->fileIndexSizeBytes = nIndexNodes * sizeof(indexNode);
+	header->rootIndexNode = 0;
+
 	return 0;
 
+cleanupNode:
+	indexNodeDestroy(iNode);
+	goto exit;
 cleanupBlocks:
 	dataBlockDestroy(workingBlock);
 	dataBlockDestroy(waitingBlock);
