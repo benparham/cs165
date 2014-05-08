@@ -126,6 +126,29 @@ int dataSend(int socketFD, char *msgStr, int dataBytes, void *data) {
 		goto cleanupSerial;
 	}
 
+	// Wait until receiver is ready for data (handshake)
+	char *response = (char *) malloc(BUFSIZE);
+	int responseBytes;
+	void *responseData;
+	int isTerm;
+	if (messageReceive(socketFD, response, &dataBytes, &responseData, &isTerm)) {
+		goto cleanupSerial;
+	}
+
+	if (responseBytes > 0) {
+		free(response);
+		free(responseData);
+		printf("Handshaking error, handshake had data.\n");
+		goto cleanupSerial;
+	}
+	if (strcmp(response, "Ready") != 0) {
+		free(response);
+		free(responseData);
+		printf("Handshaking error, handshake message incorrect.\n");
+		goto cleanupSerial;
+	}
+	free(response);
+
 	// Send serialized data
 	send(socketFD, slzr->serial, slzr->serialSizeBytes, 0);
 
@@ -227,6 +250,11 @@ int messageReceive(int socketFD, char *msgStr, int *dataBytes, void **data, int 
 
 	// Receive data if data flag is set in message
 	if (msg->hasData) {
+
+		if (messageSend(socketFD, "Ready")) {
+			goto cleanupSerial;
+		}
+
 		if (dataReceive(socketFD, dataBytes, data, term)) {
 			goto cleanupSerial;
 		}

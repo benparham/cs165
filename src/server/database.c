@@ -644,8 +644,11 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 		}
 	} else if (type == VAR_RESULTS) {
 		resultBytes = ((fetchResults *) payload)->sizeBytes;
+		// results = ((fetchResults *) payload)->results;
 		results = (int *) malloc(resultBytes);
 		memcpy(results, ((fetchResults *) payload)->results, resultBytes);
+
+
 
 		if (resultBytes == 0) {
 			free(results);

@@ -26,7 +26,7 @@ void responseWipe(response *res) {
 	res->dataBytes = -1;
 	
 	if (res->message != NULL) {
-		// free(res->message);
+		free(res->message);
 		res->message = NULL;
 	}
 
@@ -61,8 +61,26 @@ void recordResponse(response *res, char *message, unsigned int dataBytes, void *
 	}
 
 	res->dataBytes = dataBytes;
-	res->message = message;
+	// res->message = message;
 	res->data = data;
+
+	res->message = (char *) malloc((strlen(message) + 1) * sizeof(char));
+	if (res->message == NULL) {
+		goto exit;
+	}
+	strcpy(res->message, message);
+
+	// res->data = malloc(dataBytes);
+	// if (res->data == NULL) {
+	// 	goto exit;
+	// }
+	// memcpy(res->data, data, dataBytes);
+
+	return;
+
+exit:
+	res->dataBytes = 0;
+	return;
 }
 
 // int handleResponse(response *res, char **message, int *dataBytes, void **data) {
