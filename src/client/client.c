@@ -18,11 +18,20 @@
 
 static int loadFromCsv(char *fileName, int socketFD) {
 
-	// Open file
-	FILE *fp = fopen(fileName, "r");
-	if (fp == NULL) {
-		printf("Could not open '%s'\n", fileName);
+	char *defaultParent = "scripts/p2/";
+	char *total = (char *) malloc((strlen(defaultParent) + strlen(fileName) + 1) * sizeof(char));
+	if (total == NULL) {
+		printf("No memory\n");
 		goto exit;
+	}
+	strcpy(total, defaultParent);
+	strcat(total, fileName);
+
+	// Open file
+	FILE *fp = fopen(total, "r");
+	if (fp == NULL) {
+		printf("Could not open '%s'\n", total);
+		goto cleanupTotal;
 	}
 
 	// Line buffer (can be resized by getline)
@@ -36,7 +45,7 @@ static int loadFromCsv(char *fileName, int socketFD) {
 	// Read in column names
 	int charsRead = getline(&line, &lineBytes, fp);
 	if (charsRead < 1) {
-		printf("Malformed data in file '%s'\n", fileName);
+		printf("Malformed data in file '%s'\n", total);
 		goto cleanupLine;
 	}
 
@@ -131,6 +140,8 @@ cleanupLine:
 	free(line);
 cleanupFile:
 	fclose(fp);
+cleanupTotal:
+	free(total);
 exit:
 	return 1;
 }
