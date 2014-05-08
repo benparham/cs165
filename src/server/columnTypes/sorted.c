@@ -484,8 +484,8 @@ int sortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err
 		return 1;
 	}
 
-	header->fileDataSizeBytes += dataBytes;
-	header->nEntries += (dataBytes / sizeof(int));
+	header->fileDataSizeBytes = dataBytes;
+	header->nEntries = (dataBytes / sizeof(int));
 
 	return 0;
 }

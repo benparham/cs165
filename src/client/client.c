@@ -152,6 +152,14 @@ static void getInput(int socketFD) {
 		printf(">: ");
 		fgets(input, MAX_INPUT, stdin);
 
+		if (strcmp(input, "") == 0) {
+			break;
+		}
+		if (strcmp(input, "\n") == 0) {
+			printf("\r");
+			continue;
+		}
+
 		// Display input if not in interactive mode
 		if (!inAtty) {
 			printf("%s", input);
@@ -271,6 +279,27 @@ int main(int argc, char *argv[]) {
 	if (messageSend(socketFD, defaultTable)) {
 		close(socketFD);
 		printf("Couldn't send message to use table %s\n", defaultTable);
+		return 1;
+	}
+	char *expected = "Success";
+	char *response = (char *) malloc((strlen(expected) + 1) * sizeof(char));
+	if (response == NULL) {
+		close(socketFD);
+		printf("Not memory\n");
+		return 1;
+	}
+	int dataBytes;
+	void *data;
+	int term;
+	if (messageReceive(socketFD, response, &dataBytes, &data, &term)) {
+		close(socketFD);
+		printf("Bad thing1\n");
+		return 1;
+	}
+	if (dataBytes > 0 || strcmp(response, expected) != 0) {
+		close(socketFD);
+		printf("Bad thing2\n");
+		return 1;
 	}
 
 	getInput(socketFD);

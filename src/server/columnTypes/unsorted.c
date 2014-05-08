@@ -221,8 +221,8 @@ int unsortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *e
 		return 1;
 	}
 
-	header->sizeBytes += dataBytes;
-	header->nEntries += (dataBytes / sizeof(int));
+	header->sizeBytes = dataBytes;
+	header->nEntries = (dataBytes / sizeof(int));
 
 	return 0;
 }

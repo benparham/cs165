@@ -290,6 +290,11 @@ const struct cmdParseItem cmdParseMap[] = {
 
 int parseCommand(char *buf, command *cmd, error *err) {
 
+	if (buf == NULL || strcmp(buf, "") == 0) {
+		ERROR(err, E_BADARG);
+		return 1;
+	}
+
 	// Check for user variable
 	char *varName = strtok(buf, "=");
 	char *newBuf = strtok(NULL, "\0");
@@ -319,5 +324,6 @@ int parseCommand(char *buf, command *cmd, error *err) {
 	}
 
 	ERROR(err, E_UNKCMD);
+	printf("Unknown command: %s\n", buf);
 	return 1;
 }
