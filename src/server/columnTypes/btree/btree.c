@@ -919,9 +919,44 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 		}
 	}
 
+	// Write out any blocks left hanging in memory
+	fileOffset_t newOffset = blockIdx * sizeof(dataBlock);
+
+	if (blockDataIdx == 0) {
+		// Make waiting block point to itself and write it out
+		waitingBlock->nextBlock = waitingBlock->offset;
+
+		if (dataBlockWrite(dataFp, waitingBlock, err)) {
+			ERROR(err, E_CORRUPT);
+			goto cleanupBlocks;
+		}
+	} else {
+		// Make both waiting and working blocks point to working block and write them out
+		waitingBlock->nextBlock = newOffset;
+		
+		workingBlock->offset = newOffset;
+		workingBlock->nextBlock = newOffset;
+		workingBlock->nUsedEntries = blockDataIdx;
+
+		if (dataBlockWrite(dataFp, waitingBlock, err) ||
+			dataBlockWrite(dataFp, workingBlock, err)) {
+			ERROR(err, E_CORRUPT);
+			goto cleanupBlocks;
+		}
+	}
+
 	// Cleanup blocks
 	dataBlockDestroy(workingBlock);
 	dataBlockDestroy(waitingBlock);
+
+	// Update header information
+	header->nEntries = nValues;
+	header->nDataBlocks = nValues / DATABLOCK_CAPACITY;
+	if (nValues % DATABLOCK_CAPACITY != 0) {
+		header->nDataBlocks += 1;
+	}
+	header->fileDataSizeBytes = header->nDataBlocks * sizeof(dataBlock);
+	header->firstDataBlock = 0;
 
 	return 0;
 

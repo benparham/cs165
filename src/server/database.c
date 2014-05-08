@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
-#include <assert.h>
 
 #include <database.h>
 #include <error.h>
@@ -460,7 +459,7 @@ static int dbLoad(tableInfo *tbl, loadArgs *args, int dataBytes, void *data, res
 
 	// Calculate number of rows based on size of data
 	int rowBytes = numColumns * sizeof(int);
-	assert(dataBytes % rowBytes == 0);
+	MY_ASSERT(dataBytes % rowBytes == 0);
 	int numRows = dataBytes / rowBytes;
 
 	printf("Num columns: %d\n", numColumns);
@@ -546,7 +545,7 @@ static int dbLoad(tableInfo *tbl, loadArgs *args, int dataBytes, void *data, res
 				goto cleanupColumnData;
 			}
 
-			assert(curColumn->storageType == COL_UNSORTED);
+			MY_ASSERT(curColumn->storageType == COL_UNSORTED);
 		}
 
 		for (int j = 0; j < numRows; j++) {
