@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-// #include <assert.h>
 
 #include <columnTypes/btree/btree.h>
 #include <columnTypes/btree/indexnode.h>
@@ -854,7 +853,82 @@ exit:
 }
 
 int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err) {
+	columnHeaderBtree *header = (columnHeaderBtree *) _header;
+
 	ERROR(err, E_UNIMP);
+	return 1;
+
+	printf("Loading btree column %s\n", header->name);
+
+	// Allocate waiting and working blocks in memory
+	dataBlock *workingBlock;
+	dataBlock *waitingBlock;
+	if (dataBlockCreate(&workingBlock, err)) {
+		goto exit;
+	}
+	if (dataBlockCreate(&waitingBlock, err)) {
+		dataBlockDestroy(workingBlock);
+		goto exit;
+	}
+
+
+	// Calculate number of data values
+	MY_ASSERT(dataBytes % sizeof(int) == 0);
+	int nValues = dataBytes / (sizeof(int));
+
+	// Write out data into data blocks on disk
+	bool firstBlock = true;
+	int blockIdx = 0;
+	int blockDataIdx = 0;
+	for (int i = 0; i < nValues; i++) {
+
+		// Add data into working block's data
+		workingBlock->data[blockDataIdx] = data[i];
+
+		blockDataIdx += 1;
+
+		// Once working block is filled to capacity...
+		if (blockDataIdx == DATABLOCK_CAPACITY) {
+			fileOffset_t newOffset = blockIdx * sizeof(dataBlock);
+
+			// Set the metadata for the working block
+			workingBlock->offset = newOffset;
+			workingBlock->nUsedEntries = DATABLOCK_CAPACITY;
+
+			if (firstBlock) {
+				firstBlock = false;
+			} else {
+				// Set the waiting block to point to working block
+				waitingBlock->nextBlock = newOffset;
+
+				// Write out the waiting block
+				if (dataBlockWrite(dataFp, waitingBlock, err)) {
+					ERROR(err, E_CORRUPT);
+					goto cleanupBlocks;
+				}
+			}
+
+			// Swap working and waiting blocks
+			dataBlock *temp = workingBlock;
+			workingBlock = waitingBlock;
+			waitingBlock = temp;
+
+			// Move to next block offset
+			blockIdx += 1;
+			blockDataIdx = 0;
+		}
+	}
+
+	// Cleanup blocks
+	dataBlockDestroy(workingBlock);
+	dataBlockDestroy(waitingBlock);
+
+	return 0;
+
+cleanupBlocks:
+	dataBlockDestroy(workingBlock);
+	dataBlockDestroy(waitingBlock);
+exit:
 	return 1;
 }
 
