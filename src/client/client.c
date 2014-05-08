@@ -15,10 +15,11 @@
 #define DEFAULT_TARGET_ADDRESS "127.0.0.1"
 #define MAX_INPUT 1024
 
+#define DEFAULT_SCRIPT_FOLDER 	"scripts/p2/"
 
 static int loadFromCsv(char *fileName, int socketFD) {
 
-	char *defaultParent = "scripts/misc/";
+	char *defaultParent = DEFAULT_SCRIPT_FOLDER;
 	char *total = (char *) malloc((strlen(defaultParent) + strlen(fileName) + 1) * sizeof(char));
 	if (total == NULL) {
 		printf("No memory\n");
