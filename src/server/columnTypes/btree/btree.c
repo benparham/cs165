@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include <columnTypes/btree/btree.h>
 #include <columnTypes/btree/indexnode.h>
@@ -1055,7 +1056,7 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 	blockIdx = 0;
 	while(blockIdx < header->nDataBlocks) {
 		
-		// Set offset to write to in index file
+		// Re-initialize index node for writing
 		iNode->offset = nIndexNodes * sizeof(indexNode);
 		iNode->isTerminal = true;
 		iNode->nUsedKeys = 0;
@@ -1091,11 +1092,76 @@ int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err)
 		nIndexNodes += 1;
 	}
 
+	// Write out remaining levels of index nodes
+	int totalIndexNodes = nIndexNodes;
+
+	int iNodeLvl = 2;
+	fileOffset_t oldLvlOffset = 0;								// Offset of first index node of previous level
+	fileOffset_t nodeOffset = nIndexNodes * sizeof(indexNode);	// Offset to write next index node to
+
+	while(nIndexNodes > 1) {
+
+		int nodeIdx = 0;		// Index of current previous level index node
+		int nIndexNodesNew = 0;	// Count of current level nodes (nIndexNodes is previous level's count)
+
+		// Iterate over all index nodes of previous level
+		while(nodeIdx < nIndexNodes) {
+			
+			// Re-initialize index node for writing
+			iNode->offset = nodeOffset;
+			iNode->isTerminal = false;
+			iNode->nUsedKeys = 0;
+			memset(iNode->keys, 0, NUM_KEYS * sizeof(int));
+			memset(iNode->children, 0, NUM_CHILDREN * sizeof(fileOffset_t));
+
+			// Fill index node with children, updating keys
+			for (int i = 0; i < NUM_CHILDREN; i++) {
+
+				if (nodeIdx >= nIndexNodes) {
+					break;
+				}
+
+				// Add child node to index node
+				iNode->children[i] = oldLvlOffset + (nodeIdx * sizeof(indexNode));
+
+				// Add key to index node
+				if (i > 0) {
+					iNode->nUsedKeys += 1;
+
+					int entriesPerChildNode = pow(NUM_CHILDREN, iNodeLvl - 1) * DATABLOCK_CAPACITY;
+					int dataIdx = (nodeIdx * entriesPerChildNode) - 1;
+					iNode->keys[i - 1] = data[dataIdx];
+				}
+
+				nodeIdx += 1;
+			}
+
+			// Write out filled index node
+			if (indexNodeWrite(header->indexFp, iNode, err)) {
+				ERROR(err, E_CORRUPT);
+				goto cleanupNode;
+			}
+
+			nIndexNodesNew += 1;
+
+			nodeOffset += sizeof(indexNode);
+		}
+
+		iNodeLvl += 1;
+
+		nIndexNodes = nIndexNodesNew;
+		totalIndexNodes += nIndexNodes;
+	}
+
 
 	// Update header index information
-	header->nNodes = nIndexNodes;
-	header->fileIndexSizeBytes = nIndexNodes * sizeof(indexNode);
-	header->rootIndexNode = 0;
+	header->nNodes = totalIndexNodes;
+	header->fileIndexSizeBytes = totalIndexNodes * sizeof(indexNode);
+	header->rootIndexNode = iNode->offset;
+
+
+	// Cleanup node
+	indexNodeDestroy(iNode);
 
 	return 0;
 

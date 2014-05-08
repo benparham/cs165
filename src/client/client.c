@@ -18,7 +18,7 @@
 
 static int loadFromCsv(char *fileName, int socketFD) {
 
-	char *defaultParent = "scripts/p2/";
+	char *defaultParent = "scripts/misc/";
 	char *total = (char *) malloc((strlen(defaultParent) + strlen(fileName) + 1) * sizeof(char));
 	if (total == NULL) {
 		printf("No memory\n");
