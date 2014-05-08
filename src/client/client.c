@@ -18,7 +18,7 @@
 
 static int loadFromCsv(char *fileName, int socketFD) {
 
-	char *defaultParent = "scripts/misc/";
+	char *defaultParent = "scripts/p2/";
 	char *total = (char *) malloc((strlen(defaultParent) + strlen(fileName) + 1) * sizeof(char));
 	if (total == NULL) {
 		printf("No memory\n");
@@ -160,7 +160,9 @@ static void getInput(int socketFD) {
 		memset(response, 0, sizeof(response));
 		
 		// Prompt/get input
-		printf(">: ");
+		if (inAtty) {
+			printf(">: ");
+		}
 		fgets(input, MAX_INPUT, stdin);
 
 		if (strcmp(input, "") == 0) {
@@ -172,9 +174,9 @@ static void getInput(int socketFD) {
 		}
 
 		// Display input if not in interactive mode
-		if (!inAtty) {
-			printf("%s", input);
-		}
+		// if (!inAtty) {
+		// 	printf("%s", input);
+		// }
 
 		int skipReceive = 0;
 
@@ -206,13 +208,19 @@ static void getInput(int socketFD) {
 				}
 			}
 
-			printf("->: %s\n", response);
+			// If not in interactive mode, just print data results
+			if (inAtty) {
+				printf("->: %s\n", response);
+			}
 
 			if (dataBytes > 0) {
 				
 				assert(dataBytes % sizeof(int) == 0);
 				int nEntries = dataBytes / sizeof(int);
 
+				if (!inAtty) {
+					printf("%s", response);
+				}
 				printf("->: [");
 
 				for (int i = 0; i < nEntries; i++) {

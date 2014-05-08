@@ -26,6 +26,10 @@ const char *CMD_NAMES[] = {
 	"sum",
 	"average",
 	"count",
+	"add",
+	"subtract",
+	"multiply",
+	"divide",
 	"exit"
 };
 
@@ -140,7 +144,6 @@ int setArgsSelectArgs(command *cmd, char *args, char *varName) {
 }
 
 int setArgsFetchArgs(command *cmd, char *args, char *newVarName) {
-	(void) newVarName;
 
 	char *columnName = strtok(args, ",");
 	char *oldVarName = strtok(NULL, "\n");
@@ -218,6 +221,28 @@ cleanupArgs:
 	return 1;
 }
 
+int setArgsMathArgs(command *cmd, char *args, char *ignore) {
+
+	char *var1 = strtok(args, ",");
+	char *var2 = strtok(NULL, "\n");
+
+	if (var1 == NULL || var2 == NULL) {
+		return 1;
+	}
+
+	mathArgs *mthArgs = (mathArgs *) malloc(sizeof(mathArgs));
+	if (mthArgs == NULL) {
+		return 1;
+	}
+
+	strcpy(mthArgs->var1, var1);
+	strcpy(mthArgs->var2, var2);
+
+	cmd->args = mthArgs;
+
+	return 0;
+}
+
 void destroyLoadArgs(loadArgs *ldArgs) {
 	int length = sizeof(ldArgs->columnNames) / sizeof(ldArgs->columnNames[0]);
 
@@ -284,6 +309,10 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"sum(", ")", CMD_SUM, &setArgsString},
 	{"avg(", ")", CMD_AVG, &setArgsString},
 	{"count(", ")", CMD_CNT, &setArgsString},
+	{"add(", ")", CMD_ADD, &setArgsMathArgs},
+	{"sub(", ")", CMD_SUB, &setArgsMathArgs},
+	{"mul(", ")", CMD_MUL, &setArgsMathArgs},
+	{"div(", ")", CMD_DIV, &setArgsMathArgs},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
 	{NULL, NULL, 0, NULL}
 };

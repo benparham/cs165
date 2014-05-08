@@ -667,7 +667,7 @@ exit:
 	return 1;
 }
 
-static int aggObtainResults(char *varName, fetchResults **fResults, error *err) {
+static int obtainResults(char *varName, fetchResults **fResults, error *err) {
 
 	if (varName == NULL) {
 		ERROR(err, E_BADARG);
@@ -696,7 +696,7 @@ exit:
 static int dbMinimum(char *varName, response *res, error *err) {
 	
 	fetchResults *fResults;
-	if (aggObtainResults(varName, &fResults, err)) {
+	if (obtainResults(varName, &fResults, err)) {
 		goto exit;
 	}
 
@@ -732,7 +732,7 @@ exit:
 
 static int dbMaximum(char * varName, response *res, error *err) {
 	fetchResults *fResults;
-	if (aggObtainResults(varName, &fResults, err)) {
+	if (obtainResults(varName, &fResults, err)) {
 		goto exit;
 	}
 
@@ -768,7 +768,7 @@ exit:
 
 static int dbSum(char * varName, response *res, error *err) {
 	fetchResults *fResults;
-	if (aggObtainResults(varName, &fResults, err)) {
+	if (obtainResults(varName, &fResults, err)) {
 		goto exit;
 	}
 
@@ -802,7 +802,7 @@ exit:
 
 static int dbAverage(char * varName, response *res, error *err) {
 	fetchResults *fResults;
-	if (aggObtainResults(varName, &fResults, err)) {
+	if (obtainResults(varName, &fResults, err)) {
 		goto exit;
 	}
 
@@ -837,7 +837,7 @@ exit:
 
 static int dbCount(char * varName, response *res, error *err) {
 	fetchResults *fResults;
-	if (aggObtainResults(varName, &fResults, err)) {
+	if (obtainResults(varName, &fResults, err)) {
 		goto exit;
 	}
 
@@ -859,6 +859,186 @@ static int dbCount(char * varName, response *res, error *err) {
 	*count = nResults;
 
 	RESPONSE(res, "Maximum result:", resultBytes, count);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+static int dbAdd(mathArgs *args, response *res, error *err) {
+	char *var1 = args->var1;
+	char *var2 = args->var2;
+
+	if (var1 == NULL || var2 == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	fetchResults *fResults1;
+	fetchResults *fResults2;
+
+	if (obtainResults(var1, &fResults1, err) || obtainResults(var2, &fResults2, err)) {
+		goto exit;
+	}
+
+	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
+			  fResults2->sizeBytes % sizeof(int) == 0);
+	int nResults1 = fResults1->sizeBytes / sizeof(int);
+	int nResults2 = fResults2->sizeBytes / sizeof(int);
+
+	if (nResults1 == 0 || nResults1 != nResults2) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = nResults1 * sizeof(int);
+	int *results = (int *) malloc(resultBytes);
+	if (results == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	for (int i = 0; i < nResults1; i++) {
+		results[i] = fResults1->results[i] + fResults2->results[i];
+	}
+
+	RESPONSE(res, "Add results:", resultBytes, results);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+static int dbSubtract(mathArgs *args, response *res, error *err) {
+	char *var1 = args->var1;
+	char *var2 = args->var2;
+
+	if (var1 == NULL || var2 == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	fetchResults *fResults1;
+	fetchResults *fResults2;
+
+	if (obtainResults(var1, &fResults1, err) || obtainResults(var2, &fResults2, err)) {
+		goto exit;
+	}
+
+	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
+			  fResults2->sizeBytes % sizeof(int) == 0);
+	int nResults1 = fResults1->sizeBytes / sizeof(int);
+	int nResults2 = fResults2->sizeBytes / sizeof(int);
+
+	if (nResults1 == 0 || nResults1 != nResults2) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = nResults1 * sizeof(int);
+	int *results = (int *) malloc(resultBytes);
+	if (results == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	for (int i = 0; i < nResults1; i++) {
+		results[i] = fResults1->results[i] - fResults2->results[i];
+	}
+
+	RESPONSE(res, "Add results:", resultBytes, results);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+static int dbMultiply(mathArgs *args, response *res, error *err) {
+	char *var1 = args->var1;
+	char *var2 = args->var2;
+
+	if (var1 == NULL || var2 == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	fetchResults *fResults1;
+	fetchResults *fResults2;
+
+	if (obtainResults(var1, &fResults1, err) || obtainResults(var2, &fResults2, err)) {
+		goto exit;
+	}
+
+	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
+			  fResults2->sizeBytes % sizeof(int) == 0);
+	int nResults1 = fResults1->sizeBytes / sizeof(int);
+	int nResults2 = fResults2->sizeBytes / sizeof(int);
+
+	if (nResults1 == 0 || nResults1 != nResults2) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = nResults1 * sizeof(int);
+	int *results = (int *) malloc(resultBytes);
+	if (results == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	for (int i = 0; i < nResults1; i++) {
+		results[i] = fResults1->results[i] * fResults2->results[i];
+	}
+
+	RESPONSE(res, "Add results:", resultBytes, results);
+
+	return 0;
+
+exit:
+	return 1;
+}
+
+static int dbDivide(mathArgs *args, response *res, error *err) {
+	char *var1 = args->var1;
+	char *var2 = args->var2;
+
+	if (var1 == NULL || var2 == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	fetchResults *fResults1;
+	fetchResults *fResults2;
+
+	if (obtainResults(var1, &fResults1, err) || obtainResults(var2, &fResults2, err)) {
+		goto exit;
+	}
+
+	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
+			  fResults2->sizeBytes % sizeof(int) == 0);
+	int nResults1 = fResults1->sizeBytes / sizeof(int);
+	int nResults2 = fResults2->sizeBytes / sizeof(int);
+
+	if (nResults1 == 0 || nResults1 != nResults2) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = nResults1 * sizeof(int);
+	int *results = (int *) malloc(resultBytes);
+	if (results == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	for (int i = 0; i < nResults1; i++) {
+		results[i] = fResults1->results[i] / fResults2->results[i];
+	}
+
+	RESPONSE(res, "Add results:", resultBytes, results);
 
 	return 0;
 
@@ -940,7 +1120,19 @@ int executeCommand(connection *con) {
 			break;
 		case CMD_CNT:
 			result = dbCount((char *) cmd->args, res, err);
-			break;	
+			break;
+		case CMD_ADD:
+			result = dbAdd((mathArgs *) cmd->args, res, err);
+			break;
+		case CMD_SUB:
+			result = dbSubtract((mathArgs *) cmd->args, res, err);
+			break;
+		case CMD_MUL:
+			result = dbMultiply((mathArgs *) cmd->args, res, err);
+			break;
+		case CMD_DIV:
+			result = dbDivide((mathArgs *) cmd->args, res, err);
+			break;
 		case CMD_EXIT:
 			ERROR(err, E_EXIT);
 			result = 1;

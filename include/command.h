@@ -36,6 +36,12 @@ typedef enum {
 	CMD_SUM,
 	CMD_AVG,
 	CMD_CNT,
+
+	// Math
+	CMD_ADD,
+	CMD_SUB,
+	CMD_MUL,
+	CMD_DIV,
 	
 	CMD_EXIT					// End session
 } CMD;
@@ -77,6 +83,11 @@ typedef struct loadArgs {
 	int numColumns;
 	char **columnNames;
 } loadArgs;
+
+typedef struct mathArgs {
+	char var1[BUFSIZE];
+	char var2[BUFSIZE];
+} mathArgs;
 
 command* createCommand();
 void destroyCommandArgs(command *cmd);
