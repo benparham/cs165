@@ -76,7 +76,7 @@ static int messageSendDataFlag(int socketFD, char *msgStr, int hasData) {
 
 	// Initialize
 	msg->hasData = hasData;
-	msg->msgStr = (char *) malloc(strlen(msgStr) * sizeof(char));
+	msg->msgStr = (char *) malloc((strlen(msgStr) + 1) * sizeof(char));
 	strcpy(msg->msgStr, msgStr);
 
 	// Create serializer

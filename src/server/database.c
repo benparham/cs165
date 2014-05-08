@@ -626,6 +626,9 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 	if (type == VAR_BMP) {
 		struct bitmap *bmp = (struct bitmap *) payload;
 
+		printf("Bitmap result: \n");
+		bitmapPrint(bmp);
+
 		int bmpSize = bitmapSize(bmp);
 
 		resultBytes = bmpSize * sizeof(int);

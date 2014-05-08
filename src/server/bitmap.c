@@ -106,7 +106,7 @@ void bitmapPrint(struct bitmap *bmp) {
 	int size = bitmapSize(bmp);
 	printf("Size: %d\n", size);
 	printf("Words: %d\n", bmp->nWords);
-	printf("Map:\n[");
+	printf("Map:\n");
 	printf("%s\n", bmpStr);
 	// for (int i = 0; i < size; i++) {
 	// 	printf("%d", bitmapIsSet(bmp, i) ? 1 : 0);
