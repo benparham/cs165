@@ -40,7 +40,7 @@ int btreeInsert(void *_header, FILE *dataFp, int data, error *err);
 int btreeSelectAll(void *_header, FILE *dataFp, struct bitmap **bmp, error *err);
 int btreeSelectValue(void *_header, FILE *dataFp, int value, struct bitmap **bmp, error *err);
 int btreeSelectRange(void *_header, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
-int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err);
 int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err);
 void btreePrintData(void *_header, FILE *dataFp);
 

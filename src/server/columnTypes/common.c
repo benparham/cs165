@@ -31,7 +31,7 @@ int seekHeader(FILE *headerFp, error *err) {
 
 
 
-int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err) {
 
 	// Seek to beginning of file
 	if (fseek(dataFp, 0, SEEK_SET) == -1) {
@@ -40,6 +40,7 @@ int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **result
 	}
 
 	int resultBuf[BUFSIZE];
+	int indexBuf[BUFSIZE];
 	int resultOffset = 0;
 
 	int length = bitmapSize(bmp);
@@ -57,6 +58,7 @@ int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **result
 			}
 
 			resultBuf[resultOffset] = entry;
+			indexBuf[resultOffset] = i;
 			resultOffset += 1;
 
 		} else {
@@ -70,11 +72,18 @@ int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **result
 	*resultBytes = resultOffset * sizeof(int);
 
 	*results = (int *) malloc(*resultBytes);
+	*indices = (int *) malloc(*resultBytes);
 	if (*results == NULL) {
 		ERROR(err, E_NOMEM);
 		return 1;
 	}
+	if (*indices == NULL) {
+		free(*results);
+		ERROR(err, E_NOMEM);
+		return 1;
+	}
 	memcpy(*results, resultBuf, *resultBytes);
+	memcpy(*indices, indexBuf, *resultBytes);
 	
 	return 0;
 }

@@ -205,13 +205,13 @@ int unsortedSelectRange(void *_header, FILE *dataFp, int low, int high, struct b
 	return 0;
 }
 
-int unsortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+int unsortedFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err) {
 	if (bitmapSize(bmp) != ((columnHeaderUnsorted *) _header)->nEntries) {
 		ERROR(err, E_BADFTC);
 		return 1;
 	}
 
-	return commonFetch(dataFp, bmp, resultBytes, results, err);
+	return commonFetch(dataFp, bmp, resultBytes, results, indices, err);
 }
 
 int unsortedLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err) {

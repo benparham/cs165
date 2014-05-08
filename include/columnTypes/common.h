@@ -28,7 +28,7 @@ typedef struct columnFunctions {
 	int  (* selectAll) 	 (void *columnHeader, FILE *dataFp, struct bitmap **bmp, error *err);
 	int  (* selectValue) (void *columnHeader, FILE *dataFp, int value, struct bitmap **bmp, error *err);
 	int  (* selectRange) (void *columnHeader, FILE *dataFp, int low, int high, struct bitmap **bmp, error *err);
-	int  (* fetch) 		 (void *columnHeader, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+	int  (* fetch) 		 (void *columnHeader, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err);
 	int  (* load) 		 (void *columnHeader, FILE *dataFp, int dataBytes, int *data, error *err);
 	void (* printData)	 (void *columnHeader, FILE *dataFP);
 
@@ -36,7 +36,7 @@ typedef struct columnFunctions {
 
 int seekHeader(FILE *headerFp, error *err);
 
-int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err);
+int commonFetch(FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err);
 int commonLoad(FILE *dataFp, int dataBytes, int *data, error *err);
 
 #endif

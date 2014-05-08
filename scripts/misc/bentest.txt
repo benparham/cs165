@@ -1,9 +1,7 @@
-remove table test
-create table test
-use test
-create(testCol,unsorted)
-create(testCol2,sorted)
-create(testCol3,btree)
+remove(testCol)
+remove(testCol2)
+create(testCol,"b+tree")
+create(testCol2,"unsorted")
 insert(testCol,3)
 insert(testCol,6)
 insert(testCol,7)
@@ -14,6 +12,16 @@ insert(testCol,4)
 insert(testCol2,4)
 insert(testCol2,7)
 insert(testCol2,5)
+insert(testCol2,8)
+insert(testCol2,9)
 inter=select(testCol)
-fetch(testCol,inter)
-exit
+inter2=select(testCol2)
+res=fetch(testCol,inter)
+res2=fetch(testCol2,inter2)
+print var res
+print var res2
+final,final2=loopjoin(res,res2)
+print var final
+print var final2
+fetch(testCol,final)
+fetch(testCol2,final2)

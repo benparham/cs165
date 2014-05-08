@@ -30,6 +30,7 @@ const char *CMD_NAMES[] = {
 	"subtract",
 	"multiply",
 	"divide",
+	"loop join",
 	"exit"
 };
 
@@ -243,6 +244,34 @@ int setArgsMathArgs(command *cmd, char *args, char *ignore) {
 	return 0;
 }
 
+int setArgsJoinArgs(command *cmd, char *args, char *newVarNames) {
+	char *oldVar1 = strtok(args, ",");
+	char *oldVar2 = strtok(NULL, "\n");
+
+	char *newVar1 = strtok(newVarNames, ",");
+	char *newVar2 = strtok(NULL, "\n");
+
+	if (oldVar1 == NULL || oldVar2 == NULL ||
+		newVar1 == NULL || newVar2 == NULL) {
+		return 1;
+	}
+
+	joinArgs *jnArgs = (joinArgs *) malloc(sizeof(joinArgs));
+	if (jnArgs == NULL) {
+		return 1;
+	}
+
+	strcpy(jnArgs->oldVar1, oldVar1);
+	strcpy(jnArgs->oldVar2, oldVar2);
+
+	strcpy(jnArgs->newVar1, newVar1);
+	strcpy(jnArgs->newVar2, newVar2);
+
+	cmd->args = jnArgs;
+
+	return 0;
+}
+
 void destroyLoadArgs(loadArgs *ldArgs) {
 	int length = sizeof(ldArgs->columnNames) / sizeof(ldArgs->columnNames[0]);
 
@@ -313,6 +342,7 @@ const struct cmdParseItem cmdParseMap[] = {
 	{"sub(", ")", CMD_SUB, &setArgsMathArgs},
 	{"mul(", ")", CMD_MUL, &setArgsMathArgs},
 	{"div(", ")", CMD_DIV, &setArgsMathArgs},
+	{"loopjoin(", ")", CMD_LOOPJOIN, &setArgsJoinArgs},
 	{"exit", "\n", CMD_EXIT, &setArgsNull},
 	{NULL, NULL, 0, NULL}
 };

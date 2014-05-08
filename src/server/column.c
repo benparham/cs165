@@ -195,8 +195,8 @@ int columnSelectValue(column *col, int value, struct bitmap **bmp, error *err) {
 int columnSelectRange(column *col, int low, int high, struct bitmap **bmp, error *err) {
 	return col->funcs->selectRange(col->columnHeader, col->dataFp, low, high, bmp, err);
 }
-int columnFetch(column *col, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
-	return col->funcs->fetch(col->columnHeader, col->dataFp, bmp, resultBytes, results, err);
+int columnFetch(column *col, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err) {
+	return col->funcs->fetch(col->columnHeader, col->dataFp, bmp, resultBytes, results, indices, err);
 }
 int columnLoad(column *col, int dataBytes, int *data, error *err) {
 	if (col->funcs->load(col->columnHeader, col->dataFp, dataBytes, data, err)) {

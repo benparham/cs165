@@ -42,6 +42,9 @@ typedef enum {
 	CMD_SUB,
 	CMD_MUL,
 	CMD_DIV,
+
+	// Joins
+	CMD_LOOPJOIN,
 	
 	CMD_EXIT					// End session
 } CMD;
@@ -88,6 +91,14 @@ typedef struct mathArgs {
 	char var1[BUFSIZE];
 	char var2[BUFSIZE];
 } mathArgs;
+
+typedef struct joinArgs {
+	char oldVar1[BUFSIZE];
+	char oldVar2[BUFSIZE];
+
+	char newVar1[BUFSIZE];
+	char newVar2[BUFSIZE];
+} joinArgs;
 
 command* createCommand();
 void destroyCommandArgs(command *cmd);

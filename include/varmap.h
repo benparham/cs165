@@ -11,9 +11,16 @@ typedef enum {
 	VAR_RESULTS
 } VAR_TYPE;
 
+// typedef struct fetchResults {
+// 	int sizeBytes;
+// 	int *results;
+// } fetchResults;
+
 typedef struct fetchResults {
-	int sizeBytes;
+	int nColumnEntries;
+	int nResultEntries;
 	int *results;
+	int *indices;
 } fetchResults;
 
 typedef struct varMapNode {

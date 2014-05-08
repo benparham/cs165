@@ -848,7 +848,7 @@ exit:
 	return 1;
 }
 
-int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, error *err) {
+int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes, int **results, int **indices, error *err) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
 	// Check that bitmap is correct size
@@ -865,6 +865,7 @@ int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes
 
 
 	int resultBuf[BUFSIZE];
+	int indexBuf[BUFSIZE];
 	int resultIdx = 0;
 
 	int bmpSize = bitmapSize(bmp);
@@ -882,6 +883,7 @@ int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes
 			MY_ASSERT(bmpIdx < bmpSize);
 			if (bitmapIsSet(bmp, bmpIdx)) {
 				resultBuf[resultIdx] = dBlock->data[i];
+				indexBuf[resultIdx] = bmpIdx;
 				resultIdx += 1;
 			}
 
@@ -919,11 +921,18 @@ int btreeFetch(void *_header, FILE *dataFp, struct bitmap *bmp, int *resultBytes
 	*resultBytes = resultIdx * sizeof(int);
 
 	*results = (int *) malloc(*resultBytes);
+	*indices = (int *) malloc(*resultBytes);
 	if (*results == NULL) {
 		ERROR(err, E_NOMEM);
 		goto cleanupBlock;
 	}
+	if (*indices == NULL) {
+		free(*results);
+		ERROR(err, E_NOMEM);
+		goto cleanupBlock;
+	}
 	memcpy(*results, resultBuf, *resultBytes);
+	memcpy(*indices, indexBuf, *resultBytes);
 
 	// Cleanup
 	dataBlockDestroy(dBlock);

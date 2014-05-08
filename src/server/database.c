@@ -389,7 +389,8 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 	// Fetch the results
 	int resultBytes;
 	int *results;
-	if (columnFetch(col, bmp, &resultBytes, &results, err)) {
+	int *indices;
+	if (columnFetch(col, bmp, &resultBytes, &results, &indices, err)) {
 		goto cleanupColumn;
 	}
 
@@ -409,6 +410,8 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 			results = NULL;
 		}
 		RESPONSE(res, "Fetch results:", resultBytes, results);
+
+		free(indices);
 	}
 
 	// Otherwise, store data in variable
@@ -421,10 +424,14 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 			goto cleanupColumn;
 		}
 
-		fResults->sizeBytes = resultBytes;
+		fResults->nColumnEntries = bitmapSize(bmp);
+		fResults->nResultEntries = resultBytes / sizeof(int);
 		fResults->results = results;
+		fResults->indices = indices;
 
 		if (varMapAddVar(newVarName, VAR_RESULTS, fResults, err)) {
+			free(results);
+			free(indices);
 			free(fResults);
 			goto cleanupColumn;
 		}
@@ -432,9 +439,15 @@ static int dbFetch(tableInfo *tbl, fetchArgs *args, response *res, error *err) {
 		printf("Added variable '%s'\n", newVarName);
 		RESPONSE_SUCCESS(res);
 	}
+
+	// Cleanup
+	columnDestroy(col);
 	
 	return 0;
 
+// cleanupResults:
+// 	free(results);
+// 	free(indices);
 cleanupColumn:
 	columnDestroy(col);
 exit:
@@ -643,11 +656,11 @@ static int dbPrintVar(char *varName, response *res, error *err) {
 			}
 		}
 	} else if (type == VAR_RESULTS) {
-		resultBytes = ((fetchResults *) payload)->sizeBytes;
-		// results = ((fetchResults *) payload)->results;
-		results = (int *) malloc(resultBytes);
-		memcpy(results, ((fetchResults *) payload)->results, resultBytes);
+		fetchResults *fResults = (fetchResults *) payload;
 
+		resultBytes = fResults->nResultEntries * sizeof(int);
+		results = (int *) malloc(resultBytes);
+		memcpy(results, fResults->results, resultBytes);
 
 
 		if (resultBytes == 0) {
@@ -700,8 +713,7 @@ static int dbMinimum(char *varName, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
-	int nResults = fResults->sizeBytes / sizeof(int);
+	int nResults = fResults->nResultEntries;
 
 	if (nResults == 0) {
 		ERROR(err, E_VAREMT);
@@ -736,8 +748,7 @@ static int dbMaximum(char * varName, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
-	int nResults = fResults->sizeBytes / sizeof(int);
+	int nResults = fResults->nResultEntries;
 
 	if (nResults == 0) {
 		ERROR(err, E_VAREMT);
@@ -772,8 +783,7 @@ static int dbSum(char * varName, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
-	int nResults = fResults->sizeBytes / sizeof(int);
+	int nResults = fResults->nResultEntries;
 
 	if (nResults == 0) {
 		ERROR(err, E_VAREMT);
@@ -806,8 +816,7 @@ static int dbAverage(char * varName, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
-	int nResults = fResults->sizeBytes / sizeof(int);
+	int nResults = fResults->nResultEntries;
 
 	if (nResults == 0) {
 		ERROR(err, E_VAREMT);
@@ -841,8 +850,7 @@ static int dbCount(char * varName, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
-	int nResults = fResults->sizeBytes / sizeof(int);
+	int nResults = fResults->nResultEntries;
 
 	if (nResults == 0) {
 		ERROR(err, E_VAREMT);
@@ -882,10 +890,8 @@ static int dbAdd(mathArgs *args, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
-			  fResults2->sizeBytes % sizeof(int) == 0);
-	int nResults1 = fResults1->sizeBytes / sizeof(int);
-	int nResults2 = fResults2->sizeBytes / sizeof(int);
+	int nResults1 = fResults1->nResultEntries;
+	int nResults2 = fResults2->nResultEntries;
 
 	if (nResults1 == 0 || nResults1 != nResults2) {
 		ERROR(err, E_VAREMT);
@@ -927,10 +933,8 @@ static int dbSubtract(mathArgs *args, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
-			  fResults2->sizeBytes % sizeof(int) == 0);
-	int nResults1 = fResults1->sizeBytes / sizeof(int);
-	int nResults2 = fResults2->sizeBytes / sizeof(int);
+	int nResults1 = fResults1->nResultEntries;
+	int nResults2 = fResults2->nResultEntries;
 
 	if (nResults1 == 0 || nResults1 != nResults2) {
 		ERROR(err, E_VAREMT);
@@ -972,10 +976,8 @@ static int dbMultiply(mathArgs *args, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
-			  fResults2->sizeBytes % sizeof(int) == 0);
-	int nResults1 = fResults1->sizeBytes / sizeof(int);
-	int nResults2 = fResults2->sizeBytes / sizeof(int);
+	int nResults1 = fResults1->nResultEntries;
+	int nResults2 = fResults2->nResultEntries;
 
 	if (nResults1 == 0 || nResults1 != nResults2) {
 		ERROR(err, E_VAREMT);
@@ -1017,10 +1019,8 @@ static int dbDivide(mathArgs *args, response *res, error *err) {
 		goto exit;
 	}
 
-	MY_ASSERT(fResults1->sizeBytes % sizeof(int) == 0 &&
-			  fResults2->sizeBytes % sizeof(int) == 0);
-	int nResults1 = fResults1->sizeBytes / sizeof(int);
-	int nResults2 = fResults2->sizeBytes / sizeof(int);
+	int nResults1 = fResults1->nResultEntries;
+	int nResults2 = fResults2->nResultEntries;
 
 	if (nResults1 == 0 || nResults1 != nResults2) {
 		ERROR(err, E_VAREMT);
@@ -1042,6 +1042,106 @@ static int dbDivide(mathArgs *args, response *res, error *err) {
 
 	return 0;
 
+exit:
+	return 1;
+}
+
+static int dbLoopJoin(joinArgs *args, response *res, error *err) {
+	
+	char *oldVar1 = args->oldVar1;
+	char *oldVar2 = args->oldVar2;
+
+	char *newVar1 = args->newVar1;
+	char *newVar2 = args->newVar2;
+
+	if (oldVar1 == NULL || oldVar2 == NULL ||
+		newVar1 == NULL || newVar2 == NULL) {
+		ERROR(err, E_BADARG);
+		goto exit;
+	}
+
+	// Get the results from the old var names
+	fetchResults *fResults1;
+	fetchResults *fResults2;
+
+	if (obtainResults(oldVar1, &fResults1, err) || obtainResults(oldVar2, &fResults2, err)) {
+		goto exit;
+	}
+
+	int nResults1 = fResults1->nResultEntries;
+	int nResults2 = fResults2->nResultEntries;
+
+	if (nResults1 == 0 || nResults2 == 0) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	// Create bitmaps to store results of joins
+	struct bitmap *bmp1;
+	struct bitmap *bmp2;
+	if (bitmapCreate(fResults1->nColumnEntries, &bmp1, err)) {
+		goto exit;
+	}
+	if (bitmapCreate(fResults2->nColumnEntries, &bmp2, err)) {
+		bitmapDestroy(bmp1);
+		goto exit;
+	}
+
+	// Determine smaller and larger results
+	fetchResults *smallerFResults;
+	fetchResults *largerFResults;
+
+	struct bitmap *smallerBmp;
+	struct bitmap *largerBmp;
+
+	char *smallerNewVar;
+	char *largerNewVar;
+
+	if (nResults1 < nResults2) {
+		smallerFResults = fResults1;
+		smallerBmp = bmp1;
+		smallerNewVar = newVar1;
+
+		largerFResults = fResults2;
+		largerBmp = bmp2;
+		largerNewVar = newVar2;
+	} else {
+		smallerFResults = fResults2;
+		smallerBmp = bmp2;
+		smallerNewVar = newVar2;
+
+		largerFResults = fResults1;
+		largerBmp = bmp1;
+		largerNewVar = newVar1;
+	}
+
+	// Loop and fill bitmaps
+	for (int i = 0; i < largerFResults->nResultEntries; i++) {
+		for (int j = 0; j < smallerFResults->nResultEntries; j++) {
+			if (largerFResults->results[i] == smallerFResults->results[j]) {
+				if (bitmapMark(largerBmp, largerFResults->indices[i], err) ||
+					bitmapMark(smallerBmp, smallerFResults->indices[j], err)) {
+					goto cleanupBitmaps;
+				}
+			}
+		}
+	}
+
+	// Add bitmaps to varmap using new var names
+	if (varMapAddVar(smallerNewVar, VAR_BMP, smallerBmp, err) ||
+		varMapAddVar(largerNewVar, VAR_BMP, largerBmp, err)) {
+		goto cleanupBitmaps;
+	}
+
+	printf("Added variables '%s' and '%s'\n", smallerNewVar, largerNewVar);
+
+	RESPONSE_SUCCESS(res);
+
+	return 0;
+
+cleanupBitmaps:
+	bitmapDestroy(bmp1);
+	bitmapDestroy(bmp2);
 exit:
 	return 1;
 }
@@ -1132,6 +1232,9 @@ int executeCommand(connection *con) {
 			break;
 		case CMD_DIV:
 			result = dbDivide((mathArgs *) cmd->args, res, err);
+			break;
+		case CMD_LOOPJOIN:
+			result = dbLoopJoin((joinArgs *) cmd->args, res, err);
 			break;
 		case CMD_EXIT:
 			ERROR(err, E_EXIT);
