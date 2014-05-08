@@ -719,7 +719,7 @@ static int dbMinimum(char *varName, response *res, error *err) {
 		}
 	}
 
-	RESPONSE(res, "Minimum result:", sizeof(int), minimum);
+	RESPONSE(res, "Minimum result:", resultBytes, minimum);
 
 	return 0;
 
@@ -755,7 +755,7 @@ static int dbMaximum(char * varName, response *res, error *err) {
 		}
 	}
 
-	RESPONSE(res, "Maximum result:", sizeof(int), maximum);
+	RESPONSE(res, "Maximum result:", resultBytes, maximum);
 
 	return 0;
 
@@ -764,29 +764,102 @@ exit:
 }
 
 static int dbSum(char * varName, response *res, error *err) {
-	(void) varName;
-	(void) res;
-	(void) err;
+	fetchResults *fResults;
+	if (aggObtainResults(varName, &fResults, err)) {
+		goto exit;
+	}
 
-	ERROR(err, E_UNIMP);
+	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
+	int nResults = fResults->sizeBytes / sizeof(int);
+
+	if (nResults == 0) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = sizeof(int);
+	int *sum = (int *) malloc(resultBytes);
+	if (sum == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	*sum = 0;
+	for (int i = 0; i < nResults; i++) {
+		*sum += fResults->results[i];
+	}
+
+	RESPONSE(res, "Maximum result:", resultBytes, sum);
+
+	return 0;
+
+exit:
 	return 1;
 }
 
 static int dbAverage(char * varName, response *res, error *err) {
-	(void) varName;
-	(void) res;
-	(void) err;
+	fetchResults *fResults;
+	if (aggObtainResults(varName, &fResults, err)) {
+		goto exit;
+	}
 
-	ERROR(err, E_UNIMP);
+	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
+	int nResults = fResults->sizeBytes / sizeof(int);
+
+	if (nResults == 0) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = sizeof(int);
+	int *average = (int *) malloc(resultBytes);
+	if (average == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	*average = 0;
+	for (int i = 0; i < nResults; i++) {
+		*average += fResults->results[i];
+	}
+	*average /= nResults;
+
+	RESPONSE(res, "Maximum result:", resultBytes, average);
+
+	return 0;
+
+exit:
 	return 1;
 }
 
 static int dbCount(char * varName, response *res, error *err) {
-	(void) varName;
-	(void) res;
-	(void) err;
+	fetchResults *fResults;
+	if (aggObtainResults(varName, &fResults, err)) {
+		goto exit;
+	}
 
-	ERROR(err, E_UNIMP);
+	MY_ASSERT(fResults->sizeBytes % sizeof(int) == 0);
+	int nResults = fResults->sizeBytes / sizeof(int);
+
+	if (nResults == 0) {
+		ERROR(err, E_VAREMT);
+		goto exit;
+	}
+
+	int resultBytes = sizeof(int);
+	int *count = (int *) malloc(resultBytes);
+	if (count == NULL) {
+		ERROR(err, E_NOMEM);
+		goto exit;
+	}
+
+	*count = nResults;
+
+	RESPONSE(res, "Maximum result:", resultBytes, count);
+
+	return 0;
+
+exit:
 	return 1;
 }
 
