@@ -159,10 +159,10 @@ static void getInput(int socketFD) {
 
 		int skipReceive = 0;
 
-		char *loadCommand = "load(";
+		char *loadCommand = "load(\"";
 		int loadCommandLen = strlen(loadCommand);
 		if (strncmp(input, loadCommand, loadCommandLen) == 0) {
-			skipReceive = loadFromCsv(strtok(&input[loadCommandLen], ")\n"), socketFD);
+			skipReceive = loadFromCsv(strtok(&input[loadCommandLen], "\")\n"), socketFD);
 		} else {
 			if (messageSend(socketFD, input)) {
 				printf("->: Error sending message\n");
@@ -266,6 +266,12 @@ int main(int argc, char *argv[]) {
 
 	printf("\n");
 
+	// Hack to always use table test
+	char *defaultTable = "use test";
+	if (messageSend(socketFD, defaultTable)) {
+		close(socketFD);
+		printf("Couldn't send message to use table %s\n", defaultTable);
+	}
 
 	getInput(socketFD);
 	

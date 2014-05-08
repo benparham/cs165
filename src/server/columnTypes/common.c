@@ -5,13 +5,13 @@
 int strToColStorage(char *str, COL_STORAGE_TYPE *type) {
 	int result = 1;
 
-	if (strcmp(str, "unsorted") == 0) {
+	if (strcmp(str, "\"unsorted\"") == 0) {
 		*type = COL_UNSORTED;
 		result = 0;
-	} else if (strcmp(str, "sorted") == 0) {
+	} else if (strcmp(str, "\"sorted\"") == 0) {
 		*type = COL_SORTED;
 		result = 0;
-	} else if (strcmp(str, "btree") == 0) {
+	} else if (strcmp(str, "\"b+tree\"") == 0) {
 		*type = COL_BTREE;
 		result = 0;
 	}

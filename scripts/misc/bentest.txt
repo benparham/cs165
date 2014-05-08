@@ -2,6 +2,8 @@ remove table test
 create table test
 use test
 create(testCol,unsorted)
+create(testCol2,sorted)
+create(testCol3,btree)
 insert(testCol,3)
 insert(testCol,6)
 insert(testCol,7)
@@ -9,6 +11,9 @@ insert(testCol,4)
 insert(testCol,2)
 insert(testCol,5)
 insert(testCol,4)
+insert(testCol2,4)
+insert(testCol2,7)
+insert(testCol2,5)
 inter=select(testCol)
 fetch(testCol,inter)
 exit

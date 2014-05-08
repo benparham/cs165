@@ -855,9 +855,6 @@ exit:
 int btreeLoad(void *_header, FILE *dataFp, int dataBytes, int *data, error *err) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
-	ERROR(err, E_UNIMP);
-	return 1;
-
 	printf("Loading btree column %s\n", header->name);
 
 	// Allocate waiting and working blocks in memory
@@ -970,18 +967,19 @@ exit:
 void btreePrintData(void *_header, FILE *dataFp) {
 	columnHeaderBtree *header = (columnHeaderBtree *) _header;
 
-	if (header->nNodes == 0 || header->nDataBlocks == 0) {
-		printf("Column data is empty\n");
-		return;
+	// Print index nodes
+	if (header->nNodes == 0) {
+		printf("No index nodes\n");
+	} else {
+		printf("\n");
+		indexNodePrintAll("", header->indexFp);
 	}
 
-	printf("\n");
-
-	// Print index node
-	indexNodePrintAll("", header->indexFp);
-
-	printf("\n");
-
 	// Print data blocks
-	dataBlockPrintAll("", dataFp, header->firstDataBlock);
+	if (header->nDataBlocks == 0) {
+		printf("No data blocks\n");
+	} else {
+		printf("\n");
+		dataBlockPrintAll("", dataFp, header->firstDataBlock);
+	}
 }

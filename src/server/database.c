@@ -508,8 +508,8 @@ static int dbLoad(tableInfo *tbl, loadArgs *args, int dataBytes, void *data, res
 			qsort(rows, numRows, sizeof(int *), loadComp);
 			break;
 		case COL_BTREE:
-			ERROR(err, E_UNIMP);
-			goto cleanupColumn;
+			qsort(rows, numRows, sizeof(int *), loadComp);
+			break;
 		default:
 			ERROR(err, E_COLST);
 			goto cleanupColumn;
