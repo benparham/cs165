@@ -1,6 +1,3 @@
-Name - Ruben Parham
-HUID - 70797445
-
 Things that should work:
 - Sorted, unsorted and btree column creation, removal, insert, select, fetch, load
 - Aggregation functions (max, min, sum, etc.)
